@@ -104,11 +104,15 @@ const ProfileScreen = () => {
         {/* Menu Section */}
         <View style={styles.menuCard}>
           {[
-            { label: 'Pengaturan', icon: 'settings-outline', color: '#64748B' },
-            { label: 'Bantuan', icon: 'information-circle-outline', color: '#64748B' },
-            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: '#64748B' },
+            { label: 'Pengaturan', icon: 'settings-outline', color: '#64748B', route: 'Settings' },
+            { label: 'Bantuan', icon: 'information-circle-outline', color: '#64748B', route: null },
+            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: '#64748B', route: null },
           ].map((item, idx) => (
-            <Pressable key={idx} style={styles.menuItem}>
+            <Pressable
+              key={idx}
+              style={styles.menuItem}
+              onPress={() => item.route && navigation.navigate(item.route)}
+            >
               <Ionicons name={item.icon as any} size={22} color={item.color} />
               <Text style={styles.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />

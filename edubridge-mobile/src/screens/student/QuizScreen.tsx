@@ -47,13 +47,20 @@ const QuizScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Top Navigation */}
+      <View style={styles.topNav}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={24} color="#1E293B" />
+        </Pressable>
+        <View style={styles.timerBoxTop}>
+          <Ionicons name="time-outline" size={18} color={PURPLE} />
+          <Text style={styles.timerTextTop}>{formatTime(timeLeft)}</Text>
+        </View>
+      </View>
+
       {/* Header Info */}
       <View style={styles.header}>
         <Text style={styles.questionCounter}>Soal 4 dari 10</Text>
-        <View style={styles.timerBox}>
-          <Ionicons name="time-outline" size={18} color="#1E293B" />
-          <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-        </View>
       </View>
 
       {/* Progress Bar */}
@@ -113,12 +120,16 @@ const QuizScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+  topNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  backBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  timerBoxTop: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: PURPLE + '10', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 },
+  timerTextTop: { fontSize: 14, fontWeight: 'bold', color: PURPLE },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 25,
-    paddingTop: 20,
+    paddingTop: 15,
     paddingBottom: 15,
   },
   questionCounter: { fontSize: 14, color: '#64748B', fontWeight: '600' },

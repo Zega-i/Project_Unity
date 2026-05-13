@@ -24,11 +24,18 @@ const weeklyStats = [
   { day: 'Jum', score: 88 }, { day: 'Sab', score: 95 }, { day: 'Min', score: 80 },
 ];
 
+const dailyStats = [
+  { time: '08:00', score: 80 }, { time: '10:30', score: 85 },
+  { time: '13:00', score: 75 }, { time: '15:45', score: 88 },
+  { time: '18:00', score: 92 }, { time: '20:15', score: 78 },
+];
+
 const ProgressScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('Minggu Ini');
+  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
 
   const loadData = async () => {
     try {
@@ -72,11 +79,38 @@ const ProgressScreen = () => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Progress Belajar</Text>
-          <Pressable style={styles.periodBtn}>
+          <Pressable
+            style={styles.periodBtn}
+            onPress={() => setShowPeriodMenu(!showPeriodMenu)}
+          >
             <Text style={styles.periodBtnText}>{selectedPeriod}</Text>
-            <Ionicons name="chevron-down" size={14} color={PURPLE} />
+            <Ionicons
+              name={showPeriodMenu ? "chevron-up" : "chevron-down"}
+              size={14}
+              color={PURPLE}
+            />
           </Pressable>
         </View>
+
+        {/* Period Menu */}
+        {showPeriodMenu && (
+          <View style={styles.periodMenu}>
+            {['Hari Ini', 'Minggu Ini', 'Bulan Ini'].map((period) => (
+              <Pressable
+                key={period}
+                style={[styles.periodMenuItem, selectedPeriod === period && styles.periodMenuItemActive]}
+                onPress={() => {
+                  setSelectedPeriod(period);
+                  setShowPeriodMenu(false);
+                }}
+              >
+                <Text style={[styles.periodMenuText, selectedPeriod === period && styles.periodMenuTextActive]}>
+                  {period}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
 
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
@@ -95,21 +129,30 @@ const ProgressScreen = () => {
           ))}
         </View>
 
-        {/* Weekly Bar Chart */}
+        {/* Activity Chart */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Aktivitas Mingguan</Text>
+          <Text style={styles.sectionTitle}>
+            {selectedPeriod === 'Hari Ini' ? 'Aktivitas Hari Ini' : 'Aktivitas Mingguan'}
+          </Text>
           <View style={styles.barChart}>
-            {weeklyStats.map((stat, idx) => (
-              <View key={idx} style={styles.barColumn}>
-                <Text style={styles.barValue}>{stat.score}%</Text>
-                <LinearGradient
-                  colors={[PURPLE, '#5B21B6']}
-                  start={{ x: 0, y: 1 }} end={{ x: 0, y: 0 }}
-                  style={[styles.bar, { height: (stat.score / maxScore) * 120 }]}
-                />
-                <Text style={styles.barDay}>{stat.day}</Text>
-              </View>
-            ))}
+            {(selectedPeriod === 'Hari Ini' ? dailyStats : weeklyStats).map((stat, idx) => {
+              const data = selectedPeriod === 'Hari Ini' ? stat as typeof dailyStats[0] : stat as typeof weeklyStats[0];
+              const maxVal = selectedPeriod === 'Hari Ini' ? Math.max(...dailyStats.map(s => s.score)) : maxScore;
+              const label = selectedPeriod === 'Hari Ini' ? (data as any).time : (data as any).day;
+
+              return (
+                <View key={idx} style={styles.barColumn}>
+                  <Text style={styles.barValue}>{data.score}%</Text>
+                  <LinearGradient
+                    colors={[PURPLE, '#5B21B6']}
+                    start={{ x: 0, y: 1 }}
+                    end={{ x: 0, y: 0 }}
+                    style={[styles.bar, { height: (data.score / maxVal) * 120 }]}
+                  />
+                  <Text style={styles.barDay}>{label}</Text>
+                </View>
+              );
+            })}
           </View>
         </View>
 
@@ -146,6 +189,11 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },
   periodBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EDE9FE', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
   periodBtnText: { fontSize: 13, fontWeight: '600', color: PURPLE },
+  periodMenu: { backgroundColor: '#FFFFFF', borderRadius: 12, marginHorizontal: 20, marginBottom: 16, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
+  periodMenuItem: { paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  periodMenuItemActive: { backgroundColor: '#EDE9FE' },
+  periodMenuText: { fontSize: 14, color: '#64748B', fontWeight: '500' },
+  periodMenuTextActive: { color: PURPLE, fontWeight: '600' },
   summaryRow: { flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 24 },
   summaryCard: { flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 14, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   summaryIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },

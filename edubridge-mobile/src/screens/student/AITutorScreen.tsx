@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, ScrollView,
   Pressable, KeyboardAvoidingView, Platform, SafeAreaView,
-  ActivityIndicator, Image,
+  ActivityIndicator, Image, Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { aiAPI } from '../../services/api';
@@ -104,7 +104,10 @@ const AITutorScreen = () => {
       </View>
 
       {/* Input Bar */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
         <View style={styles.inputBar}>
           <TextInput
             style={styles.textInput}
@@ -112,6 +115,7 @@ const AITutorScreen = () => {
             onChangeText={setInput}
             placeholder="Ketik pertanyaanmu..."
             placeholderTextColor="#94A3B8"
+            onFocus={() => setTimeout(() => flatListRef.current?.scrollToEnd(), 100)}
           />
           <Pressable style={styles.sendBtn} onPress={() => sendMessage()}>
             <Ionicons name="send" size={20} color="#fff" />

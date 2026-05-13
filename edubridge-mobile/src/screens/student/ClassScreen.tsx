@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput,
   SafeAreaView, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,12 @@ const ClassScreen = () => {
   const [activeTab, setActiveTab] = useState<'aktif' | 'selesai'>('aktif');
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+
+  const filteredClasses = classes.filter(cls =>
+    cls.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const fetchClasses = async () => {
     try {
@@ -34,10 +40,29 @@ const ClassScreen = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Kelas Saya</Text>
-          <Pressable style={styles.searchBtn}>
-            <Ionicons name="search-outline" size={24} color="#1E293B" />
-          </Pressable>
+          {showSearch ? (
+            <View style={styles.searchInputWrapper}>
+              <Ionicons name="search-outline" size={20} color="#94A3B8" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Cari kelas..."
+                placeholderTextColor="#94A3B8"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              <Pressable onPress={() => { setShowSearch(false); setSearchQuery(''); }}>
+                <Ionicons name="close" size={20} color="#94A3B8" />
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.headerTitle}>Kelas Saya</Text>
+              <Pressable style={styles.searchBtn} onPress={() => setShowSearch(true)}>
+                <Ionicons name="search-outline" size={24} color="#1E293B" />
+              </Pressable>
+            </>
+          )}
         </View>
 
         {/* Tab Pills */}
@@ -58,11 +83,13 @@ const ClassScreen = () => {
 
         {/* Class List */}
         <View style={styles.classList}>
-          {classes.length === 0 ? (
+          {filteredClasses.length === 0 ? (
             <View style={{ alignItems: 'center', marginTop: 40 }}>
-              <Text style={{ color: '#94A3B8' }}>Belum bergabung di kelas mana pun.</Text>
+              <Text style={{ color: '#94A3B8' }}>
+                {classes.length === 0 ? 'Belum bergabung di kelas mana pun.' : 'Kelas tidak ditemukan'}
+              </Text>
             </View>
-          ) : classes.map((cls) => (
+          ) : filteredClasses.map((cls) => (
             <Pressable 
               key={cls.id} 
               style={styles.classCard}
@@ -109,6 +136,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },
   searchBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F1F5F9' },
+  searchInputWrapper: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderRadius: 12, paddingHorizontal: 14, gap: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, color: '#1E293B' },
   tabContainer: { flexDirection: 'row', backgroundColor: '#F1F5F9', borderRadius: 14, padding: 4, marginBottom: 25 },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
   tabActive: { backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
