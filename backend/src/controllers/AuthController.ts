@@ -2,23 +2,31 @@ import { Request, Response } from "express";
 import prisma from "../config/database";
 import bcrypt from "bcrypt";
 import { generateToken, AuthRequest } from "../middleware/auth";
+import { ApiResponse, ApiError } from "../types";
+import { validateRegisterRequest, validateLoginRequest } from "../utils/validation";
+import { logger } from "../utils/logger";
+import { SUCCESS_MESSAGES, ERROR_MESSAGES, VALIDATION } from "../constants";
 
 export class AuthController {
   static async register(req: Request, res: Response) {
     try {
-      const { email, password, name, role } = req.body;
+      // Validate request
+      const { email, password, name, role } = validateRegisterRequest(req.body);
 
       // Check uniqueness across ALL tables
-      const student = await prisma.student.findUnique({ where: { email } });
-      const teacher = await prisma.teacher.findUnique({ where: { email } });
-      const admin = await prisma.admin.findUnique({ where: { email } });
+      const [student, teacher, admin] = await Promise.all([
+        prisma.student.findUnique({ where: { email } }),
+        prisma.teacher.findUnique({ where: { email } }),
+        prisma.admin.findUnique({ where: { email } }),
+      ]);
 
       if (student || teacher || admin) {
-        return res.status(400).json({ error: "Email already exists" });
+        logger.warn(`Registration attempt with existing email: ${email}`);
+        throw new ApiError(409, ERROR_MESSAGES.EMAIL_ALREADY_EXISTS, 'EMAIL_EXISTS');
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
-      let user;
+      const hashedPassword = await bcrypt.hash(password, VALIDATION.BCRYPT_ROUNDS);
+      let user: any;
 
       if (role === "ADMIN") {
         user = await prisma.admin.create({
@@ -26,7 +34,7 @@ export class AuthController {
             email,
             password: hashedPassword,
             name,
-            phone: req.body.phone
+            phone: req.body.phone || null,
           },
         });
       } else if (role === "TEACHER") {
@@ -35,10 +43,10 @@ export class AuthController {
             email,
             password: hashedPassword,
             name,
-            nip: req.body.nip,
-            subjectTaught: req.body.subjectTaught,
-            phone: req.body.phone,
-            position: req.body.position
+            nip: req.body.nip || null,
+            subjectTaught: req.body.subjectTaught || null,
+            phone: req.body.phone || null,
+            position: req.body.position || null,
           },
         });
       } else {
@@ -48,31 +56,40 @@ export class AuthController {
             password: hashedPassword,
             name,
             grade: parseInt(req.body.grade) || 10,
-            nisn: req.body.nisn,
+            nisn: req.body.nisn || null,
             dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : null,
-            address: req.body.address,
-            parentName: req.body.parentName,
-            parentPhone: req.body.parentPhone
+            address: req.body.address || null,
+            parentName: req.body.parentName || null,
+            parentPhone: req.body.parentPhone || null,
           },
         });
       }
 
-      const token = generateToken(user.id, user.email, role || "STUDENT");
+      const token = generateToken(user.id, user.email, role);
 
-      res.status(201).json({
-        message: "User registered successfully",
-        token,
-        user: { id: user.id, email: user.email, name: user.name, role: role || "STUDENT" },
-      });
-    } catch (error: any) {
-      console.error("Registration Error:", error);
-      res.status(500).json({ error: error.message || "Registration failed" });
+      logger.info(`User registered successfully: ${email} (${role})`);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          token,
+          user: { id: user.id, email: user.email, name: user.name, role },
+        },
+        message: SUCCESS_MESSAGES.REGISTERED,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.status(201).json(response);
+    } catch (error) {
+      logger.error('Registration error', error);
+      throw error;
     }
   }
 
   static async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body;
+      // Validate request
+      const { email, password } = validateLoginRequest(req.body);
 
       let user: any = null;
       let role = "";
@@ -94,42 +111,53 @@ export class AuthController {
       }
 
       if (!user) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        logger.warn(`Login attempt with non-existent email: ${email}`);
+        throw new ApiError(401, ERROR_MESSAGES.INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
       }
 
       const passwordMatch = await bcrypt.compare(password, user.password);
 
       if (!passwordMatch) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        logger.warn(`Failed login attempt for: ${email}`);
+        throw new ApiError(401, ERROR_MESSAGES.INVALID_CREDENTIALS, 'INVALID_CREDENTIALS');
       }
 
+      // Log login history
       if (role === "STUDENT") {
         await prisma.loginHistory.create({
           data: {
             studentId: user.id,
-            ip: req.ip,
-            userAgent: req.get("user-agent"),
+            ip: req.ip || "unknown",
+            userAgent: req.get("user-agent") || undefined,
           },
         });
       }
 
       const token = generateToken(user.id, user.email, role);
 
-      res.json({
-        message: "Login successful",
-        token,
-        user: { id: user.id, email: user.email, name: user.name, role },
-      });
+      logger.info(`User logged in successfully: ${email} (${role})`);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          token,
+          user: { id: user.id, email: user.email, name: user.name, role },
+        },
+        message: SUCCESS_MESSAGES.LOGGED_IN,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Login failed" });
+      logger.error('Login error', error);
+      throw error;
     }
   }
 
   static async me(req: AuthRequest, res: Response) {
     try {
       if (!req.userId || !req.user?.role) {
-        return res.status(401).json({ error: "Unauthorized" });
+        throw new ApiError(401, ERROR_MESSAGES.UNAUTHORIZED, 'UNAUTHORIZED');
       }
 
       let user: any = null;
@@ -144,18 +172,41 @@ export class AuthController {
       }
 
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        throw new ApiError(404, ERROR_MESSAGES.NOT_FOUND.replace('{resource}', 'User'), 'USER_NOT_FOUND');
       }
 
-      res.json({
-        user: { id: user.id, email: user.email, name: user.name, role },
-      });
+      logger.info(`Profile retrieved for: ${user.email}`);
+
+      const response: ApiResponse = {
+        success: true,
+        data: {
+          user: { id: user.id, email: user.email, name: user.name, role },
+        },
+        message: SUCCESS_MESSAGES.PROFILE_RETRIEVED,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch user" });
+      logger.error('Profile retrieval error', error);
+      throw error;
     }
   }
 
   static async logout(req: AuthRequest, res: Response) {
-    res.json({ message: "Logout successful" });
+    try {
+      logger.info(`User logged out: ${req.user?.email}`);
+
+      const response: ApiResponse = {
+        success: true,
+        message: SUCCESS_MESSAGES.LOGGED_OUT,
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (error) {
+      logger.error('Logout error', error);
+      throw error;
+    }
   }
 }

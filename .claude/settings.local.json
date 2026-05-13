@@ -9,7 +9,9 @@
       "Bash(rm -rf D:/EduBridge/mobile)",
       "Bash(mkdir -p D:/EduBridge/mobile)",
       "Bash(timeout 15 npm start)",
-      "PowerShell(cmd /c \"cd /d D:\\\\EduBridge && move edubridge-mobile mobile\")"
+      "PowerShell(cmd /c \"cd /d D:\\\\EduBridge && move edubridge-mobile mobile\")",
+      "Bash(awk '{print \" \", $9, \"\\(\" $5 \"\\)\"}')",
+      "Bash(awk '{print \"  \", $9, \"\\(\" $5 \"\\)\"}')"
     ]
   }
 }
