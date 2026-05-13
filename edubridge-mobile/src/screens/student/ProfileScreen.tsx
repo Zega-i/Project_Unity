@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, Alert, ActivityIndicator, RefreshControl,
+  SafeAreaView, Image, ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 
@@ -13,150 +12,119 @@ const PURPLE = '#7C3AED';
 const ProfileScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const loadProfile = async () => {
+  const fetchProfile = async () => {
     try {
-      const cached = authStore.getUserSync();
-      if (cached) setUser(cached);
       const res = await authAPI.getProfile();
-      const profile = res.data || res;
-      setUser(profile);
-      await authStore.setAuth(await authStore.getToken() || '', profile);
+      setUser(res.data || res);
     } catch {
-      const cached = authStore.getUserSync();
-      if (cached) setUser(cached);
+      setUser(authStore.getUserSync());
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadProfile(); }, []);
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadProfile();
-    setRefreshing(false);
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert('Keluar', 'Apakah Anda yakin ingin keluar?', [
       { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: () => authStore.clearAuth() },
+      { text: 'Keluar', style: 'destructive', onPress: async () => await authStore.logout() }
     ]);
   };
 
-  const initials = user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+  if (loading) return (
+    <View style={styles.loading}>
+      <ActivityIndicator size="large" color={PURPLE} />
+    </View>
+  );
 
-  const menuItems = [
-    { icon: 'notifications-outline', label: 'Notifikasi', color: '#6366F1' },
-    { icon: 'shield-checkmark-outline', label: 'Privasi & Keamanan', color: '#10B981' },
-    { icon: 'help-circle-outline', label: 'Bantuan & Dukungan', color: '#F59E0B' },
-    { icon: 'information-circle-outline', label: 'Tentang Aplikasi', color: '#3B82F6' },
-  ];
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={PURPLE} />
-      </View>
-    );
-  }
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />}
-      >
-        {/* Header Gradient */}
-        <LinearGradient colors={[PURPLE, '#5B21B6']} style={styles.headerGrad}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-          <Text style={styles.userName}>{user?.name || 'Nama Siswa'}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>
-              {user?.role === 'TEACHER' ? '👩‍🏫 Guru' : `🎓 Siswa Kelas ${user?.grade || '-'}`}
-            </Text>
-          </View>
-        </LinearGradient>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.headerTitle}>Profil Saya</Text>
 
-        {/* Info Cards */}
+        {/* Avatar Section */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={{ uri: user?.avatar || 'https://via.placeholder.com/150' }}
+              style={styles.avatar}
+            />
+          </View>
+          <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
+          <Text style={styles.userRole}>{user?.role === 'STUDENT' ? 'Siswa' : 'Guru'}</Text>
+        </View>
+
+        {/* Info Section */}
         <View style={styles.infoSection}>
-          <View style={styles.infoCard}>
-            {[
-              { icon: 'mail-outline', label: 'Email', value: user?.email || '-', color: PURPLE },
-              { icon: 'school-outline', label: 'Kelas', value: user?.grade ? `Kelas ${user.grade}` : '-', color: '#10B981' },
-              { icon: 'person-outline', label: 'Role', value: user?.role === 'TEACHER' ? 'Guru' : 'Siswa', color: '#F59E0B' },
-            ].map((item, i) => (
-              <View key={i} style={[styles.infoRow, i < 2 && styles.infoRowBorder]}>
-                <View style={[styles.infoIconBox, { backgroundColor: item.color + '15' }]}>
-                  <Ionicons name={item.icon as any} size={18} color={item.color} />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>{item.label}</Text>
-                  <Text style={styles.infoValue}>{item.value}</Text>
-                </View>
-              </View>
-            ))}
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue}>{user?.email || '-'}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Kelas</Text>
+            <Text style={styles.infoValue}>{user?.className || user?.grade || '-'}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Sekolah</Text>
+            <Text style={styles.infoValue}>{user?.school || '-'}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Tanggal Lahir</Text>
+            <Text style={styles.infoValue}>{formatDate(user?.dateOfBirth)}</Text>
           </View>
         </View>
 
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <Text style={styles.menuSectionTitle}>Pengaturan</Text>
-          <View style={styles.menuCard}>
-            {menuItems.map((item, i) => (
-              <Pressable key={i} style={[styles.menuItem, i < menuItems.length - 1 && styles.menuItemBorder]}>
-                <View style={[styles.menuIconBox, { backgroundColor: item.color + '15' }]}>
-                  <Ionicons name={item.icon as any} size={18} color={item.color} />
-                </View>
-                <Text style={styles.menuLabel}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
-              </Pressable>
-            ))}
-          </View>
+        {/* Menu Section */}
+        <View style={styles.menuCard}>
+          {[
+            { label: 'Pengaturan', icon: 'settings-outline', color: '#64748B' },
+            { label: 'Bantuan', icon: 'information-circle-outline', color: '#64748B' },
+            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: '#64748B' },
+          ].map((item, idx) => (
+            <Pressable key={idx} style={styles.menuItem}>
+              <Ionicons name={item.icon as any} size={22} color={item.color} />
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+            </Pressable>
+          ))}
+          <Pressable style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+            <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Keluar</Text>
+            <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+          </Pressable>
         </View>
-
-        {/* Logout */}
-        <Pressable style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          <Text style={styles.logoutText}>Keluar dari Akun</Text>
-        </Pressable>
-
-        <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  headerGrad: { alignItems: 'center', paddingTop: 40, paddingBottom: 40, paddingHorizontal: 20 },
-  avatarCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 3, borderColor: 'rgba(255,255,255,0.5)' },
-  avatarText: { fontSize: 32, fontWeight: 'bold', color: '#fff' },
-  userName: { fontSize: 22, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
-  roleBadge: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 },
-  roleText: { fontSize: 13, color: '#fff', fontWeight: '600' },
-  infoSection: { paddingHorizontal: 20, marginTop: 20, marginBottom: 20 },
-  infoCard: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  infoIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  infoContent: { flex: 1 },
-  infoLabel: { fontSize: 12, color: '#94A3B8', marginBottom: 3 },
-  infoValue: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  menuSection: { paddingHorizontal: 20, marginBottom: 20 },
-  menuSectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1E293B', marginBottom: 12 },
-  menuCard: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16 },
-  menuItemBorder: { borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  menuIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  menuLabel: { flex: 1, fontSize: 14, fontWeight: '500', color: '#334155' },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginHorizontal: 20, backgroundColor: '#FFF1F2', borderRadius: 14, paddingVertical: 16, borderWidth: 1, borderColor: '#FECDD3' },
-  logoutText: { fontSize: 15, fontWeight: '700', color: '#EF4444' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingHorizontal: 25, paddingTop: 20, paddingBottom: 40 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 30 },
+  avatarSection: { alignItems: 'center', marginBottom: 40 },
+  avatarContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F1F5F9', padding: 4, marginBottom: 16, overflow: 'hidden' },
+  avatar: { width: '100%', height: '100%', borderRadius: 50 },
+  userName: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 6 },
+  userRole: { fontSize: 14, color: '#94A3B8' },
+  infoSection: { marginBottom: 40 },
+  infoItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  infoLabel: { fontSize: 14, color: '#64748B', fontWeight: '500' },
+  infoValue: { fontSize: 14, color: '#1E293B', fontWeight: '600' },
+  menuCard: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
+  menuLabel: { flex: 1, marginLeft: 16, fontSize: 15, fontWeight: '600', color: '#1E293B' },
 });
 
 export default ProfileScreen;

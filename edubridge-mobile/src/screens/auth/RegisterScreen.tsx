@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  ScrollView,
+  View, Text, StyleSheet, TextInput, Pressable,
+  SafeAreaView, Alert, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -23,25 +17,31 @@ const RegisterScreen = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [school, setSchool] = useState('');
+  const [className, setClassName] = useState('');
+  const [dob, setDob] = useState('');
   const [role, setRole] = useState<Role>('STUDENT');
-  const [grade, setGrade] = useState(10);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
-      Alert.alert('Error', 'Mohon isi semua kolom');
+    if (!name || !email || !password || (role === 'STUDENT' && (!school || !className))) {
+      Alert.alert('Error', 'Mohon isi semua kolom yang wajib');
       return;
     }
-
     setLoading(true);
     try {
-      const extra = role === 'STUDENT' ? { grade } : {};
+      const extra = role === 'STUDENT' ? { 
+        school, 
+        className, 
+        dateOfBirth: dob ? new Date(dob).toISOString() : undefined,
+        grade: 10 
+      } : {};
       const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.data.token, response.data.user);
     } catch (error: any) {
-      const errorMsg = error.response?.data?.error || 'Pendaftaran gagal. Silakan coba lagi.';
-      Alert.alert('Pendaftaran Gagal', errorMsg);
+      const msg = error.response?.data?.error || 'Pendaftaran gagal';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }
@@ -52,59 +52,103 @@ const RegisterScreen = () => {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Back Button */}
         <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color="#1e293b" />
-          <Text style={styles.backText}>Kembali</Text>
+          <Ionicons name="chevron-back" size={24} color="#1E293B" />
         </Pressable>
 
+        {/* Header Section */}
         <View style={styles.header}>
-          <Text style={styles.title}>Daftar</Text>
-          <Text style={styles.subtitle}>Buat akun baru Anda ✨</Text>
+          <Text style={styles.title}>Buat Akun Baru</Text>
+          <Text style={styles.subtitle}>Bergabung dan mulai perjalanan belajarmu sekarang!</Text>
         </View>
 
+        {/* Form Section */}
         <View style={styles.form}>
-          {/* Nama */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Nama Lengkap</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="person-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Nama Anda"
-                placeholderTextColor="#ccc"
-                value={name}
-                onChangeText={setName}
-                editable={!loading}
-              />
-            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Masukkan nama lengkap"
+              placeholderTextColor="#94A3B8"
+              value={name}
+              onChangeText={setName}
+              editable={!loading}
+            />
           </View>
 
-          {/* Email */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="nama@email.com"
-                placeholderTextColor="#ccc"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loading}
-              />
+            <TextInput
+              style={styles.input}
+              placeholder="contoh@email.com"
+              placeholderTextColor="#94A3B8"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Role</Text>
+            <View style={styles.roleContainer}>
+              <Pressable
+                style={[styles.roleBtn, role === 'STUDENT' && styles.roleBtnActive]}
+                onPress={() => setRole('STUDENT')}
+              >
+                <Text style={[styles.roleBtnText, role === 'STUDENT' && styles.roleBtnTextActive]}>Siswa</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.roleBtn, role === 'TEACHER' && styles.roleBtnActive]}
+                onPress={() => setRole('TEACHER')}
+              >
+                <Text style={[styles.roleBtnText, role === 'TEACHER' && styles.roleBtnTextActive]}>Guru</Text>
+              </Pressable>
             </View>
           </View>
 
-          {/* Password */}
+          {role === 'STUDENT' && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Sekolah</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nama Sekolah"
+                  placeholderTextColor="#94A3B8"
+                  value={school}
+                  onChangeText={setSchool}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Kelas</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Contoh: 10A"
+                  placeholderTextColor="#94A3B8"
+                  value={className}
+                  onChangeText={setClassName}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Tanggal Lahir</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor="#94A3B8"
+                  value={dob}
+                  onChangeText={setDob}
+                />
+              </View>
+            </>
+          )}
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
+            <View style={styles.passwordWrapper}>
               <TextInput
-                style={styles.input}
-                placeholder="Masukkan password"
-                placeholderTextColor="#ccc"
+                style={styles.passwordInput}
+                placeholder="Minimal 6 karakter"
+                placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -114,89 +158,34 @@ const RegisterScreen = () => {
                 <Ionicons
                   name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                   size={20}
-                  color="#94a3b8"
+                  color="#94A3B8"
                 />
               </Pressable>
             </View>
           </View>
-
-          {/* Role */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Saya adalah</Text>
-            <View style={styles.roleContainer}>
-              <Pressable
-                style={[styles.roleButton, role === 'STUDENT' && styles.roleButtonActive]}
-                onPress={() => !loading && setRole('STUDENT')}
-              >
-                <Ionicons
-                  name="school-outline"
-                  size={18}
-                  color={role === 'STUDENT' ? '#fff' : '#64748b'}
-                  style={{ marginBottom: 4 }}
-                />
-                <Text style={[styles.roleButtonText, role === 'STUDENT' && styles.roleButtonTextActive]}>
-                  Siswa
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.roleButton, role === 'TEACHER' && styles.roleButtonActive]}
-                onPress={() => !loading && setRole('TEACHER')}
-              >
-                <Ionicons
-                  name="person-outline"
-                  size={18}
-                  color={role === 'TEACHER' ? '#fff' : '#64748b'}
-                  style={{ marginBottom: 4 }}
-                />
-                <Text style={[styles.roleButtonText, role === 'TEACHER' && styles.roleButtonTextActive]}>
-                  Guru
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Grade (Siswa only) */}
-          {role === 'STUDENT' && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Pilih Kelas</Text>
-              <View style={styles.roleContainer}>
-                {[10, 11, 12].map((g) => (
-                  <Pressable
-                    key={g}
-                    style={[styles.roleButton, grade === g && styles.roleButtonActive]}
-                    onPress={() => !loading && setGrade(g)}
-                  >
-                    <Text style={[styles.roleButtonText, grade === g && styles.roleButtonTextActive]}>
-                      Kelas {g}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          )}
 
           <Pressable
             style={({ pressed }) => [
-              styles.registerButton,
-              pressed && { opacity: 0.8 },
-              loading && { opacity: 0.6 },
+              styles.registerBtn,
+              pressed && { opacity: 0.9 },
+              loading && { opacity: 0.7 },
             ]}
             onPress={handleRegister}
             disabled={loading}
           >
-            <Text style={styles.registerButtonText}>
-              {loading ? 'Sedang mendaftar...' : 'Daftar'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.registerBtnText}>Daftar</Text>
+            )}
           </Pressable>
         </View>
 
+        {/* Footer Link */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Sudah punya akun? </Text>
-          <Pressable onPress={() => navigation.goBack()} disabled={loading}>
-            <Text style={[styles.loginLink, loading && { opacity: 0.6 }]}>
-              Masuk
-            </Text>
+          <Pressable onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.loginLink}>Masuk</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -205,132 +194,29 @@ const RegisterScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 30,
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  backText: {
-    fontSize: 14,
-    color: '#1e293b',
-    fontWeight: '600',
-  },
-  header: {
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  form: {
-    marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 13,
-    fontSize: 14,
-    color: '#1e293b',
-  },
-  eyeBtn: {
-    padding: 6,
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#f8fafc',
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
-    alignItems: 'center',
-  },
-  roleButtonActive: {
-    backgroundColor: PURPLE,
-    borderColor: PURPLE,
-  },
-  roleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
-  },
-  roleButtonTextActive: {
-    color: '#fff',
-  },
-  registerButton: {
-    backgroundColor: PURPLE,
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 10,
-    elevation: 2,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  registerButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
-  footerText: {
-    color: '#64748b',
-    fontSize: 14,
-  },
-  loginLink: {
-    color: PURPLE,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  content: { flexGrow: 1, paddingHorizontal: 30, paddingTop: 20, paddingBottom: 40 },
+  backBtn: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 20, marginLeft: -10 },
+  header: { marginBottom: 32 },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#1E293B', marginBottom: 12 },
+  subtitle: { fontSize: 15, color: '#64748B', lineHeight: 22 },
+  form: { marginBottom: 24 },
+  inputGroup: { marginBottom: 24 },
+  label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 10 },
+  input: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 14, fontSize: 14, color: '#1E293B' },
+  roleContainer: { flexDirection: 'row', gap: 12 },
+  roleBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
+  roleBtnActive: { backgroundColor: PURPLE, borderColor: PURPLE },
+  roleBtnText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  roleBtnTextActive: { color: '#FFFFFF' },
+  passwordWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  passwordInput: { flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 14, color: '#1E293B' },
+  eyeBtn: { paddingHorizontal: 12 },
+  registerBtn: { backgroundColor: PURPLE, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10, shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  registerBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  footerText: { fontSize: 14, color: '#64748B' },
+  loginLink: { fontSize: 14, fontWeight: 'bold', color: PURPLE },
 });
 
 export default RegisterScreen;

@@ -46,6 +46,8 @@ model Student {
   name          String
   nisn          String?  @unique
   grade         Int
+  className     String?  // Contoh: 10A
+  school        String?  // Contoh: SMA Negeri 1 Jakarta
   dateOfBirth   DateTime?
   address       String?
   parentName    String?
@@ -69,6 +71,7 @@ model Student {
 model Class {
   id            String         @id @default(cuid())
   name          String
+  code          String         @unique @default(cuid())
   description   String?
   teacherId     String
   grade         Int
@@ -83,6 +86,7 @@ model Class {
 
   @@index([teacherId])
   @@index([grade])
+  @@index([code])
 }
 
 model ClassStudent {

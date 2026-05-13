@@ -6,6 +6,8 @@ import authRoutes from "./routes/auth";
 import quizRoutes from "./routes/quiz";
 import aiRoutes from "./routes/ai";
 import uploadRoutes from "./routes/upload";
+import classRoutes from "./routes/class";
+import progressRoutes from "./routes/progress";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { logger } from "./utils/logger";
@@ -54,6 +56,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/quiz", quizRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/class", classRoutes);
+app.use("/api/progress", progressRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

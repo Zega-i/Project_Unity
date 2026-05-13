@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  SafeAreaView,
-  Alert,
-  ScrollView,
+  View, Text, StyleSheet, TextInput, Pressable,
+  SafeAreaView, Alert, ScrollView, ActivityIndicator, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -28,7 +22,6 @@ const LoginScreen = () => {
       Alert.alert('Error', 'Mohon isi semua kolom');
       return;
     }
-
     setLoading(true);
     try {
       const response = await authAPI.login(email, password);
@@ -43,45 +36,44 @@ const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Back Button */}
-        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color="#1e293b" />
-          <Text style={styles.backText}>Kembali</Text>
-        </Pressable>
-
-        <View style={styles.header}>
-          <Text style={styles.title}>Masuk</Text>
-          <Text style={styles.subtitle}>Selamat datang kembali 👋</Text>
+        {/* Top Icon */}
+        <View style={styles.logoContainer}>
+          <Image
+            source={{ uri: 'file:///C:/Users/agust/.gemini/antigravity/brain/82610f0c-f3bd-40ca-8af6-3c69e09a7cf0/login_robot_icon_1778695953509.png' }}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
+        {/* Header Text */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Selamat datang kembali!</Text>
+          <Text style={styles.subtitle}>Masuk untuk melanjutkan belajar.</Text>
+        </View>
+
+        {/* Form Section */}
         <View style={styles.form}>
-          {/* Email */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="nama@email.com"
-                placeholderTextColor="#ccc"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loading}
-              />
-            </View>
+            <Text style={styles.label}>Email atau Username</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="contoh@email.com"
+              placeholderTextColor="#94A3B8"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!loading}
+            />
           </View>
 
-          {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
+            <View style={styles.passwordWrapper}>
               <TextInput
-                style={styles.input}
+                style={styles.passwordInput}
                 placeholder="Masukkan password"
-                placeholderTextColor="#ccc"
+                placeholderTextColor="#94A3B8"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -91,33 +83,38 @@ const LoginScreen = () => {
                 <Ionicons
                   name={showPassword ? 'eye-outline' : 'eye-off-outline'}
                   size={20}
-                  color="#94a3b8"
+                  color="#94A3B8"
                 />
               </Pressable>
             </View>
           </View>
 
+          <Pressable style={styles.forgotBtn}>
+            <Text style={styles.forgotText}>Lupa password?</Text>
+          </Pressable>
+
           <Pressable
             style={({ pressed }) => [
               styles.loginButton,
-              pressed && { opacity: 0.8 },
-              loading && { opacity: 0.6 },
+              pressed && { opacity: 0.9 },
+              loading && { opacity: 0.7 },
             ]}
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={styles.loginButtonText}>
-              {loading ? 'Sedang masuk...' : 'Masuk'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.loginButtonText}>Masuk</Text>
+            )}
           </Pressable>
         </View>
 
+        {/* Footer Link */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>Belum punya akun? </Text>
-          <Pressable onPress={() => navigation.navigate('Register')} disabled={loading}>
-            <Text style={[styles.registerLink, loading && { opacity: 0.6 }]}>
-              Daftar sekarang
-            </Text>
+          <Pressable onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.registerLink}>Daftar</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -126,106 +123,27 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 30,
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  backText: {
-    fontSize: 14,
-    color: '#1e293b',
-    fontWeight: '600',
-  },
-  header: {
-    marginBottom: 36,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  form: {
-    marginBottom: 30,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 13,
-    fontSize: 14,
-    color: '#1e293b',
-  },
-  eyeBtn: {
-    padding: 6,
-  },
-  loginButton: {
-    backgroundColor: PURPLE,
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 10,
-    elevation: 2,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    color: '#64748b',
-    fontSize: 14,
-  },
-  registerLink: {
-    color: PURPLE,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  content: { flexGrow: 1, paddingHorizontal: 30, paddingTop: 40, paddingBottom: 40 },
+  logoContainer: { alignItems: 'center', marginBottom: 24, marginTop: 20 },
+  logo: { width: 100, height: 100, borderRadius: 25 },
+  header: { alignItems: 'center', marginBottom: 40 },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#1E293B', marginBottom: 10 },
+  subtitle: { fontSize: 14, color: '#64748B' },
+  form: { marginBottom: 24 },
+  inputGroup: { marginBottom: 24 },
+  label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 10 },
+  input: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 14, fontSize: 14, color: '#1E293B' },
+  passwordWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  passwordInput: { flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 14, color: '#1E293B' },
+  eyeBtn: { paddingHorizontal: 12 },
+  forgotBtn: { alignSelf: 'flex-end', marginBottom: 40, marginTop: -10 },
+  forgotText: { fontSize: 14, fontWeight: '600', color: PURPLE },
+  loginButton: { backgroundColor: PURPLE, borderRadius: 12, paddingVertical: 16, alignItems: 'center', shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  loginButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: 30 },
+  footerText: { fontSize: 14, color: '#64748B' },
+  registerLink: { fontSize: 14, fontWeight: 'bold', color: PURPLE },
 });
 
 export default LoginScreen;
