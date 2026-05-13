@@ -28,6 +28,7 @@ class AuthStore {
   }
 
   private notify() {
+    console.log('AuthStore: Notifying listeners, token exists:', !!this.state.token);
     this.listeners.forEach((listener) => listener(this.state));
   }
 
@@ -57,6 +58,10 @@ class AuthStore {
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('auth_user');
     this.notify();
+  }
+
+  async logout() {
+    await this.clearAuth();
   }
 
   async getToken() {

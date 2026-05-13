@@ -56,6 +56,8 @@ export class AuthController {
             password: hashedPassword,
             name,
             grade: parseInt(req.body.grade) || 10,
+            className: req.body.className || null,
+            school: req.body.school || null,
             nisn: req.body.nisn || null,
             dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : null,
             address: req.body.address || null,
@@ -73,7 +75,10 @@ export class AuthController {
         success: true,
         data: {
           token,
-          user: { id: user.id, email: user.email, name: user.name, role },
+          user: { 
+            id: user.id, email: user.email, name: user.name, role,
+            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
+          },
         },
         message: SUCCESS_MESSAGES.REGISTERED,
         timestamp: new Date().toISOString(),
@@ -141,7 +146,10 @@ export class AuthController {
         success: true,
         data: {
           token,
-          user: { id: user.id, email: user.email, name: user.name, role },
+          user: { 
+            id: user.id, email: user.email, name: user.name, role,
+            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
+          },
         },
         message: SUCCESS_MESSAGES.LOGGED_IN,
         timestamp: new Date().toISOString(),
@@ -180,7 +188,10 @@ export class AuthController {
       const response: ApiResponse = {
         success: true,
         data: {
-          user: { id: user.id, email: user.email, name: user.name, role },
+          user: { 
+            id: user.id, email: user.email, name: user.name, role,
+            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
+          },
         },
         message: SUCCESS_MESSAGES.PROFILE_RETRIEVED,
         timestamp: new Date().toISOString(),

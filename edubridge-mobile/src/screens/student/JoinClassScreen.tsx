@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
   SafeAreaView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  Image, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { classAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
 
@@ -36,7 +38,7 @@ const JoinClassScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
@@ -49,7 +51,16 @@ const JoinClassScreen = () => {
           <View style={{ width: 40 }} />
         </View>
 
-        <View style={styles.content}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Illustration Section - Open Door */}
+          <View style={styles.illustrationBox}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1541178735423-479332dfa93b?q=80&w=2070&auto=format&fit=crop' }} 
+              style={styles.doorImage} 
+              resizeMode="contain"
+            />
+          </View>
+
           {/* User Preview */}
           <View style={styles.userCard}>
             <View style={styles.avatarBox}>
@@ -66,7 +77,7 @@ const JoinClassScreen = () => {
 
           <Text style={styles.sectionLabel}>Kode Kelas</Text>
           <Text style={styles.instruction}>
-            Mintalah kode kelas kepada guru Anda, lalu masukkan kode tersebut di bawah ini untuk bergabung.
+            Masukkan kode kelas yang diberikan oleh gurumu di bawah ini untuk bergabung.
           </Text>
 
           <TextInput
@@ -85,7 +96,7 @@ const JoinClassScreen = () => {
             <Text style={styles.tipItem}>• Masukkan kode kelas (token) dengan benar</Text>
             <Text style={styles.tipItem}>• Pastikan kode memiliki 6-8 karakter tanpa spasi</Text>
           </View>
-        </View>
+        </ScrollView>
 
         <View style={styles.footer}>
           <Pressable 
@@ -111,8 +122,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 60 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
-  content: { flex: 1, padding: 24 },
-  userCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, marginBottom: 32, borderWidth: 1, borderColor: '#F1F5F9' },
+  content: { flex: 1, paddingHorizontal: 24 },
+  illustrationBox: { alignItems: 'center', marginVertical: 20 },
+  doorImage: { width: 140, height: 140, borderRadius: 20 },
+  userCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#F1F5F9' },
   avatarBox: { width: 44, height: 44, borderRadius: 22, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   userName: { fontSize: 15, fontWeight: 'bold', color: '#1E293B' },
@@ -122,7 +135,7 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 14, fontWeight: 'bold', color: '#1E293B', marginBottom: 8 },
   instruction: { fontSize: 13, color: '#64748B', lineHeight: 20, marginBottom: 20 },
   input: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 2, borderColor: '#E2E8F0', paddingHorizontal: 16, paddingVertical: 16, fontSize: 16, color: '#1E293B', fontWeight: '500' },
-  tipsContainer: { marginTop: 40 },
+  tipsContainer: { marginTop: 30, marginBottom: 20 },
   tipTitle: { fontSize: 14, fontWeight: 'bold', color: '#1E293B', marginBottom: 12 },
   tipItem: { fontSize: 13, color: '#64748B', marginBottom: 8 },
   footer: { padding: 24, borderTopWidth: 1, borderTopColor: '#F1F5F9' },

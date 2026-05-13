@@ -37,7 +37,7 @@ const StudentTabs = () => (
       tabBarShowLabel: false,
       tabBarStyle: {
         height: 70,
-        paddingBottom: 10,
+        paddingBottom: 15,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',

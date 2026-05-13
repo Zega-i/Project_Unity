@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, Image, ActivityIndicator, Alert,
+  SafeAreaView, Image, ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 
@@ -12,6 +13,7 @@ const PURPLE = '#7C3AED';
 const ProfileScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -24,16 +26,15 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleLogoutAction = async () => {
+    setLogoutModalVisible(false);
+    await authStore.logout();
+    // No need to navigate, AppNavigator will switch stack based on auth state
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
-
-  const handleLogout = () => {
-    Alert.alert('Keluar', 'Apakah Anda yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: async () => await authStore.logout() }
-    ]);
-  };
 
   if (loading) return (
     <View style={styles.loading}>
@@ -48,7 +49,7 @@ const ProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.headerTitle}>Profil Saya</Text>
 
@@ -56,12 +57,12 @@ const ProfileScreen = () => {
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <Image
-              source={{ uri: user?.avatar || 'https://via.placeholder.com/150' }}
+              source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=2080&auto=format&fit=crop' }}
               style={styles.avatar}
             />
           </View>
           <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
-          <Text style={styles.userRole}>{user?.role === 'STUDENT' ? 'Siswa' : 'Guru'}</Text>
+          <Text style={styles.userRole}>{user?.role === 'TEACHER' ? 'Guru' : 'Siswa'}</Text>
         </View>
 
         {/* Info Section */}
@@ -97,13 +98,44 @@ const ProfileScreen = () => {
               <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
             </Pressable>
           ))}
-          <Pressable style={[styles.menuItem, { borderBottomWidth: 0 }]} onPress={handleLogout}>
+          <Pressable
+            style={[styles.menuItem, { borderBottomWidth: 0 }]}
+            onPress={() => setLogoutModalVisible(true)}
+          >
             <Ionicons name="log-out-outline" size={22} color="#EF4444" />
             <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Keluar</Text>
             <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Modern Logout Modal */}
+      <Modal visible={logoutModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.warningIcon}>
+              <Ionicons name="warning-outline" size={32} color="#EF4444" />
+            </View>
+            <Text style={styles.modalTitle}>Konfirmasi Keluar</Text>
+            <Text style={styles.modalSub}>Apakah Anda yakin ingin keluar dari akun ini?</Text>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.cancelBtn}
+                onPress={() => setLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelText}>Batal</Text>
+              </Pressable>
+              <Pressable
+                style={styles.confirmBtn}
+                onPress={handleLogoutAction}
+              >
+                <Text style={styles.confirmText}>Keluar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -125,6 +157,18 @@ const styles = StyleSheet.create({
   menuCard: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
   menuLabel: { flex: 1, marginLeft: 16, fontSize: 15, fontWeight: '600', color: '#1E293B' },
+
+  /* Modal Styles */
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalCard: { backgroundColor: '#FFFFFF', width: '85%', borderRadius: 24, padding: 24, alignItems: 'center' },
+  warningIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B', marginBottom: 8 },
+  modalSub: { fontSize: 14, color: '#64748B', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  modalActions: { flexDirection: 'row', width: '100%', justifyContent: 'space-between' },
+  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#F1F5F9', alignItems: 'center', marginRight: 12 },
+  cancelText: { color: '#64748B', fontWeight: 'bold', fontSize: 15 },
+  confirmBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: '#EF4444', alignItems: 'center' },
+  confirmText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
 });
 
 export default ProfileScreen;
