@@ -38,8 +38,9 @@ const RegisterScreen = () => {
       const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.token, response.user);
       // Navigation will happen automatically
-    } catch (error) {
-      Alert.alert('Registration Failed', 'Email might already be in use');
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.error || 'Pendaftaran gagal. Silakan coba lagi.';
+      Alert.alert('Registration Failed', errorMsg);
     } finally {
       setLoading(false);
     }

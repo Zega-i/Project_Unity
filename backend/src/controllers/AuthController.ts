@@ -47,7 +47,7 @@ export class AuthController {
             email,
             password: hashedPassword,
             name,
-            grade: req.body.grade || 10,
+            grade: parseInt(req.body.grade) || 10,
             nisn: req.body.nisn,
             dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : null,
             address: req.body.address,
@@ -64,9 +64,9 @@ export class AuthController {
         token,
         user: { id: user.id, email: user.email, name: user.name, role: role || "STUDENT" },
       });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Registration failed" });
+    } catch (error: any) {
+      console.error("Registration Error:", error);
+      res.status(500).json({ error: error.message || "Registration failed" });
     }
   }
 
