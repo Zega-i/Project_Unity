@@ -17,10 +17,25 @@ const ProfileScreen = () => {
 
   const fetchProfile = async () => {
     try {
+      // Pertama cek dari cache
+      const cachedUser = authStore.getUserSync();
+      if (cachedUser?.name) {
+        setUser(cachedUser);
+      }
+
+      // Fetch fresh data dari API
       const res = await authAPI.getProfile();
-      setUser(res.data || res);
-    } catch {
-      setUser(authStore.getUserSync());
+      const profile = res.data || res;
+      if (profile) {
+        setUser(profile);
+        const token = await authStore.getToken();
+        await authStore.setAuth(token || '', profile);
+      }
+    } catch (err) {
+      console.log('Profile fetch error:', err);
+      // Fallback ke cached data
+      const cachedUser = authStore.getUserSync();
+      setUser(cachedUser);
     } finally {
       setLoading(false);
     }

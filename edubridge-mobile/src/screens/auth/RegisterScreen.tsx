@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
   SafeAreaView, Alert, ScrollView, ActivityIndicator,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,14 +20,13 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState('');
   const [school, setSchool] = useState('');
   const [className, setClassName] = useState('');
-  const [grade, setGrade] = useState('');
   const [dob, setDob] = useState('');
   const [role, setRole] = useState<Role>('STUDENT');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !email || !password || (role === 'STUDENT' && (!school || !className || !grade))) {
+    if (!name || !email || !password || (role === 'STUDENT' && (!school || !className))) {
       Alert.alert('Error', 'Mohon isi semua kolom yang wajib');
       return;
     }
@@ -35,7 +35,7 @@ const RegisterScreen = () => {
       const extra = role === 'STUDENT' ? {
         school,
         className,
-        grade: parseInt(grade) || 10,
+        grade: 10,
         dateOfBirth: dob ? new Date(dob).toISOString() : undefined,
       } : {};
       const response = await authAPI.register(email, password, name, role, extra);
@@ -49,8 +49,17 @@ const RegisterScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         {/* Back Button */}
         <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color="#1E293B" />
@@ -133,18 +142,6 @@ const RegisterScreen = () => {
                 />
               </View>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Tingkat Kelas (Angka)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Contoh: 10"
-                  placeholderTextColor="#94A3B8"
-                  value={grade}
-                  onChangeText={setGrade}
-                  keyboardType="number-pad"
-                  editable={!loading}
-                />
-              </View>
-              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Tanggal Lahir</Text>
                 <TextInput
                   style={styles.input}
@@ -204,8 +201,9 @@ const RegisterScreen = () => {
             <Text style={styles.loginLink}>Masuk</Text>
           </Pressable>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 

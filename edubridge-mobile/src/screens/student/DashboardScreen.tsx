@@ -20,12 +20,27 @@ const DashboardScreen = () => {
 
   const loadProfile = async () => {
     try {
+      // Pertama cek dari authStore
+      const cachedUser = authStore.getUserSync();
+      if (cachedUser?.name) {
+        setUser(cachedUser);
+      }
+
+      // Fetch dari API untuk get fresh data
       const res = await authAPI.getProfile();
       const profile = res.data || res;
-      setUser(profile);
-      await authStore.setAuth(await authStore.getToken() || '', profile);
+      if (profile) {
+        setUser(profile);
+        const token = await authStore.getToken();
+        await authStore.setAuth(token || '', profile);
+      }
     } catch (err) {
       console.log('Error loading profile:', err);
+      // Use cached data if API fails
+      const cachedUser = authStore.getUserSync();
+      if (cachedUser) {
+        setUser(cachedUser);
+      }
     }
   };
 
@@ -64,19 +79,25 @@ const DashboardScreen = () => {
         <View style={styles.summaryCard}>
           <View style={styles.summaryInfo}>
             <Text style={styles.summaryTitle}>Ringkasan Belajar</Text>
-            <View style={styles.streakRow}>
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakText}>🔥 12 Streak</Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Sudah Dipelajari</Text>
+                <Text style={styles.statValue}>5</Text>
               </View>
-              <Text style={styles.summarySub}>Sangat bagus!</Text>
+              <View style={styles.divider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>Belum Dipelajari</Text>
+                <Text style={styles.statValue}>3</Text>
+              </View>
             </View>
           </View>
           <View style={styles.progressCircle}>
-            <Text style={styles.progressText}>75%</Text>
+            <Text style={styles.progressText}>63%</Text>
+            <Text style={styles.progressSub}>Selesai</Text>
           </View>
         </View>
 
-        {/* Recommendations - Vertical List (2 items) */}
+        {/* Recommendations - Vertical List (Max 2 items) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Rekomendasi Belajar</Text>
           <Pressable><Text style={styles.seeAll}>Lihat Semua</Text></Pressable>
@@ -86,7 +107,7 @@ const DashboardScreen = () => {
           {[
             { id: '1', title: 'Persamaan Linear', subject: 'Matematika', level: 'Dasar', duration: '15 Min', progress: 60, color: '#6366F1', icon: '📐' },
             { id: '2', title: 'Hukum Newton', subject: 'Fisika', level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡' },
-          ].map((item) => (
+          ].slice(0, 2).map((item) => (
             <Pressable key={item.id} style={styles.recomCard}>
               <View style={[styles.recomIconBox, { backgroundColor: item.color + '10' }]}>
                 <Text style={styles.recomIconText}>{item.icon}</Text>
@@ -106,6 +127,9 @@ const DashboardScreen = () => {
             </Pressable>
           ))}
         </View>
+
+        {/* Spacer - Push Menu Cepat to bottom */}
+        <View style={styles.spacer} />
 
         {/* Menu Cepat (Quick Menu) */}
         <View style={[styles.sectionHeader, { marginTop: 35 }]}>
@@ -139,7 +163,7 @@ const DashboardScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 90 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 90, flexGrow: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 25 },
   welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },
   subWelcome: { fontSize: 14, color: '#64748B', marginTop: 4 },
@@ -147,13 +171,15 @@ const styles = StyleSheet.create({
   
   summaryCard: { backgroundColor: PURPLE, borderRadius: 24, padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 15, elevation: 8, marginBottom: 35 },
   summaryInfo: { flex: 1 },
-  summaryTitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600' },
-  streakRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  streakBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, marginRight: 10 },
-  streakText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 14 },
-  summarySub: { color: '#FFFFFF', fontSize: 12, opacity: 0.8 },
-  progressCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)' },
-  progressText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
+  summaryTitle: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600', marginBottom: 12 },
+  statsRow: { flexDirection: 'row', alignItems: 'center' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '500' },
+  statValue: { color: '#FFFFFF', fontSize: 20, fontWeight: 'bold', marginTop: 4 },
+  divider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.2)' },
+  progressCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)' },
+  progressText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 18 },
+  progressSub: { color: 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 2 },
   
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
@@ -165,7 +191,8 @@ const styles = StyleSheet.create({
   menuText: { fontSize: 13, fontWeight: '700', color: '#1E293B', marginBottom: 4 },
   menuDesc: { fontSize: 10, color: '#94A3B8', textAlign: 'center' },
   
-  recomList: { gap: 15 },
+  recomList: { gap: 15, marginBottom: 20 },
+  spacer: { flex: 1, minHeight: 20 },
   recomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },
   recomIconBox: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
   recomIconText: { fontSize: 22 },
