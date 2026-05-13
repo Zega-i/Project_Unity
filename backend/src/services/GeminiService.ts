@@ -1,7 +1,7 @@
-﻿import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { logger } from "../utils/logger";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "" });
 
 export interface GeneratedQuestion {
   question: string;
@@ -19,7 +19,7 @@ export interface GeneratedQuestion {
 }
 
 export class GeminiService {
-  private static model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  private static readonly model = "llama-3.3-70b-versatile";
 
   static async generateQuizFromText(
     extractedText: string,
@@ -51,12 +51,16 @@ OUTPUT FORMAT - HANYA JSON ARRAY:
 
 Pastikan output adalah VALID JSON yang bisa diparsing langsung.`;
 
-      const result = await this.model.generateContent(prompt);
-      const responseText = result.response.text();
+      const message = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: this.model,
+      });
+
+      const responseText = message.choices[0]?.message?.content || "";
 
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
-        throw new Error("Gemini tidak mengembalikan JSON yang valid");
+        throw new Error("Groq tidak mengembalikan JSON yang valid");
       }
 
       const questions: GeneratedQuestion[] = JSON.parse(jsonMatch[0]);
@@ -106,8 +110,12 @@ RESPONS:
 
 Jawab sekarang:`;
 
-      const result = await this.model.generateContent(prompt);
-      const tutorResponse = result.response.text();
+      const message = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: this.model,
+      });
+
+      const tutorResponse = message.choices[0]?.message?.content || "";
 
       logger.info("AI Tutor response generated successfully");
       return tutorResponse;
@@ -139,12 +147,16 @@ DATA SISWA:
 Output JSON:
 {"analysis":"...","recommendations":["...","...","..."]}`;
 
-      const result = await this.model.generateContent(prompt);
-      const responseText = result.response.text();
+      const message = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: this.model,
+      });
+
+      const responseText = message.choices[0]?.message?.content || "";
 
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("Gemini tidak mengembalikan JSON yang valid");
+        throw new Error("Groq tidak mengembalikan JSON yang valid");
       }
 
       const analysis = JSON.parse(jsonMatch[0]);
@@ -183,12 +195,16 @@ ${answersText}
 OUTPUT JSON:
 {"weakTopics":["..."],"analysis":"...","recommendation":"..."}`;
 
-      const result = await this.model.generateContent(prompt);
-      const responseText = result.response.text();
+      const message = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: this.model,
+      });
+
+      const responseText = message.choices[0]?.message?.content || "";
 
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("Gemini tidak mengembalikan JSON yang valid");
+        throw new Error("Groq tidak mengembalikan JSON yang valid");
       }
 
       const analysis = JSON.parse(jsonMatch[0]);
@@ -216,12 +232,16 @@ PROFIL:
 OUTPUT JSON:
 {"pathName":"...","items":[{"topic":"...","duration_minutes":30,"priority":"high","description":"..."}],"totalDuration":180}`;
 
-      const result = await this.model.generateContent(prompt);
-      const responseText = result.response.text();
+      const message = await groq.chat.completions.create({
+        messages: [{ role: "user", content: prompt }],
+        model: this.model,
+      });
+
+      const responseText = message.choices[0]?.message?.content || "";
 
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("Gemini tidak mengembalikan JSON yang valid");
+        throw new Error("Groq tidak mengembalikan JSON yang valid");
       }
 
       const learningPath = JSON.parse(jsonMatch[0]);

@@ -92,7 +92,7 @@ export const AI = {
   MIN_TEXT_LENGTH: 10,
   MAX_TEXT_LENGTH: 10000,
   DEFAULT_TIMEOUT: 30000,
-  MODEL: 'gemini-pro',
+  MODEL: 'llama-3.3-70b-versatile',
 };
 
 // Pagination
