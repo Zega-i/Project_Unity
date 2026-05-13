@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   Pressable,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 
 const DashboardScreen = () => {
-  const userName = 'Agusta';
+  const user = authStore.getUserSync();
+  const userName = user?.name || 'User';
   const stats = [
     { label: 'Materi Selesai', value: '12', icon: '📚' },
     { label: 'Rata-rata Nilai', value: '85%', icon: '⭐' },

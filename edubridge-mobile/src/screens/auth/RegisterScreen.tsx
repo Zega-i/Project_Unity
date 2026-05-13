@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('STUDENT');
+  const [grade, setGrade] = useState(10);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -33,7 +34,8 @@ const RegisterScreen = () => {
 
     setLoading(true);
     try {
-      const response = await authAPI.register(email, password, name, role);
+      const extra = role === 'STUDENT' ? { grade } : {};
+      const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.token, response.user);
       // Navigation will happen automatically
     } catch (error) {
@@ -128,6 +130,33 @@ const RegisterScreen = () => {
               </Pressable>
             </View>
           </View>
+
+          {role === 'STUDENT' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Pilih Kelas</Text>
+              <View style={styles.roleContainer}>
+                {[10, 11, 12].map((g) => (
+                  <Pressable
+                    key={g}
+                    style={[
+                      styles.roleButton,
+                      grade === g && styles.roleButtonActive,
+                    ]}
+                    onPress={() => !loading && setGrade(g)}
+                  >
+                    <Text
+                      style={[
+                        styles.roleButtonText,
+                        grade === g && styles.roleButtonTextActive,
+                      ]}
+                    >
+                      Kelas {g}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
 
           <Pressable
             style={({ pressed }) => [
