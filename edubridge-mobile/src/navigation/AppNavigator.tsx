@@ -1,7 +1,8 @@
-﻿import React from 'react';
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { authStore } from '../store/authStore';
 
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -23,7 +24,6 @@ const AuthStack = () => (
   <Stack.Navigator
     screenOptions={{
       headerShown: false,
-      animationEnabled: true,
     }}
   >
     <Stack.Screen name="Splash" component={SplashScreen} />
@@ -153,13 +153,14 @@ interface AppNavigatorProps {
 }
 
 const AppNavigator: React.FC<AppNavigatorProps> = ({ isLoggedIn }) => {
-  const userRole = 'student'; // TODO: Get from auth store
+  const user = authStore.getUserSync();
+  const userRole = user?.role || 'STUDENT';
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isLoggedIn ? (
         <Stack.Screen name="Auth" component={AuthStack} />
-      ) : userRole === 'student' ? (
+      ) : userRole === 'STUDENT' ? (
         <Stack.Screen name="StudentTabs" component={StudentTabs} />
       ) : (
         <Stack.Screen name="TeacherTabs" component={TeacherTabs} />

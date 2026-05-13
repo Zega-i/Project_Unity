@@ -1,7 +1,9 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import { authStore } from '../store/authStore';
 
-const API_URL = 'http://localhost:3000/api';
+// Use environment variable, fallback to your specific local IP
+// DO NOT use localhost here, otherwise testing on a real phone will fail
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.15:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,

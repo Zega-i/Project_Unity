@@ -1,4 +1,4 @@
-﻿import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthState {
   token: string | null;
@@ -10,11 +10,26 @@ interface AuthState {
   } | null;
 }
 
+type Listener = (state: AuthState) => void;
+
 class AuthStore {
   private state: AuthState = {
     token: null,
     user: null,
   };
+  private listeners: Set<Listener> = new Set();
+
+  subscribe(listener: Listener) {
+    this.listeners.add(listener);
+    // return unsubscribe function
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notify() {
+    this.listeners.forEach((listener) => listener(this.state));
+  }
 
   async init() {
     try {
@@ -22,6 +37,7 @@ class AuthStore {
       const user = await AsyncStorage.getItem('auth_user');
       if (token) this.state.token = token;
       if (user) this.state.user = JSON.parse(user);
+      this.notify();
     } catch (error) {
       console.error('Error initializing auth store:', error);
     }
@@ -32,6 +48,7 @@ class AuthStore {
     this.state.user = user;
     await AsyncStorage.setItem('auth_token', token);
     await AsyncStorage.setItem('auth_user', JSON.stringify(user));
+    this.notify();
   }
 
   async clearAuth() {
@@ -39,6 +56,7 @@ class AuthStore {
     this.state.user = null;
     await AsyncStorage.removeItem('auth_token');
     await AsyncStorage.removeItem('auth_user');
+    this.notify();
   }
 
   async getToken() {

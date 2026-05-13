@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -45,7 +45,7 @@ const ProgressScreen = () => {
                   end={{ x: 0, y: 0 }}
                   style={[
                     styles.bar,
-                    { height: `${(stat.score / maxScore) * 200}px` },
+                    { height: (stat.score / maxScore) * 200 },
                   ]}
                 />
                 <Text style={styles.barLabel}>{stat.day}</Text>

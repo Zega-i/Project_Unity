@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+build/
+.next/
+.claude/
+ts_errors.txt
+backend/node_modules/
+edubridge-mobile/node_modules/
+.env
+.env.local
+*.log
