@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { authAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
@@ -25,10 +26,11 @@ const RegisterScreen = () => {
   const [role, setRole] = useState<Role>('STUDENT');
   const [grade, setGrade] = useState(10);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+      Alert.alert('Error', 'Mohon isi semua kolom');
       return;
     }
 
@@ -36,12 +38,10 @@ const RegisterScreen = () => {
     try {
       const extra = role === 'STUDENT' ? { grade } : {};
       const response = await authAPI.register(email, password, name, role, extra);
-      // Access the inner 'data' field from ApiResponse
       await authStore.setAuth(response.data.token, response.data.user);
-      // Navigation will happen automatically
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Pendaftaran gagal. Silakan coba lagi.';
-      Alert.alert('Registration Failed', errorMsg);
+      Alert.alert('Pendaftaran Gagal', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -50,89 +50,113 @@ const RegisterScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Back Button */}
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={22} color="#1e293b" />
+          <Text style={styles.backText}>Kembali</Text>
+        </Pressable>
+
         <View style={styles.header}>
           <Text style={styles.title}>Daftar</Text>
-          <Text style={styles.subtitle}>Buat akun baru Anda</Text>
+          <Text style={styles.subtitle}>Buat akun baru Anda ✨</Text>
         </View>
 
         <View style={styles.form}>
+          {/* Nama */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Nama Lengkap</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nama Anda"
-              placeholderTextColor="#ccc"
-              value={name}
-              onChangeText={setName}
-              editable={!loading}
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons name="person-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Nama Anda"
+                placeholderTextColor="#ccc"
+                value={name}
+                onChangeText={setName}
+                editable={!loading}
+              />
+            </View>
           </View>
 
+          {/* Email */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="nama@email.com"
-              placeholderTextColor="#ccc"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              editable={!loading}
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons name="mail-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="nama@email.com"
+                placeholderTextColor="#ccc"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!loading}
+              />
+            </View>
           </View>
 
+          {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Masukkan password"
-              placeholderTextColor="#ccc"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              editable={!loading}
-            />
+            <View style={styles.inputWrapper}>
+              <Ionicons name="lock-closed-outline" size={18} color="#94a3b8" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan password"
+                placeholderTextColor="#ccc"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                editable={!loading}
+              />
+              <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color="#94a3b8"
+                />
+              </Pressable>
+            </View>
           </View>
 
+          {/* Role */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Saya adalah</Text>
             <View style={styles.roleContainer}>
               <Pressable
-                style={[
-                  styles.roleButton,
-                  role === 'STUDENT' && styles.roleButtonActive,
-                ]}
+                style={[styles.roleButton, role === 'STUDENT' && styles.roleButtonActive]}
                 onPress={() => !loading && setRole('STUDENT')}
               >
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === 'STUDENT' && styles.roleButtonTextActive,
-                  ]}
-                >
+                <Ionicons
+                  name="school-outline"
+                  size={18}
+                  color={role === 'STUDENT' ? '#fff' : '#64748b'}
+                  style={{ marginBottom: 4 }}
+                />
+                <Text style={[styles.roleButtonText, role === 'STUDENT' && styles.roleButtonTextActive]}>
                   Siswa
                 </Text>
               </Pressable>
 
               <Pressable
-                style={[
-                  styles.roleButton,
-                  role === 'TEACHER' && styles.roleButtonActive,
-                ]}
+                style={[styles.roleButton, role === 'TEACHER' && styles.roleButtonActive]}
                 onPress={() => !loading && setRole('TEACHER')}
               >
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    role === 'TEACHER' && styles.roleButtonTextActive,
-                  ]}
-                >
+                <Ionicons
+                  name="person-outline"
+                  size={18}
+                  color={role === 'TEACHER' ? '#fff' : '#64748b'}
+                  style={{ marginBottom: 4 }}
+                />
+                <Text style={[styles.roleButtonText, role === 'TEACHER' && styles.roleButtonTextActive]}>
                   Guru
                 </Text>
               </Pressable>
             </View>
           </View>
 
+          {/* Grade (Siswa only) */}
           {role === 'STUDENT' && (
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Pilih Kelas</Text>
@@ -140,18 +164,10 @@ const RegisterScreen = () => {
                 {[10, 11, 12].map((g) => (
                   <Pressable
                     key={g}
-                    style={[
-                      styles.roleButton,
-                      grade === g && styles.roleButtonActive,
-                    ]}
+                    style={[styles.roleButton, grade === g && styles.roleButtonActive]}
                     onPress={() => !loading && setGrade(g)}
                   >
-                    <Text
-                      style={[
-                        styles.roleButtonText,
-                        grade === g && styles.roleButtonTextActive,
-                      ]}
-                    >
+                    <Text style={[styles.roleButtonText, grade === g && styles.roleButtonTextActive]}>
                       Kelas {g}
                     </Text>
                   </Pressable>
@@ -174,6 +190,15 @@ const RegisterScreen = () => {
             </Text>
           </Pressable>
         </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Sudah punya akun? </Text>
+          <Pressable onPress={() => navigation.goBack()} disabled={loading}>
+            <Text style={[styles.loginLink, loading && { opacity: 0.6 }]}>
+              Masuk
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -187,7 +212,21 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingVertical: 20,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 30,
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  backText: {
+    fontSize: 14,
+    color: '#1e293b',
+    fontWeight: '600',
   },
   header: {
     marginBottom: 30,
@@ -195,15 +234,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 5,
+    color: '#1e293b',
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
   },
   form: {
-    marginBottom: 30,
+    marginBottom: 20,
   },
   inputGroup: {
     marginBottom: 20,
@@ -211,31 +250,41 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#334155',
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#1a1a1a',
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 12,
+  },
+  inputIcon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 13,
+    fontSize: 14,
+    color: '#1e293b',
+  },
+  eyeBtn: {
+    padding: 6,
   },
   roleContainer: {
     flexDirection: 'row',
-    gap: 15,
+    gap: 12,
   },
   roleButton: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: '#e2e8f0',
     alignItems: 'center',
   },
   roleButtonActive: {
@@ -245,21 +294,41 @@ const styles = StyleSheet.create({
   roleButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#64748b',
   },
   roleButtonTextActive: {
     color: '#fff',
   },
   registerButton: {
     backgroundColor: PURPLE,
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: 10,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 10,
+    elevation: 2,
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   registerButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
+  footerText: {
+    color: '#64748b',
+    fontSize: 14,
+  },
+  loginLink: {
+    color: PURPLE,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

@@ -2,12 +2,14 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { authStore } from '../store/authStore';
 
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import DashboardScreen from '../screens/student/DashboardScreen';
+import ClassScreen from '../screens/student/ClassScreen';
 import QuizScreen from '../screens/student/QuizScreen';
 import AITutorScreen from '../screens/student/AITutorScreen';
 import ProgressScreen from '../screens/student/ProgressScreen';
@@ -20,129 +22,128 @@ const Tab = createBottomTabNavigator();
 
 const PURPLE = '#7C3AED';
 
+// Custom tab bar icon with label
+const TabIcon = ({ name, label, color, focused }: { name: any; label: string; color: string; focused: boolean }) => (
+  <View style={tabStyles.iconWrap}>
+    <Ionicons name={focused ? name : `${name}-outline`} size={22} color={color} />
+    <Text style={[tabStyles.tabLabel, { color }]}>{label}</Text>
+  </View>
+);
+
+const tabStyles = StyleSheet.create({
+  iconWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: 6 },
+  tabLabel: { fontSize: 10, fontWeight: '600', marginTop: 2 },
+});
+
 const AuthStack = () => (
-  <Stack.Navigator
-    screenOptions={{
-      headerShown: false,
-    }}
-  >
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Splash" component={SplashScreen} />
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
   </Stack.Navigator>
 );
 
+// Student Tab Navigator — matches design: Beranda, Kelas, Progress, Profil
 const StudentTabs = () => (
   <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: true,
+    screenOptions={{
+      headerShown: false,
+      tabBarShowLabel: false,
       tabBarActiveTintColor: PURPLE,
-      tabBarInactiveTintColor: '#999',
+      tabBarInactiveTintColor: '#94A3B8',
       tabBarStyle: {
         backgroundColor: '#fff',
-        borderTopColor: '#eee',
+        borderTopColor: '#F1F5F9',
         borderTopWidth: 1,
+        height: 68,
+        paddingBottom: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 12,
       },
-      headerStyle: {
-        backgroundColor: PURPLE,
-      },
-      headerTintColor: '#fff',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
-      tabBarIcon: ({ color, size }) => {
-        let iconName;
-        if (route.name === 'StudentDashboard') iconName = 'home';
-        else if (route.name === 'Quiz') iconName = 'help-circle';
-        else if (route.name === 'AITutor') iconName = 'chatbubbles';
-        else if (route.name === 'Progress') iconName = 'bar-chart';
-        else iconName = 'person';
-
-        return <Ionicons name={iconName as any} size={size} color={color} />;
-      },
-    })}
+    }}
   >
     <Tab.Screen
       name="StudentDashboard"
       component={DashboardScreen}
       options={{
-        title: 'Beranda',
-        tabBarLabel: 'Beranda',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="home" label="Beranda" color={color} focused={focused} />,
+      }}
+    />
+    <Tab.Screen
+      name="Kelas"
+      component={ClassScreen}
+      options={{
+        tabBarIcon: ({ color, focused }) => <TabIcon name="library" label="Kelas" color={color} focused={focused} />,
       }}
     />
     <Tab.Screen
       name="Quiz"
       component={QuizScreen}
       options={{
-        title: 'Kuis',
-        tabBarLabel: 'Kuis',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="help-circle" label="Kuis" color={color} focused={focused} />,
       }}
     />
     <Tab.Screen
       name="AITutor"
       component={AITutorScreen}
       options={{
-        title: 'AI Tutor',
-        tabBarLabel: 'Tutor AI',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="chatbubbles" label="AI Tutor" color={color} focused={focused} />,
       }}
     />
     <Tab.Screen
       name="Progress"
       component={ProgressScreen}
       options={{
-        title: 'Progres',
-        tabBarLabel: 'Progres',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="bar-chart" label="Progres" color={color} focused={focused} />,
       }}
     />
     <Tab.Screen
       name="StudentProfile"
       component={ProfileScreen}
       options={{
-        title: 'Profil',
-        tabBarLabel: 'Profil',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="person" label="Profil" color={color} focused={focused} />,
       }}
     />
   </Tab.Navigator>
 );
 
+// Teacher Tab Navigator
 const TeacherTabs = () => (
   <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: true,
+    screenOptions={{
+      headerShown: false,
+      tabBarShowLabel: false,
       tabBarActiveTintColor: PURPLE,
-      tabBarInactiveTintColor: '#999',
+      tabBarInactiveTintColor: '#94A3B8',
       tabBarStyle: {
         backgroundColor: '#fff',
-        borderTopColor: '#eee',
+        borderTopColor: '#F1F5F9',
         borderTopWidth: 1,
+        height: 68,
+        paddingBottom: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 12,
       },
-      headerStyle: {
-        backgroundColor: PURPLE,
-      },
-      headerTintColor: '#fff',
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
-      tabBarIcon: ({ color, size }) => {
-        let iconName = route.name === 'TeacherDashboard' ? 'home' : 'person';
-        return <Ionicons name={iconName as any} size={size} color={color} />;
-      },
-    })}
+    }}
   >
     <Tab.Screen
       name="TeacherDashboard"
       component={TeacherDashboardScreen}
       options={{
-        title: 'Beranda',
-        tabBarLabel: 'Beranda',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="home" label="Beranda" color={color} focused={focused} />,
       }}
     />
     <Tab.Screen
       name="TeacherProfile"
       component={TeacherProfileScreen}
       options={{
-        title: 'Profil',
-        tabBarLabel: 'Profil',
+        tabBarIcon: ({ color, focused }) => <TabIcon name="person" label="Profil" color={color} focused={focused} />,
       }}
     />
   </Tab.Navigator>

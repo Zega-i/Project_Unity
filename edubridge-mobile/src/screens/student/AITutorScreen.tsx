@@ -1,164 +1,136 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  Pressable,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, StyleSheet, FlatList, TextInput,
+  Pressable, KeyboardAvoidingView, Platform, SafeAreaView,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { aiAPI } from '../../services/api';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
-const LIGHT_PURPLE = '#F5F3FF';
 
-interface Message {
-  id: string;
-  text: string;
-  isAI: boolean;
-  timestamp: string;
-}
+interface Message { id: string; text: string; isUser: boolean; time: string; }
+
+const getTime = () => new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+const QUICK_CHIPS = ['Beri contoh soal', 'Cara menyelesaikan', 'Latihan'];
 
 const AITutorScreen = () => {
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Halo! Saya AI Tutor EduBridge. Ada yang bisa saya bantu hari ini?',
-      isAI: true,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
+    { id: '0', text: 'Halo! Saya AI Tutor EduBridge. Ada yang bisa saya bantu hari ini? 😊', isUser: false, time: getTime() },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
+  const user = authStore.getUserSync();
 
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-
-    const userMsg = input.trim();
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: userMsg,
-      isAI: false,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+  const sendMessage = async (text?: string) => {
+    const msg = (text || input).trim();
+    if (!msg || loading) return;
     setInput('');
+    const userMsg: Message = { id: Date.now().toString(), text: msg, isUser: true, time: getTime() };
+    setMessages(prev => [...prev, userMsg]);
     setLoading(true);
-
     try {
-      const response = await aiAPI.tutorChat(userMsg);
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: response.data?.response || response.response || 'Maaf, saya sedang mengalami gangguan.',
-        isAI: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error('AI Error:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        text: 'Terjadi kesalahan koneksi. Pastikan server Railway menyala.',
-        isAI: true,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      const context = { subject: 'Umum', grade: user?.grade?.toString() || 'SMA', role: 'student' };
+      const res = await aiAPI.tutorChat(msg, context);
+      const reply = res.data?.response || res.data || res.response || 'Maaf, saya tidak mengerti. Coba ulangi pertanyaan Anda.';
+      const aiMsg: Message = { id: (Date.now() + 1).toString(), text: typeof reply === 'string' ? reply : JSON.stringify(reply), isUser: false, time: getTime() };
+      setMessages(prev => [...prev, aiMsg]);
+    } catch {
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: 'Maaf, terjadi kesalahan. Pastikan koneksi internet Anda stabil.', isUser: false, time: getTime() }]);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (messages.length > 0) setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  }, [messages]);
+
+  const renderMessage = ({ item }: { item: Message }) => (
+    <View style={[styles.msgRow, item.isUser && styles.msgRowUser]}>
+      {!item.isUser && (
+        <LinearGradient colors={[PURPLE, '#5B21B6']} style={styles.aiAvatar}>
+          <Ionicons name="hardware-chip" size={16} color="#fff" />
+        </LinearGradient>
+      )}
+      <View style={[styles.bubble, item.isUser ? styles.bubbleUser : styles.bubbleAI]}>
+        <Text style={[styles.bubbleText, item.isUser && styles.bubbleTextUser]}>{item.text}</Text>
+        <Text style={[styles.bubbleTime, item.isUser && styles.bubbleTimeUser]}>{item.time}</Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTitleRow}>
-            <View style={styles.aiAvatar}>
-              <Ionicons name="hardware-chip" size={24} color="#fff" />
-            </View>
-            <View>
-              <Text style={styles.title}>AI Tutor</Text>
-              <Text style={styles.subtitle}>Aktif 24/7 siap membantumu</Text>
-            </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <LinearGradient colors={[PURPLE, '#5B21B6']} style={styles.headerAvatar}>
+          <Ionicons name="hardware-chip" size={20} color="#fff" />
+        </LinearGradient>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerName}>AI Tutor</Text>
+          <View style={styles.onlineBadge}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.onlineText}>Online • Siap membantu</Text>
           </View>
         </View>
+      </View>
 
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.chatContainer}
-          contentContainerStyle={styles.scrollContent}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-        >
-          {messages.map((msg) => (
-            <View
-              key={msg.id}
-              style={[
-                styles.messageRow,
-                msg.isAI ? styles.aiRow : styles.userRow,
-              ]}
-            >
-              {msg.isAI && (
-                <View style={styles.msgAvatar}>
-                  <Ionicons name="hardware-chip-outline" size={16} color={PURPLE} />
-                </View>
-              )}
-              <View
-                style={[
-                  styles.bubble,
-                  msg.isAI ? styles.aiBubble : styles.userBubble,
-                ]}
-              >
-                <Text style={[styles.messageText, msg.isAI ? styles.aiText : styles.userText]}>
-                  {msg.text}
-                </Text>
-                <Text style={[styles.timeText, msg.isAI ? styles.aiTime : styles.userTime]}>
-                  {msg.timestamp}
-                </Text>
-              </View>
+      {/* Messages */}
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={m => m.id}
+        renderItem={renderMessage}
+        contentContainerStyle={styles.chatArea}
+        showsVerticalScrollIndicator={false}
+        ListFooterComponent={loading ? (
+          <View style={styles.typingIndicator}>
+            <LinearGradient colors={[PURPLE, '#5B21B6']} style={styles.aiAvatar}>
+              <Ionicons name="hardware-chip" size={16} color="#fff" />
+            </LinearGradient>
+            <View style={styles.typingBubble}>
+              <Text style={styles.typingText}>AI sedang mengetik...</Text>
             </View>
-          ))}
-          {loading && (
-            <View style={[styles.messageRow, styles.aiRow]}>
-              <View style={styles.msgAvatar}>
-                <Ionicons name="hardware-chip-outline" size={16} color={PURPLE} />
-              </View>
-              <View style={[styles.bubble, styles.aiBubble]}>
-                <ActivityIndicator size="small" color={PURPLE} />
-              </View>
-            </View>
-          )}
-        </ScrollView>
-
-        <View style={styles.inputArea}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              placeholder="Ketik pertanyaanmu di sini..."
-              value={input}
-              onChangeText={setInput}
-              multiline
-              maxLength={500}
-            />
-            <Pressable
-              style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
-              onPress={handleSend}
-              disabled={!input.trim() || loading}
-            >
-              <Ionicons name="send" size={20} color="#fff" />
-            </Pressable>
           </View>
+        ) : null}
+      />
+
+      {/* Quick Chips */}
+      <View style={styles.chipsRow}>
+        {QUICK_CHIPS.map((chip, i) => (
+          <Pressable key={i} style={styles.chip} onPress={() => sendMessage(chip)}>
+            <Text style={styles.chipText}>{chip}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Input */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={styles.inputBar}>
+          <TextInput
+            style={styles.textInput}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Ketik pertanyaanmu di sini..."
+            placeholderTextColor="#94A3B8"
+            multiline
+            maxLength={500}
+            onSubmitEditing={() => sendMessage()}
+          />
+          <Pressable
+            style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
+            onPress={() => sendMessage()}
+            disabled={!input.trim() || loading}
+          >
+            <LinearGradient colors={[PURPLE, '#5B21B6']} style={styles.sendBtnInner}>
+              <Ionicons name="send" size={18} color="#fff" />
+            </LinearGradient>
+          </Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -166,141 +138,36 @@ const AITutorScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  aiAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: PURPLE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1e293b',
-  },
-  subtitle: {
-    fontSize: 12,
-    color: '#64748b',
-  },
-  chatContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  scrollContent: {
-    padding: 20,
-    gap: 20,
-  },
-  messageRow: {
-    flexDirection: 'row',
-    maxWidth: '85%',
-    gap: 8,
-  },
-  aiRow: {
-    alignSelf: 'flex-start',
-  },
-  userRow: {
-    alignSelf: 'flex-end',
-  },
-  msgAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  bubble: {
-    padding: 12,
-    borderRadius: 16,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  aiBubble: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 4,
-  },
-  userBubble: {
-    backgroundColor: PURPLE,
-    borderTopRightRadius: 4,
-  },
-  messageText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  aiText: {
-    color: '#1e293b',
-  },
-  userText: {
-    color: '#fff',
-  },
-  timeText: {
-    fontSize: 10,
-    marginTop: 4,
-    textAlign: 'right',
-  },
-  aiTime: {
-    color: '#94a3b8',
-  },
-  userTime: {
-    color: 'rgba(255,255,255,0.7)',
-  },
-  inputArea: {
-    padding: 15,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 24,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  input: {
-    flex: 1,
-    maxHeight: 100,
-    fontSize: 14,
-    color: '#1e293b',
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: PURPLE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-  },
-  sendBtnDisabled: {
-    backgroundColor: '#cbd5e1',
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  headerAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  headerInfo: {},
+  headerName: { fontSize: 16, fontWeight: 'bold', color: '#1E293B' },
+  onlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  onlineDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#10B981' },
+  onlineText: { fontSize: 12, color: '#64748B' },
+  chatArea: { padding: 16, paddingBottom: 8 },
+  msgRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 16 },
+  msgRowUser: { flexDirection: 'row-reverse' },
+  aiAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 8 },
+  bubble: { maxWidth: '75%', borderRadius: 18, padding: 12 },
+  bubbleAI: { backgroundColor: '#fff', borderBottomLeftRadius: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1 },
+  bubbleUser: { backgroundColor: PURPLE, borderBottomRightRadius: 4 },
+  bubbleText: { fontSize: 14, color: '#1E293B', lineHeight: 22 },
+  bubbleTextUser: { color: '#fff' },
+  bubbleTime: { fontSize: 10, color: '#94A3B8', marginTop: 6, textAlign: 'right' },
+  bubbleTimeUser: { color: 'rgba(255,255,255,0.7)' },
+  typingIndicator: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 16 },
+  typingBubble: { backgroundColor: '#fff', borderRadius: 18, borderBottomLeftRadius: 4, padding: 12, marginLeft: 8 },
+  typingText: { fontSize: 13, color: '#94A3B8', fontStyle: 'italic' },
+  chipsRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10, gap: 8 },
+  chip: { backgroundColor: '#EDE9FE', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
+  chipText: { fontSize: 12, fontWeight: '600', color: PURPLE },
+  inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16, paddingBottom: 16, gap: 10, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 },
+  textInput: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 24, borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 18, paddingVertical: 12, fontSize: 14, color: '#1E293B', maxHeight: 120 },
+  sendBtn: { borderRadius: 22 },
+  sendBtnDisabled: { opacity: 0.5 },
+  sendBtnInner: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default AITutorScreen;
