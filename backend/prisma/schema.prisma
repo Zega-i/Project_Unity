@@ -105,6 +105,8 @@ model Question {
   text          String              @db.Text
   type          QuestionType
   difficulty    Int                 @default(1)
+  topic         String?             @default("Umum")
+  subTopic      String?
   options       String[] // JSON stringified options
   correctAnswer String
   explanation   String?             @db.Text
@@ -116,6 +118,7 @@ model Question {
 
   @@index([classId])
   @@index([difficulty])
+  @@index([topic])
 }
 
 enum QuestionType {
@@ -159,8 +162,8 @@ model QuizAnswer {
   timeSpent  Int // in seconds
   createdAt  DateTime @default(now())
 
-  session  QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  quizSession QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([questionId])
@@ -221,17 +224,20 @@ model AiGeneratedMaterial {
 }
 
 model StudentRiskScore {
-  id         String   @id @default(cuid())
-  studentId  String
-  classId    String?
-  score      Float
-  reason     String   @db.Text
-  assessedAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  studentId    String
+  classId      String?
+  riskScore    Float
+  riskCategory String   @default("NORMAL")
+  reason       String   @db.Text
+  date         DateTime @default(now())
+  assessedAt   DateTime @default(now())
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
+  @@unique([studentId, date])
   @@index([studentId])
-  @@index([score])
+  @@index([riskScore])
 }
 
 model LearningPath {
@@ -239,7 +245,9 @@ model LearningPath {
   studentId   String
   classId     String
   title       String
+  subject     String?            @default("Umum")
   description String?            @db.Text
+  weakTopics  String?            @db.Text
   status      PathStatus         @default(ACTIVE)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
@@ -258,16 +266,20 @@ enum PathStatus {
 }
 
 model LearningPathItem {
-  id          String    @id @default(cuid())
-  pathId      String
-  materialId  String?
-  order       Int
-  completed   Boolean   @default(false)
-  completedAt DateTime?
+  id             String    @id @default(cuid())
+  learningPathId String
+  materialId     String?
+  topic          String?
+  order          Int
+  orderIndex     Int       @default(0)
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  status         String    @default("TODO")
+  masterScore    Float?
 
-  path LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  path LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
 
-  @@index([pathId])
+  @@index([learningPathId])
 }
 
 model StudentNotification {
@@ -324,11 +336,11 @@ enum NotificationType {
 }
 
 model LoginHistory {
-  id        String   @id @default(cuid())
-  studentId String
-  loginAt   DateTime @default(now())
-  ip        String?
-  userAgent String?
+  id         String   @id @default(cuid())
+  studentId  String
+  loggedInAt DateTime @default(now())
+  ip         String?
+  userAgent  String?
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
@@ -336,17 +348,18 @@ model LoginHistory {
 }
 
 model QuizErrorAnalysis {
-  id         String   @id @default(cuid())
-  questionId String
-  studentId  String
-  errorType  String // concept, calculation, misread, etc
-  frequency  Int      @default(1)
-  suggestion String?  @db.Text
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  questionId    String
+  studentId     String
+  errorType     String // concept, calculation, misread, etc
+  weakSubTopics String   @default("[]") // JSON stringified
+  frequency     Int      @default(1)
+  suggestion    String?  @db.Text
+  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now())
 
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([questionId, studentId, errorType])
   @@index([questionId])
 }
-
