@@ -39,7 +39,7 @@ const RegisterScreen = () => {
         dateOfBirth: dob ? new Date(dob).toISOString() : undefined,
       } : {};
       const response = await authAPI.register(email, password, name, role, extra);
-      await authStore.setAuth(response.data.token, response.data.user);
+      await authStore.setAuth(response.token, response.user);
     } catch (error: any) {
       const msg = error.response?.data?.error || 'Pendaftaran gagal';
       Alert.alert('Error', msg);

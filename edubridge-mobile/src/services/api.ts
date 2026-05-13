@@ -19,15 +19,15 @@ api.interceptors.request.use(async (config) => {
 export const authAPI = {
   register: async (email: string, password: string, name: string, role: string, extra: any = {}) => {
     const response = await api.post('/auth/register', { email, password, name, role, ...extra });
-    return response.data;
+    return response.data.data;
   },
   login: async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    return response.data.data;
   },
   getProfile: async () => {
     const response = await api.get('/auth/me');
-    return response.data;
+    return response.data.data.user;
   },
 };
 

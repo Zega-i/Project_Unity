@@ -26,7 +26,7 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const response = await authAPI.login(email, password);
-      await authStore.setAuth(response.data.token, response.data.user);
+      await authStore.setAuth(response.token, response.user);
     } catch (error) {
       Alert.alert('Login Gagal', 'Email atau password salah');
     } finally {

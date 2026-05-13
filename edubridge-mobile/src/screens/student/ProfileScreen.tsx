@@ -19,20 +19,21 @@ const ProfileScreen = () => {
     try {
       // Pertama cek dari cache
       const cachedUser = authStore.getUserSync();
+      console.log('[ProfileScreen] Cached user:', cachedUser?.name);
       if (cachedUser?.name) {
         setUser(cachedUser);
       }
 
       // Fetch fresh data dari API
       const res = await authAPI.getProfile();
-      const profile = res.data || res;
-      if (profile) {
-        setUser(profile);
+      console.log('[ProfileScreen] API response:', res?.name, res?.school);
+      if (res && res.id) {
+        setUser(res);
         const token = await authStore.getToken();
-        await authStore.setAuth(token || '', profile);
+        await authStore.setAuth(token || '', res);
       }
     } catch (err) {
-      console.log('Profile fetch error:', err);
+      console.log('[ProfileScreen] Fetch error:', err);
       // Fallback ke cached data
       const cachedUser = authStore.getUserSync();
       setUser(cachedUser);

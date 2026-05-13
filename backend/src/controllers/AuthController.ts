@@ -188,7 +188,8 @@ export class AuthController {
       const response: ApiResponse = {
         success: true,
         data: {
-          user: { 
+          token: '',
+          user: {
             id: user.id, email: user.email, name: user.name, role,
             school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
           },

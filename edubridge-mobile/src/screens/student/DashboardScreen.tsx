@@ -22,20 +22,21 @@ const DashboardScreen = () => {
     try {
       // Pertama cek dari authStore
       const cachedUser = authStore.getUserSync();
+      console.log('[DashboardScreen] Cached user:', cachedUser?.name);
       if (cachedUser?.name) {
         setUser(cachedUser);
       }
 
       // Fetch dari API untuk get fresh data
       const res = await authAPI.getProfile();
-      const profile = res.data || res;
-      if (profile) {
-        setUser(profile);
+      console.log('[DashboardScreen] API response:', res?.name, res?.school);
+      if (res && res.id) {
+        setUser(res);
         const token = await authStore.getToken();
-        await authStore.setAuth(token || '', profile);
+        await authStore.setAuth(token || '', res);
       }
     } catch (err) {
-      console.log('Error loading profile:', err);
+      console.log('[DashboardScreen] Error loading profile:', err);
       // Use cached data if API fails
       const cachedUser = authStore.getUserSync();
       if (cachedUser) {
@@ -97,7 +98,7 @@ const DashboardScreen = () => {
           </View>
         </View>
 
-        {/* Recommendations - Vertical List (Max 2 items) */}
+        {/* Recommendations - Vertical List (Max 4 items) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Rekomendasi Belajar</Text>
           <Pressable><Text style={styles.seeAll}>Lihat Semua</Text></Pressable>
@@ -107,7 +108,9 @@ const DashboardScreen = () => {
           {[
             { id: '1', title: 'Persamaan Linear', subject: 'Matematika', level: 'Dasar', duration: '15 Min', progress: 60, color: '#6366F1', icon: '📐' },
             { id: '2', title: 'Hukum Newton', subject: 'Fisika', level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡' },
-          ].slice(0, 2).map((item) => (
+            { id: '3', title: 'Fungsi Kuadrat', subject: 'Matematika', level: 'Menengah', duration: '25 Min', progress: 35, color: '#8B5CF6', icon: '📊' },
+            { id: '4', title: 'Reaksi Kimia', subject: 'Kimia', level: 'Lanjut', duration: '30 Min', progress: 20, color: '#EC4899', icon: '⚗️' },
+          ].slice(0, 4).map((item) => (
             <Pressable key={item.id} style={styles.recomCard}>
               <View style={[styles.recomIconBox, { backgroundColor: item.color + '10' }]}>
                 <Text style={styles.recomIconText}>{item.icon}</Text>
@@ -192,7 +195,7 @@ const styles = StyleSheet.create({
   menuDesc: { fontSize: 10, color: '#94A3B8', textAlign: 'center' },
   
   recomList: { gap: 15, marginBottom: 20 },
-  spacer: { flex: 1, minHeight: 20 },
+  spacer: { minHeight: 15 },
   recomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },
   recomIconBox: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
   recomIconText: { fontSize: 22 },
