@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,105 +7,92 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model Admin {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
   name      String
-  role      Role
+  phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  studentProfile   StudentProfile?
-  teacherProfile   TeacherProfile?
-  adminProfile     AdminProfile?
-  loginHistory     LoginHistory[]
-  notifications    Notification[]
-  quizSessions     QuizSession[]
-  materialViews    MaterialView[]
+  notifications AdminNotification[]
 
   @@index([email])
-  @@index([role])
 }
 
-enum Role {
-  STUDENT
-  TEACHER
-  ADMIN
+model Teacher {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  nip           String?  @unique
+  subjectTaught String?
+  phone         String?
+  position      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  classes       Class[]
+  notifications TeacherNotification[]
+
+  @@index([email])
 }
 
-model StudentProfile {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  grade             Int
-  school            String
-  learningStyle     String? // visual, auditory, kinesthetic
-  strengths         String[]
-  weaknesses        String[]
-  riskScore         Float    @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model Student {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  nisn          String?  @unique
+  grade         Int
+  dateOfBirth   DateTime?
+  address       String?
+  parentName    String?
+  parentPhone   String?
+  learningStyle String? // visual, auditory, kinesthetic
+  riskScore     Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  classStudents     ClassStudent[]
-  learningPaths     LearningPath[]
-  riskScores        StudentRiskScore[]
+  classStudents  ClassStudent[]
+  quizSessions   QuizSession[]
+  learningPaths  LearningPath[]
+  notifications  StudentNotification[]
+  loginHistories LoginHistory[]
+  riskScores     StudentRiskScore[]
+  materialViews  MaterialView[]
 
-  @@index([userId])
-}
-
-model TeacherProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  subject   String
-  classes   Class[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model AdminProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  @@index([email])
 }
 
 model Class {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  teacherId       String
-  grade           Int
-  subject         String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  teacher         TeacherProfile @relation(fields: [teacherId], references: [id])
-  students        ClassStudent[]
-  questions       Question[]
-  materials       Material[]
-  learningPaths   LearningPath[]
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  teacherId     String
+  grade         Int
+  subject       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  teacher       Teacher        @relation(fields: [teacherId], references: [id])
+  students      ClassStudent[]
+  questions     Question[]
+  materials     Material[]
+  learningPaths LearningPath[]
 
   @@index([teacherId])
   @@index([grade])
 }
 
 model ClassStudent {
-  id        String   @id @default(cuid())
-  classId   String
-  studentId String
+  id         String   @id @default(cuid())
+  classId    String
+  studentId  String
   enrolledAt DateTime @default(now())
 
-  class     Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([classId, studentId])
   @@index([classId])
@@ -116,20 +100,19 @@ model ClassStudent {
 }
 
 model Question {
-  id              String   @id @default(cuid())
-  classId         String
-  text            String   @db.Text
-  type            QuestionType
-  difficulty      Int      @default(1)
-  options         String[] // JSON stringified options
-  correctAnswer   String
-  explanation     String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  class           Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
-  quizAnswers     QuizAnswer[]
-  errorAnalysis   QuizErrorAnalysis[]
+  id            String              @id @default(cuid())
+  classId       String
+  text          String              @db.Text
+  type          QuestionType
+  difficulty    Int                 @default(1)
+  options       String[] // JSON stringified options
+  correctAnswer String
+  explanation   String?             @db.Text
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  class         Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  quizAnswers   QuizAnswer[]
+  errorAnalysis QuizErrorAnalysis[]
 
   @@index([classId])
   @@index([difficulty])
@@ -143,18 +126,18 @@ enum QuestionType {
 }
 
 model QuizSession {
-  id          String   @id @default(cuid())
-  studentId   String
-  classId     String
-  startedAt   DateTime @default(now())
-  endedAt     DateTime?
-  score       Float?
+  id             String        @id @default(cuid())
+  studentId      String
+  classId        String
+  startedAt      DateTime      @default(now())
+  endedAt        DateTime?
+  score          Float?
   totalQuestions Int
-  correctAnswers Int @default(0)
-  status      SessionStatus @default(IN_PROGRESS)
+  correctAnswers Int           @default(0)
+  status         SessionStatus @default(IN_PROGRESS)
 
-  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  answers     QuizAnswer[]
+  student Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
 
   @@index([studentId])
   @@index([status])
@@ -168,36 +151,35 @@ enum SessionStatus {
 }
 
 model QuizAnswer {
-  id        String   @id @default(cuid())
-  sessionId String
+  id         String   @id @default(cuid())
+  sessionId  String
   questionId String
-  answer    String
-  isCorrect Boolean
-  timeSpent Int      // in seconds
-  createdAt DateTime @default(now())
+  answer     String
+  isCorrect  Boolean
+  timeSpent  Int // in seconds
+  createdAt  DateTime @default(now())
 
-  session   QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  question  Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  session  QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
   @@index([questionId])
 }
 
 model Material {
-  id              String   @id @default(cuid())
-  classId         String
-  title           String
-  description     String?  @db.Text
-  content         String   @db.Text
-  type            MaterialType
-  url             String?
-  aiGenerated     Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  class           Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
-  views           MaterialView[]
-  aiMaterial      AiGeneratedMaterial?
+  id          String                @id @default(cuid())
+  classId     String
+  title       String
+  description String?               @db.Text
+  content     String                @db.Text
+  type        MaterialType
+  url         String?
+  aiGenerated Boolean               @default(false)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  class       Class                 @relation(fields: [classId], references: [id], onDelete: Cascade)
+  views       MaterialView[]
+  aiMaterial  AiGeneratedMaterial?
 
   @@index([classId])
   @@index([aiGenerated])
@@ -212,18 +194,18 @@ enum MaterialType {
 }
 
 model MaterialView {
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   materialId String
-  userId    String
-  viewedAt  DateTime @default(now())
-  timeSpent Int      // in seconds
+  studentId  String
+  viewedAt   DateTime @default(now())
+  timeSpent  Int // in seconds
 
-  material  Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@unique([materialId, userId])
+  @@unique([materialId, studentId])
   @@index([materialId])
-  @@index([userId])
+  @@index([studentId])
 }
 
 model AiGeneratedMaterial {
@@ -239,31 +221,30 @@ model AiGeneratedMaterial {
 }
 
 model StudentRiskScore {
-  id        String   @id @default(cuid())
-  studentId String
-  classId   String?
-  score     Float
-  reason    String   @db.Text
+  id         String   @id @default(cuid())
+  studentId  String
+  classId    String?
+  score      Float
+  reason     String   @db.Text
   assessedAt DateTime @default(now())
 
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([score])
 }
 
 model LearningPath {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   studentId   String
   classId     String
   title       String
-  description String? @db.Text
-  status      PathStatus @default(ACTIVE)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class       Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  description String?            @db.Text
+  status      PathStatus         @default(ACTIVE)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  student     Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class       Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
   items       LearningPathItem[]
 
   @@index([studentId])
@@ -277,30 +258,60 @@ enum PathStatus {
 }
 
 model LearningPathItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   pathId      String
   materialId  String?
   order       Int
-  completed   Boolean  @default(false)
+  completed   Boolean   @default(false)
   completedAt DateTime?
 
-  path       LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  path LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
 
   @@index([pathId])
 }
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
+model StudentNotification {
+  id        String           @id @default(cuid())
+  studentId String
   title     String
-  message   String   @db.Text
+  message   String           @db.Text
   type      NotificationType
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([studentId])
+  @@index([read])
+}
+
+model TeacherNotification {
+  id        String           @id @default(cuid())
+  teacherId String
+  title     String
+  message   String           @db.Text
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([read])
+}
+
+model AdminNotification {
+  id        String           @id @default(cuid())
+  adminId   String
+  title     String
+  message   String           @db.Text
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
   @@index([read])
 }
 
@@ -314,27 +325,28 @@ enum NotificationType {
 
 model LoginHistory {
   id        String   @id @default(cuid())
-  userId    String
+  studentId String
   loginAt   DateTime @default(now())
   ip        String?
   userAgent String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([studentId])
 }
 
 model QuizErrorAnalysis {
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   questionId String
-  studentId String
-  errorType String   // concept, calculation, misread, etc
-  frequency Int      @default(1)
-  suggestion String? @db.Text
-  updatedAt DateTime @updatedAt
+  studentId  String
+  errorType  String // concept, calculation, misread, etc
+  frequency  Int      @default(1)
+  suggestion String?  @db.Text
+  updatedAt  DateTime @updatedAt
 
-  question  Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([questionId, studentId, errorType])
   @@index([questionId])
 }
+
