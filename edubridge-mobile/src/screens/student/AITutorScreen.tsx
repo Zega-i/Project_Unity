@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
   statusText: { fontSize: 12, color: '#64748B' },
-  chatArea: { padding: 20 },
+  chatArea: { padding: 20, paddingBottom: 90 },
   msgRow: { flexDirection: 'row', marginBottom: 20, maxWidth: '85%' },
   msgRowUser: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
   msgRowAI: { alignSelf: 'flex-start' },

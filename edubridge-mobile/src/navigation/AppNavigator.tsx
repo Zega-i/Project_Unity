@@ -25,8 +25,14 @@ const PURPLE = '#7C3AED';
 
 const TabIcon = ({ name, label, focused }: { name: any; label: string; focused: boolean }) => (
   <View style={styles.tabIconWrap}>
-    <Ionicons name={focused ? name : `${name}-outline`} size={24} color={focused ? PURPLE : '#94A3B8'} />
-    <Text style={[styles.tabLabel, { color: focused ? PURPLE : '#94A3B8' }]}>{label}</Text>
+    <Ionicons name={focused ? name : `${name}-outline`} size={22} color={focused ? PURPLE : '#94A3B8'} />
+    <Text
+      style={[styles.tabLabel, { color: focused ? PURPLE : '#94A3B8' }]}
+      numberOfLines={1}
+      ellipsizeMode="tail"
+    >
+      {label}
+    </Text>
   </View>
 );
 
@@ -36,8 +42,9 @@ const StudentTabs = () => (
       headerShown: false,
       tabBarShowLabel: false,
       tabBarStyle: {
-        height: 70,
-        paddingBottom: 15,
+        height: 65,
+        paddingBottom: 8,
+        paddingTop: 4,
         backgroundColor: '#FFFFFF',
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
@@ -101,8 +108,8 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
 };
 
 const styles = StyleSheet.create({
-  tabIconWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: 10 },
-  tabLabel: { fontSize: 11, fontWeight: '600', marginTop: 4 },
+  tabIconWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: 6, width: '100%' },
+  tabLabel: { fontSize: 9, fontWeight: '600', marginTop: 2, lineHeight: 11, maxWidth: '100%' },
 });
 
 export default AppNavigator;

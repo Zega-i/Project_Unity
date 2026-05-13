@@ -19,23 +19,24 @@ const RegisterScreen = () => {
   const [password, setPassword] = useState('');
   const [school, setSchool] = useState('');
   const [className, setClassName] = useState('');
+  const [grade, setGrade] = useState('');
   const [dob, setDob] = useState('');
   const [role, setRole] = useState<Role>('STUDENT');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !email || !password || (role === 'STUDENT' && (!school || !className))) {
+    if (!name || !email || !password || (role === 'STUDENT' && (!school || !className || !grade))) {
       Alert.alert('Error', 'Mohon isi semua kolom yang wajib');
       return;
     }
     setLoading(true);
     try {
-      const extra = role === 'STUDENT' ? { 
-        school, 
-        className, 
+      const extra = role === 'STUDENT' ? {
+        school,
+        className,
+        grade: parseInt(grade) || 10,
         dateOfBirth: dob ? new Date(dob).toISOString() : undefined,
-        grade: 10 
       } : {};
       const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.data.token, response.data.user);
@@ -117,6 +118,7 @@ const RegisterScreen = () => {
                   placeholderTextColor="#94A3B8"
                   value={school}
                   onChangeText={setSchool}
+                  editable={!loading}
                 />
               </View>
               <View style={styles.inputGroup}>
@@ -127,6 +129,19 @@ const RegisterScreen = () => {
                   placeholderTextColor="#94A3B8"
                   value={className}
                   onChangeText={setClassName}
+                  editable={!loading}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Tingkat Kelas (Angka)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Contoh: 10"
+                  placeholderTextColor="#94A3B8"
+                  value={grade}
+                  onChangeText={setGrade}
+                  keyboardType="number-pad"
+                  editable={!loading}
                 />
               </View>
               <View style={styles.inputGroup}>
@@ -137,6 +152,7 @@ const RegisterScreen = () => {
                   placeholderTextColor="#94A3B8"
                   value={dob}
                   onChangeText={setDob}
+                  editable={!loading}
                 />
               </View>
             </>

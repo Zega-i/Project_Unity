@@ -143,7 +143,7 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { paddingHorizontal: 25, paddingTop: 20, paddingBottom: 40 },
+  scrollContent: { paddingHorizontal: 25, paddingTop: 20, paddingBottom: 90 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 30 },
   avatarSection: { alignItems: 'center', marginBottom: 40 },
   avatarContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F1F5F9', padding: 4, marginBottom: 16, overflow: 'hidden' },

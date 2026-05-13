@@ -76,31 +76,6 @@ const DashboardScreen = () => {
           </View>
         </View>
 
-        {/* Menu Cepat (Quick Menu) */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Menu Cepat</Text>
-        </View>
-        
-        <View style={styles.menuGrid}>
-          {[
-            { id: '1', name: 'Materi', icon: 'book', color: '#8B5CF6', route: 'Kelas' },
-            { id: '2', name: 'Quiz', icon: 'extension-puzzle', color: '#F59E0B', route: 'Quiz' },
-            { id: '3', name: 'AI Tutor', icon: 'chatbubble-ellipses', color: '#10B981', route: 'AITutor' },
-            { id: '4', name: 'Tugas', icon: 'document-text', color: '#3B82F6', route: 'Progress' },
-          ].map((item) => (
-            <Pressable 
-              key={item.id} 
-              style={styles.menuItem}
-              onPress={() => navigation.navigate(item.route as any)}
-            >
-              <View style={[styles.menuIconBox, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon as any} size={28} color={item.color} />
-              </View>
-              <Text style={styles.menuText}>{item.name}</Text>
-            </Pressable>
-          ))}
-        </View>
-
         {/* Recommendations - Vertical List (2 items) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Rekomendasi Belajar</Text>
@@ -131,6 +106,32 @@ const DashboardScreen = () => {
             </Pressable>
           ))}
         </View>
+
+        {/* Menu Cepat (Quick Menu) */}
+        <View style={[styles.sectionHeader, { marginTop: 35 }]}>
+          <Text style={styles.sectionTitle}>Menu Cepat</Text>
+        </View>
+
+        <View style={styles.menuGrid}>
+          {[
+            { id: '1', name: 'Kelas', icon: 'people', color: '#8B5CF6', route: 'Kelas', desc: 'Bergabung kelas' },
+            { id: '2', name: 'Kuis', icon: 'extension-puzzle', color: '#F59E0B', route: 'Quiz', desc: 'Tes pengetahuan' },
+            { id: '3', name: 'AI Tutor', icon: 'chatbubble-ellipses', color: '#10B981', route: 'AITutor', desc: 'Bantuan pembelajaran' },
+            { id: '4', name: 'Progres', icon: 'trending-up', color: '#3B82F6', route: 'Progress', desc: 'Lihat kemajuan' },
+          ].map((item) => (
+            <Pressable
+              key={item.id}
+              style={styles.menuItem}
+              onPress={() => navigation.navigate(item.route as any)}
+            >
+              <View style={[styles.menuIconBox, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={28} color={item.color} />
+              </View>
+              <Text style={styles.menuText}>{item.name}</Text>
+              <Text style={styles.menuDesc}>{item.desc}</Text>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -138,7 +139,7 @@ const DashboardScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 30 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 90 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 25 },
   welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },
   subWelcome: { fontSize: 14, color: '#64748B', marginTop: 4 },
@@ -158,10 +159,11 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B' },
   seeAll: { fontSize: 14, color: PURPLE, fontWeight: '600' },
   
-  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 35 },
-  menuItem: { width: '23%', alignItems: 'center' },
-  menuIconBox: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 1 },
-  menuText: { fontSize: 12, fontWeight: '700', color: '#475569' },
+  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 35, gap: 12 },
+  menuItem: { width: '22%', alignItems: 'center' },
+  menuIconBox: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 1 },
+  menuText: { fontSize: 13, fontWeight: '700', color: '#1E293B', marginBottom: 4 },
+  menuDesc: { fontSize: 10, color: '#94A3B8', textAlign: 'center' },
   
   recomList: { gap: 15 },
   recomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },

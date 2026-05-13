@@ -66,6 +66,7 @@ const ProgressScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />}
       >
         {/* Header */}
@@ -139,6 +140,7 @@ const ProgressScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
+  scrollContent: { paddingBottom: 90 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },

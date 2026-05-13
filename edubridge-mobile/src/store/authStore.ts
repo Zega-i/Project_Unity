@@ -7,6 +7,14 @@ interface AuthState {
     email: string;
     name: string;
     role: string;
+    school?: string;
+    className?: string;
+    grade?: number;
+    dateOfBirth?: string;
+    address?: string;
+    parentName?: string;
+    parentPhone?: string;
+    nisn?: string;
   } | null;
 }
 
