@@ -1,59 +1,178 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# EduBridge AI Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Adaptive AI learning platform backend for Indonesian students. Built with Express.js, TypeScript, Prisma, and Gemini API.
 
-## About Laravel
+## 🚀 Quick Start
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- PostgreSQL (Neon)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Installation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+# Install dependencies
+npm install
 
-## Learning Laravel
+# Generate Prisma Client
+npx prisma generate
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# Start development server
+npm run dev
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+The server will run on `http://localhost:3000`
 
-## Laravel Sponsors
+## 📁 Project Structure
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```
+├── src/
+│   ├── config/          # Configuration files
+│   │   ├── database.ts  # Prisma client setup
+│   │   ├── gemini.ts    # Gemini API configuration
+│   │   └── uploadthing.ts
+│   ├── controllers/     # Business logic controllers
+│   │   ├── AuthController.ts
+│   │   ├── QuizController.ts
+│   │   └── AIController.ts
+│   ├── middleware/      # Express middleware
+│   │   └── auth.ts      # JWT authentication
+│   ├── routes/          # API route definitions
+│   │   ├── auth.ts
+│   │   ├── quiz.ts
+│   │   ├── ai.ts
+│   │   └── upload.ts
+│   ├── services/        # Business service layer
+│   │   ├── AdaptiveQuizService.ts
+│   │   └── GeminiService.ts
+│   └── index.ts         # Express app entry point
+├── prisma/
+│   └── schema.prisma    # Database schema (13 models)
+├── package.json
+├── tsconfig.json
+└── .env                 # Environment variables
+```
 
-### Premium Partners
+## 🔌 API Endpoints
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user (requires auth)
+- `POST /api/auth/logout` - Logout user
 
-## Contributing
+### Quiz
+- `POST /api/quiz/start` - Start a quiz session
+- `POST /api/quiz/answer` - Submit quiz answer
+- `POST /api/quiz/finish` - End quiz session
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### AI
+- `POST /api/ai/tutor` - Chat with AI tutor
+- `POST /api/ai/generate-quiz` - Generate quiz from text
+- `POST /api/ai/analyze-errors` - Analyze student errors
 
-## Code of Conduct
+### Upload
+- `POST /api/upload/upload` - Upload learning materials
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🗄️ Database Models (13 Models)
 
-## Security Vulnerabilities
+1. **User** - User accounts (Student, Teacher, Admin)
+2. **StudentProfile** - Student-specific data
+3. **TeacherProfile** - Teacher-specific data
+4. **AdminProfile** - Admin-specific data
+5. **Class** - Course/class information
+6. **ClassStudent** - Student enrollment in classes
+7. **Question** - Quiz questions with difficulty levels
+8. **QuizSession** - Quiz attempt tracking
+9. **QuizAnswer** - Individual question answers
+10. **Material** - Learning materials (PDF, video, article, etc.)
+11. **MaterialView** - Material viewing analytics
+12. **AiGeneratedMaterial** - AI-generated content metadata
+13. **StudentRiskScore** - Risk assessment scores
+14. **LearningPath** - Personalized learning paths
+15. **LearningPathItem** - Items in learning paths
+16. **Notification** - User notifications
+17. **LoginHistory** - Login tracking
+18. **QuizErrorAnalysis** - Error pattern analysis
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 🧠 Key Features
 
-## License
+### Adaptive Quiz System
+- Increases difficulty on correct answers
+- Decreases difficulty on wrong answers
+- Tracks student performance and learning patterns
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### AI Tutor Integration
+- Chat-based tutoring with Gemini API
+- Quiz generation from learning materials
+- Automated error analysis and suggestions
+
+### Risk Assessment
+- Real-time student risk scoring
+- Multi-factor analysis (performance, engagement, etc.)
+- Personalized intervention suggestions
+
+### Learning Paths
+- AI-generated personalized learning paths
+- Material sequencing based on student level
+- Progress tracking and completion monitoring
+
+## 📝 Environment Variables
+
+```env
+DATABASE_URL=postgresql://...  # Neon PostgreSQL
+GEMINI_API_KEY=...             # Google Gemini API key
+JWT_SECRET=...                 # JWT signing secret
+PORT=3000                      # Server port
+UPLOADTHING_TOKEN=...          # File upload service
+```
+
+## 🛠️ Development Commands
+
+```bash
+# Development server with hot reload
+npm run dev
+
+# Build TypeScript
+npm run build
+
+# Start production server
+npm start
+
+# Prisma commands
+npm run prisma:generate        # Generate Prisma Client
+npm run prisma:push            # Push schema to database
+npm run prisma:pull            # Pull existing schema from database
+```
+
+## 🔒 Authentication
+
+Uses JWT tokens for authentication. Include in requests:
+```
+Authorization: Bearer <token>
+```
+
+## 📚 Stack
+
+- **Framework**: Express.js 4.18
+- **Language**: TypeScript 5.1
+- **Database**: PostgreSQL (Neon)
+- **ORM**: Prisma 5.8
+- **AI**: Google Gemini API
+- **File Upload**: Uploadthing
+- **Dev Tools**: Nodemon, ts-node
+
+## 🚀 Deployment
+
+Build and start:
+```bash
+npm run build
+npm start
+```
+
+The application is ready for deployment on platforms supporting Node.js (Heroku, Railway, Vercel, AWS, GCP, etc.).
+
+## 📄 License
+
+Part of EduBridge AI - UNITY Competition #14
