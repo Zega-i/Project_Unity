@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,16 @@ import {
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const PURPLE = '#7C3AED';
+const LIGHT_PURPLE = '#F5F3FF';
 
 const QuizScreen = () => {
   const [timeLeft, setTimeLeft] = useState(465); // 7:45 in seconds
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(3);
+  const totalQuestions = 10;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -29,98 +32,78 @@ const QuizScreen = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const answers = ['A', 'B', 'C', 'D'];
-  const answerTexts = [
-    'Percepatan adalah perubahan kecepatan per satuan waktu',
-    'Gaya yang menyebabkan perubahan kecepatan benda',
-    'Jarak yang ditempuh benda dalam satuan waktu',
-    'Arah gerakan benda terhadap titik acuan',
+  const answers = [
+    { id: 'A', text: 'Jumlah cahaya matahari' },
+    { id: 'B', text: 'Warna daun' },
+    { id: 'C', text: 'Ukuran batang' },
+    { id: 'D', text: 'Jenis tanah' },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Header with Progress and Timer */}
-        <View style={styles.header}>
-          <View style={styles.progressInfo}>
-            <Text style={styles.progressText}>Soal {currentQuestion} dari 10</Text>
-            <View style={styles.progressBar}>
-              <LinearGradient
-                colors={[PURPLE, '#5B21B6']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.progressFill, { width: `${(currentQuestion / 10) * 100}%` }]}
-              />
-            </View>
-          </View>
-
-          <View style={styles.timer}>
-            <Text style={styles.timerIcon}>⏱️</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressText}>Soal {currentQuestion} dari {totalQuestions}</Text>
+          <View style={styles.timerContainer}>
+            <Ionicons name="time-outline" size={18} color="#666" />
             <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
           </View>
         </View>
+        <View style={styles.progressBar}>
+          <View style={[styles.progressFill, { width: `${(currentQuestion / totalQuestions) * 100}%` }]} />
+        </View>
+      </View>
 
-        {/* Question */}
-        <View style={styles.questionSection}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Question Area */}
+        <View style={styles.questionCard}>
           <Text style={styles.questionText}>
-            Apa yang dimaksud dengan percepatan dalam fisika?
+            Manakah faktor utama yang mempengaruhi laju fotosintesis?
           </Text>
         </View>
 
-        {/* Answer Options */}
-        <View style={styles.answersSection}>
-          {answers.map((answer, idx) => (
+        {/* Options Area */}
+        <View style={styles.optionsArea}>
+          {answers.map((item) => (
             <Pressable
-              key={answer}
+              key={item.id}
               style={[
-                styles.answerCard,
-                selectedAnswer === answer && styles.answerCardSelected,
+                styles.optionCard,
+                selectedAnswer === item.id && styles.optionCardSelected,
               ]}
-              onPress={() => setSelectedAnswer(answer)}
+              onPress={() => setSelectedAnswer(item.id)}
             >
               <View
                 style={[
-                  styles.answerLetter,
-                  selectedAnswer === answer && styles.answerLetterSelected,
+                  styles.radioBtn,
+                  selectedAnswer === item.id && styles.radioBtnSelected,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.answerLetterText,
-                    selectedAnswer === answer && styles.answerLetterTextSelected,
-                  ]}
-                >
-                  {answer}
+                <Text style={[styles.optionId, selectedAnswer === item.id && styles.optionIdSelected]}>
+                  {item.id}
                 </Text>
               </View>
-              <Text style={styles.answerText}>{answerTexts[idx]}</Text>
+              <Text style={[styles.optionText, selectedAnswer === item.id && styles.optionTextSelected]}>
+                {item.text}
+              </Text>
+              {selectedAnswer === item.id && (
+                <Ionicons name="checkmark-circle" size={24} color={PURPLE} />
+              )}
             </Pressable>
           ))}
         </View>
-
-        {/* Navigation Buttons */}
-        <View style={styles.navigationSection}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.navButton,
-              styles.navButtonSecondary,
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <Text style={styles.navButtonTextSecondary}>← Sebelumnya</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.navButton,
-              styles.navButtonPrimary,
-              pressed && { opacity: 0.8 },
-            ]}
-          >
-            <Text style={styles.navButtonTextPrimary}>Selanjutnya →</Text>
-          </Pressable>
-        </View>
       </ScrollView>
+
+      {/* Footer Navigation */}
+      <View style={styles.footer}>
+        <Pressable style={styles.prevBtn}>
+          <Text style={styles.prevBtnText}>Sebelumnya</Text>
+        </Pressable>
+        <Pressable style={styles.nextBtn}>
+          <Text style={styles.nextBtnText}>Selanjutnya</Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -128,130 +111,149 @@ const QuizScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    backgroundColor: '#F8FAFC',
   },
   header: {
-    marginBottom: 30,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-  progressInfo: {
-    marginBottom: 15,
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   progressText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
+    color: '#64748b',
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  timerText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
   },
   progressBar: {
-    height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
+    height: 6,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-  },
-  timer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: PURPLE,
-    paddingVertical: 12,
-    borderRadius: 8,
   },
-  timerIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  timerText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  questionSection: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
+  content: {
     padding: 20,
-    marginBottom: 25,
+  },
+  questionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   questionText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    lineHeight: 24,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+    lineHeight: 28,
   },
-  answersSection: {
-    marginBottom: 30,
+  optionsArea: {
     gap: 12,
   },
-  answerCard: {
+  optionCard: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    padding: 15,
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: 'transparent',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
-  answerCardSelected: {
-    backgroundColor: PURPLE,
+  optionCardSelected: {
     borderColor: PURPLE,
+    backgroundColor: LIGHT_PURPLE,
   },
-  answerLetter: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
+  radioBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
-  answerLetterSelected: {
-    backgroundColor: '#fff',
-  },
-  answerLetterText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  answerLetterTextSelected: {
-    color: PURPLE,
-  },
-  answerText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
-  },
-  navigationSection: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  navButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  navButtonPrimary: {
+  radioBtnSelected: {
+    borderColor: PURPLE,
     backgroundColor: PURPLE,
   },
-  navButtonSecondary: {
-    backgroundColor: '#f0f0f0',
+  optionId: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#64748b',
   },
-  navButtonTextPrimary: {
+  optionIdSelected: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
-  navButtonTextSecondary: {
+  optionText: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1e293b',
+    fontWeight: '500',
+  },
+  optionTextSelected: {
     color: PURPLE,
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  prevBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+  },
+  prevBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748b',
+  },
+  nextBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: PURPLE,
+    alignItems: 'center',
+  },
+  nextBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
 

@@ -42,6 +42,9 @@ export const SUCCESS_MESSAGES = {
   ANSWER_SUBMITTED: 'Jawaban disimpan',
   QUIZ_FINISHED: 'Kuis selesai',
   PROFILE_RETRIEVED: 'Profil berhasil diambil',
+  TUTOR_RESPONSE: 'Respons dari AI tutor',
+  QUIZ_GENERATED: 'Kuis berhasil dibuat',
+  ERRORS_ANALYZED: 'Analisis kesalahan selesai',
 };
 
 // HTTP Status Codes

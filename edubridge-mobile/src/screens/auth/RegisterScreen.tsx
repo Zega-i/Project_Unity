@@ -36,7 +36,8 @@ const RegisterScreen = () => {
     try {
       const extra = role === 'STUDENT' ? { grade } : {};
       const response = await authAPI.register(email, password, name, role, extra);
-      await authStore.setAuth(response.token, response.user);
+      // Access the inner 'data' field from ApiResponse
+      await authStore.setAuth(response.data.token, response.data.user);
       // Navigation will happen automatically
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || 'Pendaftaran gagal. Silakan coba lagi.';

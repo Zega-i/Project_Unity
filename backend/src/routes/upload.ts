@@ -1,12 +1,12 @@
-import { Router } from "express";
-import { authMiddleware } from "../middleware/auth";
+import { Router, Request, Response } from "express";
+import { AuthRequest, authMiddleware } from "../middleware/auth";
 import { asyncHandler } from "../middleware/errorHandler";
 import { ApiResponse } from "../types";
 import { logger } from "../utils/logger";
 
 const router = Router();
 
-router.post("/upload", authMiddleware, asyncHandler(async (req, res) => {
+router.post("/upload", authMiddleware, asyncHandler(async (req: AuthRequest, res: Response) => {
   logger.info("Upload endpoint called");
 
   const response: ApiResponse = {

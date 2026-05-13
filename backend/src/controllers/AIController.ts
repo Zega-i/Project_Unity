@@ -24,7 +24,7 @@ export class AIController {
         data: {
           response,
         },
-        message: SUCCESS_MESSAGES.TUTOR_RESPONSE || 'Respons dari AI tutor',
+        message: SUCCESS_MESSAGES.TUTOR_RESPONSE,
         timestamp: new Date().toISOString(),
       };
 
@@ -55,7 +55,7 @@ export class AIController {
         data: {
           quiz,
         },
-        message: SUCCESS_MESSAGES.QUIZ_GENERATED || 'Kuis berhasil dibuat',
+        message: SUCCESS_MESSAGES.QUIZ_GENERATED,
         timestamp: new Date().toISOString(),
       };
 
@@ -86,7 +86,7 @@ export class AIController {
         data: {
           analysis,
         },
-        message: SUCCESS_MESSAGES.ERRORS_ANALYZED || 'Analisis kesalahan selesai',
+        message: SUCCESS_MESSAGES.ERRORS_ANALYZED,
         timestamp: new Date().toISOString(),
       };
 

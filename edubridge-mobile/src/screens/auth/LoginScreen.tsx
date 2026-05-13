@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -30,7 +30,8 @@ const LoginScreen = () => {
     setLoading(true);
     try {
       const response = await authAPI.login(email, password);
-      await authStore.setAuth(response.token, response.user);
+      // Access the inner 'data' field from ApiResponse
+      await authStore.setAuth(response.data.token, response.data.user);
       // Navigation will happen automatically
     } catch (error) {
       Alert.alert('Login Failed', 'Invalid email or password');

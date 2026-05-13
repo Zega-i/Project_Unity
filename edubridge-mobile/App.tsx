@@ -3,20 +3,22 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
 import { authStore } from './src/store/authStore';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { QuizProvider } from './src/contexts/QuizContext';
+import { TutorProvider } from './src/contexts/TutorContext';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check initial auth state
     const checkAuth = async () => {
       await authStore.init();
+      setIsLoggedIn(!!authStore.getToken());
       setIsReady(true);
     };
     checkAuth();
 
-    // Subscribe to future auth changes
     const unsubscribe = authStore.subscribe((state) => {
       setIsLoggedIn(!!state.token);
     });
@@ -24,15 +26,19 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  if (!isReady) {
-    return null;
-  }
+  if (!isReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <AppNavigator isLoggedIn={isLoggedIn} />
-      </NavigationContainer>
+      <AuthProvider>
+        <QuizProvider>
+          <TutorProvider>
+            <NavigationContainer>
+              <AppNavigator isLoggedIn={isLoggedIn} />
+            </NavigationContainer>
+          </TutorProvider>
+        </QuizProvider>
+      </AuthProvider>
     </GestureHandlerRootView>
   );
 }
