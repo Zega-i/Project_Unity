@@ -29,10 +29,22 @@ const LoginScreen = () => {
 
     setLoading(true);
     try {
+      console.log('[LoginScreen] Attempting login with:', email);
       const response = await authAPI.login(email, password);
+      console.log('[LoginScreen] Login response:', response);
+
+      if (!response || !response.token || !response.user) {
+        throw new Error('Response tidak lengkap dari server');
+      }
+
       await authStore.setAuth(response.token, response.user);
+      console.log('[LoginScreen] Auth saved successfully');
     } catch (error: any) {
-      const msg = error.response?.data?.error || error.response?.data?.message || 'Email atau password salah. Silakan coba lagi.';
+      console.log('[LoginScreen] Login error:', error);
+      const msg = error?.response?.data?.message ||
+                  error?.response?.data?.error ||
+                  error?.message ||
+                  'Email atau password salah. Silakan coba lagi.';
       setErrorMessage(msg);
       setErrorModalVisible(true);
     } finally {
