@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PURPLE = '#7C3AED';
 const screenWidth = Dimensions.get('window').width;
@@ -24,6 +25,7 @@ export const EditProfilePictureModal: React.FC<EditProfilePictureModalProps> = (
   onImageSelected,
   loading = false,
 }) => {
+  const { colors } = useTheme();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [localLoading, setLocalLoading] = useState(false);
 
@@ -76,12 +78,12 @@ export const EditProfilePictureModal: React.FC<EditProfilePictureModalProps> = (
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Ubah Foto Profil</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Ubah Foto Profil</Text>
             <Pressable onPress={onClose} disabled={isLoading}>
-              <Ionicons name="close" size={24} color="#1E293B" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </Pressable>
           </View>
 
@@ -104,33 +106,29 @@ export const EditProfilePictureModal: React.FC<EditProfilePictureModalProps> = (
             </View>
           ) : (
             <View style={styles.placeholderSection}>
-              <Ionicons name="person-circle" size={80} color="#E2E8F0" />
-              <Text style={styles.placeholderText}>Belum ada foto profil</Text>
+              <Ionicons name="person-circle" size={80} color={colors.border} />
+              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>Belum ada foto profil</Text>
             </View>
           )}
 
           {/* Action Buttons */}
           <View style={styles.buttonGroup}>
             <Pressable
-              style={[styles.optionBtn, styles.cameraBtn]}
+              style={[styles.optionBtn, { borderColor: PURPLE, backgroundColor: PURPLE + '08' }]}
               onPress={() => pickImage(true)}
               disabled={isLoading}
             >
               <Ionicons name="camera" size={20} color={PURPLE} />
-              <Text style={[styles.optionBtnText, { color: PURPLE }]}>
-                Ambil Foto
-              </Text>
+              <Text style={[styles.optionBtnText, { color: PURPLE }]}>Ambil Foto</Text>
             </Pressable>
 
             <Pressable
-              style={[styles.optionBtn, styles.galleryBtn]}
+              style={[styles.optionBtn, { borderColor: PURPLE, backgroundColor: PURPLE + '08' }]}
               onPress={() => pickImage(false)}
               disabled={isLoading}
             >
               <Ionicons name="images" size={20} color={PURPLE} />
-              <Text style={[styles.optionBtnText, { color: PURPLE }]}>
-                Pilih dari Galeri
-              </Text>
+              <Text style={[styles.optionBtnText, { color: PURPLE }]}>Pilih dari Galeri</Text>
             </Pressable>
           </View>
 
@@ -158,7 +156,7 @@ export const EditProfilePictureModal: React.FC<EditProfilePictureModalProps> = (
             onPress={onClose}
             disabled={isLoading}
           >
-            <Text style={styles.cancelBtnText}>Batal</Text>
+            <Text style={[styles.cancelBtnText, { color: colors.textSecondary }]}>Batal</Text>
           </Pressable>
         </View>
       </View>
@@ -173,7 +171,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -190,9 +187,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
   },
-
   previewSection: {
     alignItems: 'center',
     marginBottom: 24,
@@ -226,7 +221,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   placeholderSection: {
     alignItems: 'center',
     marginBottom: 24,
@@ -234,10 +228,8 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: 14,
-    color: '#94A3B8',
     marginTop: 12,
   },
-
   buttonGroup: {
     gap: 10,
     marginBottom: 16,
@@ -251,19 +243,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     gap: 10,
   },
-  cameraBtn: {
-    borderColor: PURPLE,
-    backgroundColor: PURPLE + '08',
-  },
-  galleryBtn: {
-    borderColor: PURPLE,
-    backgroundColor: PURPLE + '08',
-  },
   optionBtnText: {
     fontSize: 15,
     fontWeight: '700',
   },
-
   uploadBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -287,7 +270,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-
   cancelBtn: {
     paddingVertical: 14,
     borderRadius: 12,
@@ -296,6 +278,5 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#64748B',
   },
 });

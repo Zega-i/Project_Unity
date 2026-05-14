@@ -23,6 +23,8 @@ import RecommendationsScreen from '../screens/student/RecommendationsScreen';
 import NotificationsScreen from '../screens/student/NotificationsScreen';
 import ChangePasswordScreen from '../screens/student/ChangePasswordScreen';
 import PrivacyDataScreen from '../screens/student/PrivacyDataScreen';
+import HelpScreen from '../screens/student/HelpScreen';
+import AboutScreen from '../screens/student/AboutScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -118,6 +120,8 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           <Stack.Screen name="Quiz" component={QuizScreen} />
           <Stack.Screen name="AITutor" component={AITutorScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
+          <Stack.Screen name="Help" component={HelpScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
         </>
       )}
     </Stack.Navigator>

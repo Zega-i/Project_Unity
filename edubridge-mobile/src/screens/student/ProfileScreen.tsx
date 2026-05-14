@@ -164,8 +164,8 @@ const ProfileScreen = () => {
         <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {[
             { label: 'Pengaturan', icon: 'settings-outline', color: colors.textSecondary, route: 'Settings' },
-            { label: 'Bantuan', icon: 'information-circle-outline', color: colors.textSecondary, route: null },
-            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: colors.textSecondary, route: null },
+            { label: 'Bantuan', icon: 'information-circle-outline', color: colors.textSecondary, route: 'Help' },
+            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: colors.textSecondary, route: 'About' },
           ].map((item, idx) => (
             <Pressable
               key={idx}
