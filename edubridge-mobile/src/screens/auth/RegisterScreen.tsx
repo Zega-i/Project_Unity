@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable,
   SafeAreaView, Alert, ScrollView, ActivityIndicator,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +23,7 @@ const RegisterScreen = () => {
   const [role, setRole]           = useState<Role>('STUDENT');
   const [loading, setLoading]     = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errorModal, setErrorModal] = useState({ visible: false, title: '', message: '' });
 
   // Auto-format DOB as DD-MM-YYYY
   const handleDobChange = (text: string) => {
@@ -58,11 +59,19 @@ const RegisterScreen = () => {
 
   const handleRegister = async () => {
     if (!name || !email || !password || (role === 'STUDENT' && !school)) {
-      Alert.alert('Error', 'Mohon isi semua kolom yang wajib');
+      setErrorModal({ 
+        visible: true, 
+        title: 'Kolom Wajib', 
+        message: 'Mohon isi semua kolom yang wajib untuk melanjutkan pendaftaran.' 
+      });
       return;
     }
     if (!pwValid) {
-      Alert.alert('Password Tidak Valid', 'Password harus minimal 8 karakter, mengandung huruf besar, kecil, angka, dan karakter spesial.');
+      setErrorModal({ 
+        visible: true, 
+        title: 'Password Tidak Valid', 
+        message: 'Password harus minimal 8 karakter, mengandung huruf besar, kecil, angka, dan karakter spesial.' 
+      });
       return;
     }
     setLoading(true);
@@ -76,7 +85,11 @@ const RegisterScreen = () => {
       await authStore.setAuth(response.token, response.user);
     } catch (error: any) {
       const msg = error.response?.data?.error || 'Pendaftaran gagal';
-      Alert.alert('Error', msg);
+      setErrorModal({ 
+        visible: true, 
+        title: 'Error', 
+        message: msg 
+      });
     } finally {
       setLoading(false);
     }
@@ -253,6 +266,31 @@ const RegisterScreen = () => {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <Modal
+        visible={errorModal.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setErrorModal({ ...errorModal, visible: false })}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.errorIconCircle}>
+              <Ionicons name="alert-circle-outline" size={32} color="#EF4444" />
+            </View>
+            <Text style={styles.modalTitle}>{errorModal.title}</Text>
+            <Text style={styles.modalMessage}>{errorModal.message}</Text>
+            <View style={styles.modalActions}>
+              <Pressable 
+                style={styles.modalBtn} 
+                onPress={() => setErrorModal({ ...errorModal, visible: false })}
+              >
+                <Text style={styles.modalBtnText}>Mengerti</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -295,6 +333,65 @@ const styles = StyleSheet.create({
   footer:     { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   footerText: { fontSize: 14, color: '#64748B' },
   loginLink:  { fontSize: 14, fontWeight: 'bold', color: PURPLE },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '85%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  errorIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1E293B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: '#64748B',
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+  modalBtn: {
+    flex: 1,
+    backgroundColor: PURPLE,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
 });
 
 export default RegisterScreen;

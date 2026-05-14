@@ -15,6 +15,8 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 import DashboardScreen from '../screens/student/DashboardScreen';
 import ClassScreen from '../screens/student/ClassScreen';
 import QuizScreen from '../screens/student/QuizScreen';
+import AssignmentsScreen from '../screens/student/AssignmentsScreen';
+import MaterialsScreen from '../screens/student/MaterialsScreen';
 import AITutorScreen from '../screens/student/AITutorScreen';
 import ProgressScreen from '../screens/student/ProgressScreen';
 import ProfileScreen from '../screens/student/ProfileScreen';
@@ -182,6 +184,8 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           <Stack.Screen name="SubjectModules"  component={SubjectModulesScreen} />
           <Stack.Screen name="MaterialDetail"  component={MaterialDetailScreen} />
           <Stack.Screen name="Quiz"            component={QuizScreen}           />
+          <Stack.Screen name="Assignments"     component={AssignmentsScreen}    />
+          <Stack.Screen name="Materials"       component={MaterialsScreen}      />
           <Stack.Screen name="AITutor"         component={AITutorScreen}        />
         </>
       )}

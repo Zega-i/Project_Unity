@@ -15,7 +15,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 const PURPLE = '#7C3AED';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PANEL_WIDTH = SCREEN_WIDTH * 0.78;
-const HISTORY_KEY = 'ai_tutor_history';
+// We will generate the key dynamically based on user ID
+let HISTORY_KEY = 'ai_tutor_history';
 
 interface Message {
   id: string;
@@ -58,8 +59,12 @@ const AITutorScreen = () => {
 
   const loadHistory = async () => {
     try {
-      const stored = await AsyncStorage.getItem(HISTORY_KEY);
-      if (stored) setSessions(JSON.parse(stored));
+      const userData = authStore.getUserSync();
+      if (userData?.id) {
+        const userHistoryKey = `ai_tutor_history_${userData.id}`;
+        const stored = await AsyncStorage.getItem(userHistoryKey);
+        if (stored) setSessions(JSON.parse(stored));
+      }
     } catch {}
   };
 
@@ -80,7 +85,11 @@ const AITutorScreen = () => {
 
   const saveSession = async (updatedMessages: Message[], sessionId: string, title: string) => {
     try {
-      const stored = await AsyncStorage.getItem(HISTORY_KEY);
+      const userData = authStore.getUserSync();
+      if (!userData?.id) return;
+      
+      const userHistoryKey = `ai_tutor_history_${userData.id}`;
+      const stored = await AsyncStorage.getItem(userHistoryKey);
       const existing: ChatSession[] = stored ? JSON.parse(stored) : [];
       const idx = existing.findIndex(s => s.id === sessionId);
       let updated: ChatSession[];
@@ -91,7 +100,7 @@ const AITutorScreen = () => {
       }
       const limited = updated.slice(0, 20);
       setSessions(limited);
-      await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(limited));
+      await AsyncStorage.setItem(userHistoryKey, JSON.stringify(limited));
     } catch {}
   };
 
