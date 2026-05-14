@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, Pressable,
-  FlatList, StatusBar, Image,
+  FlatList, StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -12,33 +12,35 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 const PURPLE = '#7C3AED';
 
 const AssignmentsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const [assignments] = useState([]); // Empty state for now
+  const [assignments] = useState([
+    { id: '1', title: 'Latihan Aljabar Linear', subject: 'Matematika', deadline: 'Besok, 23:59', status: 'Pending' },
+    { id: '2', title: 'Analisis Sel Hewan', subject: 'Biologi', deadline: '18 Mei 2026', status: 'Pending' },
+  ]);
 
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
-        <Ionicons name="clipboard-outline" size={60} color={colors.textSecondary} />
+  const renderItem = ({ item }: { item: any }) => (
+    <Pressable style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.iconBox, { backgroundColor: PURPLE + '10' }]}>
+        <Ionicons name="clipboard" size={24} color={PURPLE} />
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Tugas</Text>
-      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        Guru kamu belum memberikan tugas untuk kelas ini. Santai dulu sejenak!
-      </Text>
-    </View>
+      <View style={styles.info}>
+        <Text style={[styles.subject, { color: PURPLE }]}>{item.subject}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
+        <View style={styles.footer}>
+          <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+          <Text style={[styles.deadline, { color: colors.textSecondary }]}>Deadline: {item.deadline}</Text>
+        </View>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+    </Pressable>
   );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
-      <StatusBar barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Pressable 
-          style={styles.backBtn} 
-          onPress={() => { triggerLight(); navigation.goBack(); }}
-        >
+      <View style={styles.header}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Tugas Saya</Text>
@@ -47,10 +49,15 @@ const AssignmentsScreen = () => {
 
       <FlatList
         data={assignments}
-        keyExtractor={(item: any) => item.id}
-        renderItem={null}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="checkmark-circle-outline" size={64} color={colors.textSecondary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Semua tugas sudah selesai!</Text>
+          </View>
+        }
       />
     </SafeAreaView>
   );
@@ -58,54 +65,19 @@ const AssignmentsScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  listContent: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 80,
-  },
-  emptyIconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 40,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
+  backBtn: { padding: 4 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold' },
+  list: { padding: 20 },
+  card: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 20, borderWidth: 1, marginBottom: 12 },
+  iconBox: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
+  info: { flex: 1 },
+  subject: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 },
+  title: { fontSize: 15, fontWeight: 'bold', marginBottom: 8 },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  deadline: { fontSize: 12 },
+  empty: { alignItems: 'center', marginTop: 100, gap: 16 },
+  emptyText: { fontSize: 16, textAlign: 'center' },
 });
 
 export default AssignmentsScreen;

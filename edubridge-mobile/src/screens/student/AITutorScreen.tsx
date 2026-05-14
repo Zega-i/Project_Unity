@@ -11,12 +11,12 @@ import { useNavigation } from '@react-navigation/native';
 import { aiAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PANEL_WIDTH = SCREEN_WIDTH * 0.78;
-// We will generate the key dynamically based on user ID
-let HISTORY_KEY = 'ai_tutor_history';
+// Chat history is now stored per user ID
 
 interface Message {
   id: string;

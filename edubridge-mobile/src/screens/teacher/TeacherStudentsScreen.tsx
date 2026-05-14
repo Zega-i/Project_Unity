@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, SafeAreaView, ScrollView,
+  View, Text, StyleSheet, SafeAreaView, FlatList,
   Pressable, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,74 +12,84 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 const GREEN = '#16A34A';
 
 const MOCK_STUDENTS = [
-  { id: '1', name: 'Dika Pratama',   kelas: 'Matematika 10A', avg: 60, color: '#6366F1' },
-  { id: '2', name: 'Siti Nurhaliza', kelas: 'Fisika 10A',      avg: 65, color: '#EC4899' },
-  { id: '3', name: 'Budi Santoso',   kelas: 'Biologi 10A',     avg: 55, color: '#F59E0B' },
-  { id: '4', name: 'Anita Wijaya',   kelas: 'Matematika 10A', avg: 88, color: '#10B981' },
-  { id: '5', name: 'Rian Hidayat',   kelas: 'Fisika 11B',      avg: 72, color: '#8B5CF6' },
+  { id: '1', name: 'Ahmad Fauzi', class: '10A', score: 88, status: 'Active' },
+  { id: '2', name: 'Budi Santoso', class: '10A', score: 72, status: 'At Risk' },
+  { id: '3', name: 'Citra Lestari', class: '11B', score: 95, status: 'Active' },
 ];
 
 const TeacherStudentsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { triggerLight } = useHapticFeedback();
+  const [search, setSearch] = useState('');
+
+  const filteredStudents = MOCK_STUDENTS.filter(s => 
+    s.name.toLowerCase().includes(search.toLowerCase()) || s.class.includes(search)
+  );
+
+  const renderStudentItem = ({ item }: { item: any }) => (
+    <Pressable 
+      style={[styles.studentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: item }); }}
+    >
+      <View style={[styles.avatar, { backgroundColor: item.status === 'At Risk' ? '#FEE2E2' : '#DCFCE7' }]}>
+        <Text style={[styles.avatarText, { color: item.status === 'At Risk' ? '#EF4444' : '#16A34A' }]}>
+          {item.name.charAt(0)}
+        </Text>
+      </View>
+      <View style={styles.info}>
+        <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
+        <Text style={[styles.sub, { color: colors.textSecondary }]}>Kelas {item.class} • Rerata Skor: {item.score}</Text>
+      </View>
+      <View style={[styles.statusBadge, { backgroundColor: item.status === 'At Risk' ? '#FEE2E2' : '#DCFCE7' }]}>
+        <Text style={[styles.statusText, { color: item.status === 'At Risk' ? '#EF4444' : '#16A34A' }]}>
+          {item.status}
+        </Text>
+      </View>
+    </Pressable>
+  );
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Daftar Siswa</Text>
-      </View>
-
-      <View style={styles.searchBox}>
-        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="search" size={20} color="#999" />
-          <TextInput placeholder="Cari nama siswa..." placeholderTextColor="#999" style={[styles.searchInput, { color: colors.text }]} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Daftar Siswa</Text>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Cari nama atau kelas..."
+            placeholderTextColor={colors.textSecondary}
+            value={search}
+            onChangeText={setSearch}
+          />
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {MOCK_STUDENTS.map((s) => (
-          <Pressable 
-            key={s.id} 
-            style={[styles.studentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { name: s.name, className: s.kelas, avgScore: s.avg, avatarColor: s.color }); }}
-          >
-            <View style={[styles.avatar, { backgroundColor: s.color + '20', borderColor: s.color + '50' }]}>
-              <Text style={[styles.avatarText, { color: s.color }]}>{s.name.charAt(0)}</Text>
-            </View>
-            <View style={styles.studentInfo}>
-              <Text style={[styles.studentName, { color: colors.text }]}>{s.name}</Text>
-              <Text style={[styles.studentClass, { color: colors.textSecondary }]}>{s.kelas}</Text>
-            </View>
-            <View style={styles.scoreBox}>
-              <Text style={styles.scoreLabel}>Rata-rata</Text>
-              <Text style={[styles.scoreVal, { color: s.avg < 70 ? '#EF4444' : GREEN }]}>{s.avg}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#CCC" />
-          </Pressable>
-        ))}
-      </ScrollView>
+      <FlatList
+        data={filteredStudents}
+        renderItem={renderStudentItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.list}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingVertical: 15 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  searchBox: { paddingHorizontal: 20, marginBottom: 20 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 14 },
-  scroll: { paddingHorizontal: 20, paddingBottom: 100 },
-  studentCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
+  header: { padding: 20 },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', marginBottom: 15 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, height: 45 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 14 },
+  list: { padding: 20 },
+  studentCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
+  avatar: { width: 45, height: 45, borderRadius: 22.5, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText: { fontSize: 18, fontWeight: 'bold' },
-  studentInfo: { flex: 1, marginLeft: 14 },
-  studentName: { fontSize: 15, fontWeight: 'bold' },
-  studentClass: { fontSize: 12, marginTop: 2 },
-  scoreBox: { alignItems: 'flex-end', marginRight: 10 },
-  scoreLabel: { fontSize: 10, color: '#999', marginBottom: 2 },
-  scoreVal: { fontSize: 16, fontWeight: 'bold' },
+  info: { flex: 1 },
+  name: { fontSize: 16, fontWeight: 'bold', marginBottom: 2 },
+  sub: { fontSize: 12 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  statusText: { fontSize: 10, fontWeight: '700' },
 });
 
 export default TeacherStudentsScreen;
