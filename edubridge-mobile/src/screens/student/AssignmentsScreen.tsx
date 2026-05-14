@@ -271,7 +271,7 @@ const AssignmentsScreen = () => {
       </View>
 
       {/* Filter chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView} contentContainerStyle={styles.filterRow}>
         {FILTERS.map(f => {
           const active = f.key === activeFilter;
           return (
@@ -287,6 +287,7 @@ const AssignmentsScreen = () => {
       </ScrollView>
 
       <ScrollView
+        style={styles.mainScroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PURPLE]} />}
@@ -340,7 +341,9 @@ const styles = StyleSheet.create({
   tabActive: {},
   tabText: { fontSize: 13, fontWeight: '700' },
 
+  filterScrollView: { flexGrow: 0 },
   filterRow: { paddingHorizontal: 20, paddingVertical: 10, gap: 8 },
+  mainScroll: { flex: 1 },
   chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 13, fontWeight: '600' },
 
