@@ -66,7 +66,7 @@ const AITutorScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable style={styles.backBtn}>
+        <Pressable style={styles.backBtn} onPress={() => Keyboard.dismiss()}>
           <Ionicons name="chevron-back" size={24} color="#1E293B" />
         </Pressable>
         <View style={styles.headerProfile}>
@@ -83,31 +83,34 @@ const AITutorScreen = () => {
         </View>
       </View>
 
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={m => m.id}
-        renderItem={renderMessage}
-        contentContainerStyle={styles.chatArea}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Quick Chips */}
-      <View style={styles.chipsRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {['Beri contoh soal', 'Cara menyelesaikan', 'Latihan'].map((chip, i) => (
-            <Pressable key={i} style={styles.chip} onPress={() => sendMessage(chip)}>
-              <Text style={styles.chipText}>{chip}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Input Bar */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        style={styles.keyboardAvoid}
       >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={m => m.id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.chatArea}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          scrollEnabled={true}
+        />
+
+        {/* Quick Chips */}
+        <View style={styles.chipsRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {['Beri contoh soal', 'Cara menyelesaikan', 'Latihan'].map((chip, i) => (
+              <Pressable key={i} style={styles.chip} onPress={() => sendMessage(chip)}>
+                <Text style={styles.chipText}>{chip}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Input Bar */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.textInput}
@@ -115,7 +118,7 @@ const AITutorScreen = () => {
             onChangeText={setInput}
             placeholder="Ketik pertanyaanmu..."
             placeholderTextColor="#94A3B8"
-            onFocus={() => setTimeout(() => flatListRef.current?.scrollToEnd(), 100)}
+            onFocus={() => setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200)}
           />
           <Pressable style={styles.sendBtn} onPress={() => sendMessage()}>
             <Ionicons name="send" size={20} color="#fff" />
@@ -128,6 +131,7 @@ const AITutorScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+  keyboardAvoid: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   backBtn: { marginRight: 16 },
   headerProfile: { flexDirection: 'row', alignItems: 'center', gap: 12 },

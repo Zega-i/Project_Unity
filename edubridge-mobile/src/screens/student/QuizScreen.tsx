@@ -46,7 +46,7 @@ const QuizScreen = () => {
   const currentQuestion = QUESTIONS[0];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: 10 }]}>
       {/* Top Navigation */}
       <View style={styles.topNav}>
         <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>

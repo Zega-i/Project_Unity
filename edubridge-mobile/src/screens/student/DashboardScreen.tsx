@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
   menuText: { fontSize: 13, fontWeight: '700', color: '#1E293B', marginBottom: 4 },
   menuDesc: { fontSize: 10, color: '#94A3B8', textAlign: 'center' },
   
-  recomList: { gap: 12, marginBottom: 15 },
-  spacer: { minHeight: 10 },
+  recomList: { gap: 10, marginBottom: 8 },
+  spacer: { minHeight: 5 },
   recomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },
   recomIconBox: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
   recomIconText: { fontSize: 22 },

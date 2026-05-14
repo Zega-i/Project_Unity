@@ -30,6 +30,13 @@ const dailyStats = [
   { time: '18:00', score: 92 }, { time: '20:15', score: 78 },
 ];
 
+const monthlyStats = [
+  { week: 'Ming 1', score: 72 },
+  { week: 'Ming 2', score: 78 },
+  { week: 'Ming 3', score: 85 },
+  { week: 'Ming 4', score: 81 },
+];
+
 const ProgressScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -132,13 +139,27 @@ const ProgressScreen = () => {
         {/* Activity Chart */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {selectedPeriod === 'Hari Ini' ? 'Aktivitas Hari Ini' : 'Aktivitas Mingguan'}
+            {selectedPeriod === 'Hari Ini' ? 'Aktivitas Hari Ini' : selectedPeriod === 'Minggu Ini' ? 'Aktivitas Mingguan' : 'Aktivitas Bulanan'}
           </Text>
           <View style={styles.barChart}>
-            {(selectedPeriod === 'Hari Ini' ? dailyStats : weeklyStats).map((stat, idx) => {
-              const data = selectedPeriod === 'Hari Ini' ? stat as typeof dailyStats[0] : stat as typeof weeklyStats[0];
-              const maxVal = selectedPeriod === 'Hari Ini' ? Math.max(...dailyStats.map(s => s.score)) : maxScore;
-              const label = selectedPeriod === 'Hari Ini' ? (data as any).time : (data as any).day;
+            {(selectedPeriod === 'Hari Ini' ? dailyStats : selectedPeriod === 'Minggu Ini' ? weeklyStats : monthlyStats).map((stat, idx) => {
+              let data: any;
+              let maxVal: number;
+              let label: string;
+
+              if (selectedPeriod === 'Hari Ini') {
+                data = stat;
+                maxVal = Math.max(...dailyStats.map(s => s.score));
+                label = (data as any).time;
+              } else if (selectedPeriod === 'Minggu Ini') {
+                data = stat;
+                maxVal = maxScore;
+                label = (data as any).day;
+              } else {
+                data = stat;
+                maxVal = Math.max(...monthlyStats.map(s => s.score));
+                label = (data as any).week;
+              }
 
               return (
                 <View key={idx} style={styles.barColumn}>

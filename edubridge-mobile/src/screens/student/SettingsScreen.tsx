@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 
@@ -19,7 +20,14 @@ const SettingsScreen = () => {
   const handleLogout = () => {
     Alert.alert('Logout', 'Apakah Anda yakin ingin keluar?', [
       { text: 'Batal', onPress: () => {} },
-      { text: 'Keluar', onPress: () => navigation.navigate('Login'), style: 'destructive' },
+      {
+        text: 'Keluar',
+        onPress: async () => {
+          await authStore.logout();
+          navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
+        },
+        style: 'destructive',
+      },
     ]);
   };
 
