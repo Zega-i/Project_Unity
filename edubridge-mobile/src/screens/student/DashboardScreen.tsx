@@ -10,12 +10,14 @@ import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PURPLE = '#7C3AED';
 
 const DashboardScreen = () => {
   const navigation = useNavigation<any>();
   const { triggerLight } = useHapticFeedback();
+  const { colors, isDarkMode } = useTheme();
   const [user, setUser] = useState<any>(authStore.getUserSync());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,11 +60,12 @@ const DashboardScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
-      <StatusBar barStyle="dark-content" />
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        scrollEnabled={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PURPLE]} />
         }
@@ -70,11 +73,11 @@ const DashboardScreen = () => {
         {/* Header Section */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.welcomeText}>Halo, {user?.name?.split(' ')[0] || 'Siswa'} 👋</Text>
-            <Text style={styles.subWelcome}>Mari lanjutkan belajarmu hari ini</Text>
+            <Text style={[styles.welcomeText, { color: colors.text }]}>Halo, {user?.name?.split(' ')[0] || 'Siswa'} 👋</Text>
+            <Text style={[styles.subWelcome, { color: colors.textSecondary }]}>Mari lanjutkan belajarmu hari ini</Text>
           </View>
-          <Pressable style={styles.notificationBtn} onPress={() => { triggerLight(); navigation.navigate('Notifications' as any); }}>
-            <Ionicons name="notifications-outline" size={24} color="#1E293B" />
+          <Pressable style={[styles.notificationBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => { triggerLight(); navigation.navigate('Notifications' as any); }}>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
             <View style={styles.notificationBadge}>
               <Text style={styles.badgeText}>2</Text>
             </View>
@@ -105,10 +108,10 @@ const DashboardScreen = () => {
 
         {/* Recommendations - Vertical List (Max 3 items) */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Rekomendasi Belajar</Text>
-          <Pressable style={styles.seeAllBtn} onPress={() => navigation.navigate('Recommendations' as any)}>
-            <Text style={styles.seeAll}>Lihat Semua</Text>
-            <Ionicons name="chevron-forward" size={16} color={PURPLE} />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Rekomendasi Belajar</Text>
+          <Pressable style={[styles.seeAllBtn, { backgroundColor: colors.primary + '15' }]} onPress={() => { triggerLight(); navigation.navigate('Recommendations' as any); }}>
+            <Text style={[styles.seeAll, { color: colors.primary }]}>Lihat Semua</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
           </Pressable>
         </View>
 
@@ -118,22 +121,22 @@ const DashboardScreen = () => {
             { id: '2', title: 'Hukum Newton', subject: 'Fisika', level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡' },
             { id: '3', title: 'Fungsi Kuadrat', subject: 'Matematika', level: 'Menengah', duration: '25 Min', progress: 35, color: '#8B5CF6', icon: '📊' },
           ].slice(0, 3).map((item) => (
-            <Pressable key={item.id} style={styles.recomCard}>
+            <Pressable key={item.id} style={[styles.recomCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => triggerLight()}>
               <View style={[styles.recomIconBox, { backgroundColor: item.color + '10' }]}>
                 <Text style={styles.recomIconText}>{item.icon}</Text>
               </View>
               <View style={styles.recomInfo}>
-                <Text style={styles.recomSubject}>{item.subject} • {item.level}</Text>
-                <Text style={styles.recomTitle}>{item.title}</Text>
+                <Text style={[styles.recomSubject, { color: colors.textSecondary }]}>{item.subject} • {item.level}</Text>
+                <Text style={[styles.recomTitle, { color: colors.text }]}>{item.title}</Text>
                 <View style={styles.recomFooter}>
-                  <Ionicons name="time-outline" size={14} color="#94A3B8" />
-                  <Text style={styles.recomTime}>{item.duration}</Text>
-                  <View style={styles.miniProgressBg}>
+                  <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                  <Text style={[styles.recomTime, { color: colors.textSecondary }]}>{item.duration}</Text>
+                  <View style={[styles.miniProgressBg, { backgroundColor: colors.border }]}>
                     <View style={[styles.miniProgressFill, { width: `${item.progress}%`, backgroundColor: item.color }]} />
                   </View>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </Pressable>
           ))}
         </View>
@@ -143,7 +146,7 @@ const DashboardScreen = () => {
 
         {/* Menu Cepat (Quick Menu) */}
         <View style={[styles.sectionHeader, { marginTop: 35 }]}>
-          <Text style={styles.sectionTitle}>Menu Cepat</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Menu Cepat</Text>
         </View>
 
         <View style={styles.menuGrid}>
@@ -156,13 +159,13 @@ const DashboardScreen = () => {
             <Pressable
               key={item.id}
               style={styles.menuItem}
-              onPress={() => navigation.navigate(item.route as any)}
+              onPress={() => { triggerLight(); navigation.navigate(item.route as any); }}
             >
               <View style={[styles.menuIconBox, { backgroundColor: item.color + '15' }]}>
                 <Ionicons name={item.icon as any} size={28} color={item.color} />
               </View>
-              <Text style={styles.menuText}>{item.name}</Text>
-              <Text style={styles.menuDesc}>{item.desc}</Text>
+              <Text style={[styles.menuText, { color: colors.text }]}>{item.name}</Text>
+              <Text style={[styles.menuDesc, { color: colors.textSecondary }]}>{item.desc}</Text>
             </Pressable>
           ))}
         </View>
@@ -172,7 +175,7 @@ const DashboardScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 90, flexGrow: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 10 },
   welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },

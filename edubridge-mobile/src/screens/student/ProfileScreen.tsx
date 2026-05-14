@@ -10,12 +10,14 @@ import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { EditProfilePictureModal } from './EditProfilePictureModal';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PURPLE = '#7C3AED';
 
 const ProfileScreen = () => {
   const navigation = useNavigation<any>();
   const { triggerLight } = useHapticFeedback();
+  const { colors, isDarkMode } = useTheme();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -117,9 +119,9 @@ const ProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.headerTitle}>Profil Saya</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profil Saya</Text>
 
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
@@ -132,59 +134,56 @@ const ProfileScreen = () => {
                 source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=2080&auto=format&fit=crop' }}
                 style={styles.avatar}
               />
-              <View style={styles.editAvatarOverlay}>
-                <Ionicons name="camera" size={24} color="#FFFFFF" />
-              </View>
             </View>
           </Pressable>
-          <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
-          <Text style={styles.userRole}>{user?.role === 'TEACHER' ? 'Guru' : 'Siswa'}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'User Name'}</Text>
+          <Text style={[styles.userRole, { color: colors.textSecondary }]}>{user?.role === 'TEACHER' ? 'Guru' : 'Siswa'}</Text>
         </View>
 
         {/* Info Section */}
         <View style={styles.infoSection}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email || '-'}</Text>
+          <View style={[styles.infoItem, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.email || '-'}</Text>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Kelas</Text>
-            <Text style={styles.infoValue}>{user?.className || user?.grade || '-'}</Text>
+          <View style={[styles.infoItem, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Kelas</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.className || user?.grade || '-'}</Text>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Sekolah</Text>
-            <Text style={styles.infoValue}>{user?.school || '-'}</Text>
+          <View style={[styles.infoItem, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Sekolah</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.school || '-'}</Text>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Tanggal Lahir</Text>
-            <Text style={styles.infoValue}>{formatDate(user?.dateOfBirth)}</Text>
+          <View style={[styles.infoItem, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Tanggal Lahir</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{formatDate(user?.dateOfBirth)}</Text>
           </View>
         </View>
 
         {/* Menu Section */}
-        <View style={styles.menuCard}>
+        <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {[
-            { label: 'Pengaturan', icon: 'settings-outline', color: '#64748B', route: 'Settings' },
-            { label: 'Bantuan', icon: 'information-circle-outline', color: '#64748B', route: null },
-            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: '#64748B', route: null },
+            { label: 'Pengaturan', icon: 'settings-outline', color: colors.textSecondary, route: 'Settings' },
+            { label: 'Bantuan', icon: 'information-circle-outline', color: colors.textSecondary, route: null },
+            { label: 'Tentang Aplikasi', icon: 'alert-circle-outline', color: colors.textSecondary, route: null },
           ].map((item, idx) => (
             <Pressable
               key={idx}
-              style={styles.menuItem}
-              onPress={() => item.route && navigation.navigate(item.route)}
+              style={[styles.menuItem, { borderBottomColor: colors.border }]}
+              onPress={() => { triggerLight(); item.route && navigation.navigate(item.route); }}
             >
               <Ionicons name={item.icon as any} size={22} color={item.color} />
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+              <Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </Pressable>
           ))}
           <Pressable
             style={[styles.menuItem, { borderBottomWidth: 0 }]}
-            onPress={() => setLogoutModalVisible(true)}
+            onPress={() => { triggerLight(); setLogoutModalVisible(true); }}
           >
             <Ionicons name="log-out-outline" size={22} color="#EF4444" />
             <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Keluar</Text>
-            <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
       </ScrollView>
@@ -201,23 +200,23 @@ const ProfileScreen = () => {
       {/* Logout Modal */}
       <Modal visible={logoutModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <View style={styles.warningIcon}>
               <Ionicons name="warning-outline" size={32} color="#EF4444" />
             </View>
-            <Text style={styles.modalTitle}>Konfirmasi Keluar</Text>
-            <Text style={styles.modalSub}>Apakah Anda yakin ingin keluar dari akun ini?</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Konfirmasi Keluar</Text>
+            <Text style={[styles.modalSub, { color: colors.textSecondary }]}>Apakah Anda yakin ingin keluar dari akun ini?</Text>
 
             <View style={styles.modalActions}>
               <Pressable
-                style={styles.cancelBtn}
-                onPress={() => setLogoutModalVisible(false)}
+                style={[styles.cancelBtn, { backgroundColor: colors.surface }]}
+                onPress={() => { triggerLight(); setLogoutModalVisible(false); }}
               >
-                <Text style={styles.cancelText}>Batal</Text>
+                <Text style={[styles.cancelText, { color: colors.textSecondary }]}>Batal</Text>
               </Pressable>
               <Pressable
                 style={styles.confirmBtn}
-                onPress={handleLogoutAction}
+                onPress={() => { triggerLight(); handleLogoutAction(); }}
               >
                 <Text style={styles.confirmText}>Keluar</Text>
               </Pressable>
@@ -230,7 +229,7 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { paddingHorizontal: 25, paddingTop: 20, paddingBottom: 90 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 30 },
@@ -245,13 +244,13 @@ const styles = StyleSheet.create({
   infoItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   infoLabel: { fontSize: 14, color: '#64748B', fontWeight: '500' },
   infoValue: { fontSize: 14, color: '#1E293B', fontWeight: '600' },
-  menuCard: { backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  menuCard: { borderRadius: 20, paddingHorizontal: 16, borderWidth: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
   menuLabel: { flex: 1, marginLeft: 16, fontSize: 15, fontWeight: '600', color: '#1E293B' },
 
   /* Modal Styles */
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalCard: { backgroundColor: '#FFFFFF', width: '85%', borderRadius: 24, padding: 24, alignItems: 'center' },
+  modalCard: { width: '85%', borderRadius: 24, padding: 24, alignItems: 'center' },
   warningIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1E293B', marginBottom: 8 },
   modalSub: { fontSize: 14, color: '#64748B', textAlign: 'center', marginBottom: 24, lineHeight: 20 },

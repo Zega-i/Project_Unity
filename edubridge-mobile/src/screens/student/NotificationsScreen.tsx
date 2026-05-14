@@ -7,7 +7,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authStore } from '../../store/authStore';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
@@ -22,6 +25,8 @@ interface Notification {
 
 const NotificationsScreen = () => {
   const navigation = useNavigation<any>();
+  const { colors, isDarkMode } = useTheme();
+  const { triggerLight } = useHapticFeedback();
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
@@ -62,6 +67,10 @@ const NotificationsScreen = () => {
   const loadNotifications = async () => {
     setLoading(true);
     try {
+      const stored = await AsyncStorage.getItem('notifications');
+      if (stored) {
+        setNotifications(JSON.parse(stored));
+      }
       // TODO: Fetch from API when backend is ready
       // const token = await authStore.getToken();
       // const response = await fetch('http://your-backend-url/api/notifications', {
@@ -90,8 +99,12 @@ const NotificationsScreen = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const token = await authStore.getToken();
+      triggerLight();
+      const updated = notifications.map(n => n.id === notificationId ? { ...n, read: true } : n);
+      setNotifications(updated);
+      await AsyncStorage.setItem('notifications', JSON.stringify(updated));
       // TODO: Call backend when ready
+      // const token = await authStore.getToken();
       // await fetch('http://your-backend-url/api/notifications/mark-read', {
       //   method: 'POST',
       //   headers: {
@@ -100,10 +113,6 @@ const NotificationsScreen = () => {
       //   },
       //   body: JSON.stringify({ notificationId })
       // });
-
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-      );
     } catch (error) {
       console.log('Error marking as read:', error);
     }
@@ -111,8 +120,12 @@ const NotificationsScreen = () => {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const token = await authStore.getToken();
+      triggerLight();
+      const updated = notifications.filter(n => n.id !== notificationId);
+      setNotifications(updated);
+      await AsyncStorage.setItem('notifications', JSON.stringify(updated));
       // TODO: Call backend when ready
+      // const token = await authStore.getToken();
       // await fetch('http://your-backend-url/api/notifications/delete', {
       //   method: 'POST',
       //   headers: {
@@ -121,8 +134,6 @@ const NotificationsScreen = () => {
       //   },
       //   body: JSON.stringify({ notificationId })
       // });
-
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
       console.log('Error deleting notification:', error);
     }
@@ -130,16 +141,18 @@ const NotificationsScreen = () => {
 
   const markAllAsRead = async () => {
     try {
-      const token = await authStore.getToken();
+      triggerLight();
+      const updated = notifications.map(n => ({ ...n, read: true }));
+      setNotifications(updated);
+      await AsyncStorage.setItem('notifications', JSON.stringify(updated));
       // TODO: Call backend when ready
+      // const token = await authStore.getToken();
       // await fetch('http://your-backend-url/api/notifications/mark-all-read', {
       //   method: 'POST',
       //   headers: {
       //     'Authorization': `Bearer ${token}`
       //   }
       // });
-
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (error) {
       console.log('Error marking all as read:', error);
     }
@@ -185,7 +198,11 @@ const NotificationsScreen = () => {
 
     return (
       <Pressable
-        style={[styles.notifCard, !item.read && styles.notifCardUnread]}
+        style={[
+          styles.notifCard,
+          !item.read && [styles.notifCardUnread, { backgroundColor: colors.primary + '08' }],
+          { backgroundColor: colors.surface },
+        ]}
         onPress={() => !item.read && markAsRead(item.id)}
       >
         <View style={[styles.notifIconBox, { backgroundColor: iconInfo.color + '15' }]}>
@@ -193,11 +210,11 @@ const NotificationsScreen = () => {
         </View>
 
         <View style={styles.notifContent}>
-          <Text style={styles.notifTitle}>{item.title}</Text>
-          <Text style={styles.notifMessage} numberOfLines={2}>
+          <Text style={[styles.notifTitle, { color: colors.text }]}>{item.title}</Text>
+          <Text style={[styles.notifMessage, { color: colors.textSecondary }]} numberOfLines={2}>
             {item.message}
           </Text>
-          <Text style={styles.notifTime}>{formatTime(item.createdAt)}</Text>
+          <Text style={[styles.notifTime, { color: colors.textSecondary }]}>{formatTime(item.createdAt)}</Text>
         </View>
 
         {!item.read && <View style={styles.unreadDot} />}
@@ -207,27 +224,27 @@ const NotificationsScreen = () => {
           onPress={() => deleteNotification(item.id)}
           hitSlop={10}
         >
-          <Ionicons name="close" size={18} color="#94A3B8" />
+          <Ionicons name="close" size={18} color={colors.textSecondary} />
         </Pressable>
       </Pressable>
     );
   };
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View>
-          <Text style={styles.headerTitle}>Notifikasi</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Notifikasi</Text>
           {unreadCount > 0 && (
-            <Text style={styles.unreadLabel}>{unreadCount} notifikasi baru</Text>
+            <Text style={[styles.unreadLabel, { color: colors.textSecondary }]}>{unreadCount} notifikasi baru</Text>
           )}
         </View>
         {unreadCount > 0 && (
-          <Pressable style={styles.markAllBtn} onPress={markAllAsRead}>
-            <Text style={styles.markAllText}>Tandai Semua</Text>
+          <Pressable style={[styles.markAllBtn, { backgroundColor: colors.primary + '15' }]} onPress={markAllAsRead}>
+            <Text style={[styles.markAllText, { color: colors.primary }]}>Tandai Semua</Text>
           </Pressable>
         )}
       </View>
@@ -246,9 +263,9 @@ const NotificationsScreen = () => {
         />
       ) : (
         <View style={styles.emptyState}>
-          <Ionicons name="notifications-off-outline" size={48} color={PURPLE} />
-          <Text style={styles.emptyTitle}>Tidak ada notifikasi</Text>
-          <Text style={styles.emptyDesc}>Semua notifikasi akan muncul di sini</Text>
+          <Ionicons name="notifications-off-outline" size={48} color={colors.primary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Tidak ada notifikasi</Text>
+          <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>Semua notifikasi akan muncul di sini</Text>
         </View>
       )}
     </SafeAreaView>
@@ -256,16 +273,16 @@ const NotificationsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B' },
   unreadLabel: { fontSize: 12, color: '#94A3B8', marginTop: 4 },
   markAllBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: PURPLE + '10' },
   markAllText: { fontSize: 12, color: PURPLE, fontWeight: '600' },
 
   listContent: { paddingHorizontal: 20, paddingVertical: 12, paddingBottom: 20 },
-  notifCard: { backgroundColor: '#F8FAFC', borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 4, borderLeftColor: 'transparent' },
-  notifCardUnread: { backgroundColor: PURPLE + '08', borderLeftColor: PURPLE },
+  notifCard: { borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 4, borderLeftColor: 'transparent' },
+  notifCardUnread: { borderLeftColor: PURPLE },
   notifIconBox: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   notifContent: { flex: 1 },
   notifTitle: { fontSize: 14, fontWeight: '700', color: '#1E293B', marginBottom: 4 },

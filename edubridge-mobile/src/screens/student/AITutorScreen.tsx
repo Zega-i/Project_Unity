@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { useNavigation } from '@react-navigation/native';
 import { aiAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
@@ -19,7 +20,8 @@ interface Message {
 }
 
 const AITutorScreen = () => {
-  const { triggerMedium } = useHapticFeedback();
+  const navigation = useNavigation<any>();
+  const { triggerMedium, triggerLight } = useHapticFeedback();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -69,7 +71,7 @@ const AITutorScreen = () => {
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => Keyboard.dismiss()}>
+        <Pressable style={styles.backBtn} onPress={() => { triggerLight(); Keyboard.dismiss(); navigation.goBack(); }}>
           <Ionicons name="chevron-back" size={24} color="#1E293B" />
         </Pressable>
         <View style={styles.headerProfile}>
@@ -106,7 +108,7 @@ const AITutorScreen = () => {
         <View style={styles.chipsRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {['Beri contoh soal', 'Cara menyelesaikan', 'Latihan'].map((chip, i) => (
-              <Pressable key={i} style={styles.chip} onPress={() => sendMessage(chip)}>
+              <Pressable key={i} style={styles.chip} onPress={() => { triggerLight(); sendMessage(chip); }}>
                 <Text style={styles.chipText}>{chip}</Text>
               </Pressable>
             ))}
