@@ -49,103 +49,103 @@ const SettingsScreen = () => {
 
         {/* Learning Preferences */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferensi Pembelajaran</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Preferensi Pembelajaran</Text>
 
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBox, { backgroundColor: '#F5F3FF' }]}>
                 <Ionicons name="notifications-outline" size={20} color={PURPLE} />
               </View>
               <View>
-                <Text style={styles.settingLabel}>Notifikasi Pembelajaran</Text>
-                <Text style={styles.settingDesc}>Reminder untuk quiz dan materi baru</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Notifikasi Pembelajaran</Text>
+                <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>Reminder untuk quiz dan materi baru</Text>
               </View>
             </View>
             <Switch
               value={notifications}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: '#E2E8F0', true: PURPLE + '40' }}
-              thumbColor={notifications ? PURPLE : '#94A3B8'}
+              trackColor={{ false: colors.border, true: PURPLE + '40' }}
+              thumbColor={notifications ? PURPLE : colors.disabled}
             />
           </View>
 
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBox, { backgroundColor: '#FEFCE8' }]}>
                 <Ionicons name="phone-portrait-outline" size={20} color="#F59E0B" />
               </View>
               <View>
-                <Text style={styles.settingLabel}>Haptic Feedback</Text>
-                <Text style={styles.settingDesc}>Getaran saat mengklik atau mengetik</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Haptic Feedback</Text>
+                <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>Getaran saat mengklik atau mengetik</Text>
               </View>
             </View>
             <Switch
               value={isHapticEnabled}
               onValueChange={handleHapticToggle}
-              trackColor={{ false: '#E2E8F0', true: '#F59E0B40' }}
-              thumbColor={isHapticEnabled ? '#F59E0B' : '#94A3B8'}
+              trackColor={{ false: colors.border, true: '#F59E0B40' }}
+              thumbColor={isHapticEnabled ? '#F59E0B' : colors.disabled}
             />
           </View>
         </View>
 
         {/* Display Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tampilan</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Tampilan</Text>
 
-          <View style={styles.settingItem}>
+          <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBox, { backgroundColor: '#F3E8FF' }]}>
                 <Ionicons name="moon-outline" size={20} color="#8B5CF6" />
               </View>
               <View>
-                <Text style={styles.settingLabel}>Mode Gelap</Text>
-                <Text style={styles.settingDesc}>Lebih nyaman untuk mata</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Mode Gelap</Text>
+                <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>Lebih nyaman untuk mata</Text>
               </View>
             </View>
             <Switch
               value={isDarkMode}
               onValueChange={handleDarkModeToggle}
-              trackColor={{ false: '#E2E8F0', true: '#8B5CF640' }}
-              thumbColor={isDarkMode ? '#8B5CF6' : '#94A3B8'}
+              trackColor={{ false: colors.border, true: '#8B5CF640' }}
+              thumbColor={isDarkMode ? '#8B5CF6' : colors.disabled}
             />
           </View>
         </View>
 
         {/* Account Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Keamanan Akun</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Keamanan Akun</Text>
 
-          <Pressable style={styles.menuItem} onPress={() => navigation.navigate('ChangePassword' as any)}>
+          <Pressable style={[styles.menuItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { triggerMedium(); navigation.navigate('ChangePassword' as any); }}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBox, { backgroundColor: '#FDF2F8' }]}>
                 <Ionicons name="key-outline" size={20} color="#EC4899" />
               </View>
               <View>
-                <Text style={styles.settingLabel}>Ganti Password</Text>
-                <Text style={styles.settingDesc}>Ubah password akun Anda</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Ganti Password</Text>
+                <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>Ubah password akun Anda</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
 
-          <Pressable style={styles.menuItem} onPress={() => navigation.navigate('PrivacyData' as any)}>
+          <Pressable style={[styles.menuItem, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => { triggerMedium(); navigation.navigate('PrivacyData' as any); }}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconBox, { backgroundColor: '#F0FDF4' }]}>
                 <Ionicons name="shield-checkmark-outline" size={20} color="#10B981" />
               </View>
               <View>
-                <Text style={styles.settingLabel}>Privasi & Data</Text>
-                <Text style={styles.settingDesc}>Kelola pengaturan data Anda</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Privasi & Data</Text>
+                <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>Kelola pengaturan data Anda</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
         </View>
 
         {/* Version Info */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>EduBridge v1.0.0</Text>
-          <Text style={styles.versionDesc}>Build 2026.05.14 • Proudly Made for Students</Text>
+          <Text style={[styles.versionText, { color: colors.text }]}>EduBridge v1.0.0</Text>
+          <Text style={[styles.versionDesc, { color: colors.textSecondary }]}>Build 2026.05.14 • Proudly Made for Students</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

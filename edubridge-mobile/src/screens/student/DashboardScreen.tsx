@@ -11,6 +11,8 @@ import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 const PURPLE = '#7C3AED';
 
@@ -21,6 +23,27 @@ const DashboardScreen = () => {
   const [user, setUser] = useState<any>(authStore.getUserSync());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const loadUnreadCount = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('notifications');
+      if (stored) {
+        const notifs = JSON.parse(stored);
+        setUnreadCount(notifs.filter((n: any) => !n.read).length);
+      } else {
+        setUnreadCount(2);
+      }
+    } catch {
+      setUnreadCount(0);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUnreadCount();
+    }, [])
+  );
 
   const loadProfile = async () => {
     try {
@@ -78,9 +101,11 @@ const DashboardScreen = () => {
           </View>
           <Pressable style={[styles.notificationBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => { triggerLight(); navigation.navigate('Notifications' as any); }}>
             <Ionicons name="notifications-outline" size={24} color={colors.text} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.badgeText}>2</Text>
-            </View>
+            {unreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.badgeText}>{unreadCount}</Text>
+              </View>
+            )}
           </Pressable>
         </View>
 

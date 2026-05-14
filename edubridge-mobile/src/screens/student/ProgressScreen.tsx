@@ -8,6 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import { authAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
@@ -38,6 +40,8 @@ const monthlyStats = [
 ];
 
 const ProgressScreen = () => {
+  const { colors, isDarkMode } = useTheme();
+  const { triggerLight } = useHapticFeedback();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,14 +74,14 @@ const ProgressScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={PURPLE} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -85,33 +89,30 @@ const ProgressScreen = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Progress Belajar</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Progress Belajar</Text>
           <Pressable
-            style={styles.periodBtn}
-            onPress={() => setShowPeriodMenu(!showPeriodMenu)}
+            style={[styles.periodBtn, { backgroundColor: colors.primaryLight }]}
+            onPress={() => { triggerLight(); setShowPeriodMenu(!showPeriodMenu); }}
           >
-            <Text style={styles.periodBtnText}>{selectedPeriod}</Text>
+            <Text style={[styles.periodBtnText, { color: colors.primary }]}>{selectedPeriod}</Text>
             <Ionicons
               name={showPeriodMenu ? "chevron-up" : "chevron-down"}
               size={14}
-              color={PURPLE}
+              color={colors.primary}
             />
           </Pressable>
         </View>
 
         {/* Period Menu */}
         {showPeriodMenu && (
-          <View style={styles.periodMenu}>
+          <View style={[styles.periodMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {['Hari Ini', 'Minggu Ini', 'Bulan Ini'].map((period) => (
               <Pressable
                 key={period}
-                style={[styles.periodMenuItem, selectedPeriod === period && styles.periodMenuItemActive]}
-                onPress={() => {
-                  setSelectedPeriod(period);
-                  setShowPeriodMenu(false);
-                }}
+                style={[styles.periodMenuItem, { borderBottomColor: colors.border }, selectedPeriod === period && [styles.periodMenuItemActive, { backgroundColor: colors.primaryLight }]]}
+                onPress={() => { triggerLight(); setSelectedPeriod(period); setShowPeriodMenu(false); }}
               >
-                <Text style={[styles.periodMenuText, selectedPeriod === period && styles.periodMenuTextActive]}>
+                <Text style={[styles.periodMenuText, { color: colors.textSecondary }, selectedPeriod === period && [styles.periodMenuTextActive, { color: colors.primary }]]}>
                   {period}
                 </Text>
               </Pressable>
@@ -126,22 +127,22 @@ const ProgressScreen = () => {
             { icon: 'time-outline', val: '12 Jam', label: 'Waktu Belajar', color: '#F59E0B' },
             { icon: 'checkmark-circle-outline', val: '8', label: 'Quiz Dikerjakan', color: '#10B981' },
           ].map((item, i) => (
-            <View key={i} style={styles.summaryCard}>
+            <View key={i} style={[styles.summaryCard, { backgroundColor: colors.card }]}>
               <View style={[styles.summaryIconBox, { backgroundColor: item.color + '15' }]}>
                 <Ionicons name={item.icon as any} size={20} color={item.color} />
               </View>
               <Text style={[styles.summaryVal, { color: item.color }]}>{item.val}</Text>
-              <Text style={styles.summaryLabel}>{item.label}</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{item.label}</Text>
             </View>
           ))}
         </View>
 
         {/* Activity Chart */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {selectedPeriod === 'Hari Ini' ? 'Aktivitas Hari Ini' : selectedPeriod === 'Minggu Ini' ? 'Aktivitas Mingguan' : 'Aktivitas Bulanan'}
           </Text>
-          <View style={styles.barChart}>
+          <View style={[styles.barChart, { backgroundColor: colors.card }]}>
             {(selectedPeriod === 'Hari Ini' ? dailyStats : selectedPeriod === 'Minggu Ini' ? weeklyStats : monthlyStats).map((stat, idx) => {
               let data: any;
               let maxVal: number;
@@ -163,14 +164,14 @@ const ProgressScreen = () => {
 
               return (
                 <View key={idx} style={styles.barColumn}>
-                  <Text style={styles.barValue}>{data.score}%</Text>
+                  <Text style={[styles.barValue, { color: colors.textSecondary }]}>{data.score}%</Text>
                   <LinearGradient
                     colors={[PURPLE, '#5B21B6']}
                     start={{ x: 0, y: 1 }}
                     end={{ x: 0, y: 0 }}
                     style={[styles.bar, { height: (data.score / maxVal) * 120 }]}
                   />
-                  <Text style={styles.barDay}>{label}</Text>
+                  <Text style={[styles.barDay, { color: colors.textSecondary }]}>{label}</Text>
                 </View>
               );
             })}
@@ -179,18 +180,18 @@ const ProgressScreen = () => {
 
         {/* Subject Performance */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Performa per Mata Pelajaran</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Performa per Mata Pelajaran</Text>
           {subjects.map((subj, idx) => (
-            <View key={idx} style={styles.subjectCard}>
+            <View key={idx} style={[styles.subjectCard, { backgroundColor: colors.card }]}>
               <View style={[styles.subjectIconBox, { backgroundColor: subj.color + '15' }]}>
                 <Text style={styles.subjectIcon}>{subj.icon}</Text>
               </View>
               <View style={styles.subjectInfo}>
                 <View style={styles.subjectHeader}>
-                  <Text style={styles.subjectName}>{subj.name}</Text>
+                  <Text style={[styles.subjectName, { color: colors.text }]}>{subj.name}</Text>
                   <Text style={[styles.subjectPct, { color: subj.color }]}>{subj.percentage}%</Text>
                 </View>
-                <View style={styles.subjBarBg}>
+                <View style={[styles.subjBarBg, { backgroundColor: colors.border }]}>
                   <View style={[styles.subjBarFill, { width: `${subj.percentage}%`, backgroundColor: subj.color }]} />
                 </View>
               </View>
@@ -203,7 +204,7 @@ const ProgressScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1 },
   scrollContent: { paddingBottom: 90 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },

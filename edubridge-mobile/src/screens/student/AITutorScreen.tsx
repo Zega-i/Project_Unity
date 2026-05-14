@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { aiAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PURPLE = '#7C3AED';
 const AI_GRAY = '#F1F5F9';
@@ -22,6 +23,7 @@ interface Message {
 const AITutorScreen = () => {
   const navigation = useNavigation<any>();
   const { triggerMedium, triggerLight } = useHapticFeedback();
+  const { colors, isDarkMode } = useTheme();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -57,32 +59,32 @@ const AITutorScreen = () => {
   const renderMessage = ({ item }: { item: Message }) => (
     <View style={[styles.msgRow, item.isUser ? styles.msgRowUser : styles.msgRowAI]}>
       {!item.isUser && (
-        <View style={styles.aiAvatarSmall}>
+        <View style={[styles.aiAvatarSmall, { backgroundColor: colors.surface }]}>
           <Ionicons name="hardware-chip" size={16} color={PURPLE} />
         </View>
       )}
-      <View style={[styles.bubble, item.isUser ? styles.bubbleUser : styles.bubbleAI]}>
-        <Text style={[styles.bubbleText, item.isUser && styles.bubbleTextUser]}>{item.text}</Text>
+      <View style={[styles.bubble, item.isUser ? styles.bubbleUser : [styles.bubbleAI, { backgroundColor: colors.surface }]]}>
+        <Text style={[styles.bubbleText, { color: colors.text }, item.isUser && styles.bubbleTextUser]}>{item.text}</Text>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <Pressable style={styles.backBtn} onPress={() => { triggerLight(); Keyboard.dismiss(); navigation.goBack(); }}>
-          <Ionicons name="chevron-back" size={24} color="#1E293B" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headerProfile}>
-          <View style={styles.avatarCircle}>
+          <View style={[styles.avatarCircle, { backgroundColor: colors.primaryLight }]}>
             <Ionicons name="hardware-chip" size={24} color={PURPLE} />
           </View>
           <View>
-            <Text style={styles.headerName}>AI Tutor</Text>
+            <Text style={[styles.headerName, { color: colors.text }]}>AI Tutor</Text>
             <View style={styles.statusRow}>
               <View style={styles.statusDot} />
-              <Text style={styles.statusText}>Online</Text>
+              <Text style={[styles.statusText, { color: colors.textSecondary }]}>Online</Text>
             </View>
           </View>
         </View>
@@ -105,24 +107,24 @@ const AITutorScreen = () => {
         />
 
         {/* Quick Chips */}
-        <View style={styles.chipsRow}>
+        <View style={[styles.chipsRow, { backgroundColor: colors.background }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {['Beri contoh soal', 'Cara menyelesaikan', 'Latihan'].map((chip, i) => (
-              <Pressable key={i} style={styles.chip} onPress={() => { triggerLight(); sendMessage(chip); }}>
-                <Text style={styles.chipText}>{chip}</Text>
+              <Pressable key={i} style={[styles.chip, { backgroundColor: colors.primaryLight, borderColor: colors.border }]} onPress={() => { triggerLight(); sendMessage(chip); }}>
+                <Text style={[styles.chipText, { color: colors.primary }]}>{chip}</Text>
               </Pressable>
             ))}
           </ScrollView>
         </View>
 
         {/* Input Bar */}
-        <View style={styles.inputBar}>
+        <View style={[styles.inputBar, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
             value={input}
             onChangeText={setInput}
             placeholder="Ketik pertanyaanmu..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.placeholder}
             onFocus={() => setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200)}
             multiline={true}
             numberOfLines={4}
@@ -137,7 +139,7 @@ const AITutorScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   keyboardAvoid: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   backBtn: { marginRight: 16 },

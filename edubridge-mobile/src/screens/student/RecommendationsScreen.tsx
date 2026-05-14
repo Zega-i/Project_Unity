@@ -7,6 +7,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
@@ -24,6 +26,8 @@ interface Recommendation {
 
 const RecommendationsScreen = () => {
   const navigation = useNavigation<any>();
+  const { colors, isDarkMode } = useTheme();
+  const { triggerLight } = useHapticFeedback();
   const [recommendations, setRecommendations] = useState<Recommendation[]>([
     { id: '1', title: 'Persamaan Linear', subject: 'Matematika', level: 'Dasar', duration: '15 Min', progress: 60, color: '#6366F1', icon: '📐', importance: 1 },
     { id: '2', title: 'Hukum Newton', subject: 'Fisika', level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡', importance: 1 },
@@ -75,22 +79,22 @@ const RecommendationsScreen = () => {
 
   if (loading && recommendations.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={PURPLE} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1E293B" />
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <Pressable onPress={() => { triggerLight(); navigation.goBack(); }} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Semua Rekomendasi</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Semua Rekomendasi</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -102,9 +106,9 @@ const RecommendationsScreen = () => {
         }
       >
         {/* Info Card */}
-        <View style={styles.infoCard}>
+        <View style={[styles.infoCard, { backgroundColor: colors.primary + '10' }]}>
           <Ionicons name="information-circle" size={20} color={PURPLE} />
-          <Text style={styles.infoText}>
+          <Text style={[styles.infoText, { color: colors.text }]}>
             Rekomendasi didasarkan pada analisis AI terhadap performa belajarmu
           </Text>
         </View>
@@ -114,14 +118,14 @@ const RecommendationsScreen = () => {
           {sortedRecommendations.map((item) => {
             const importanceInfo = getImportanceLabel(item.importance);
             return (
-              <Pressable key={item.id} style={styles.recomCard}>
+              <Pressable key={item.id} style={[styles.recomCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => triggerLight()}>
                 <View style={[styles.recomIconBox, { backgroundColor: item.color + '10' }]}>
                   <Text style={styles.recomIconText}>{item.icon}</Text>
                 </View>
 
                 <View style={styles.recomInfo}>
                   <View style={styles.headerRow}>
-                    <Text style={styles.recomSubject}>{item.subject}</Text>
+                    <Text style={[styles.recomSubject, { color: colors.textSecondary }]}>{item.subject}</Text>
                     <View style={[styles.importanceBadge, { backgroundColor: importanceInfo.color + '20' }]}>
                       <Text style={[styles.importanceText, { color: importanceInfo.color }]}>
                         {importanceInfo.label}
@@ -129,19 +133,19 @@ const RecommendationsScreen = () => {
                     </View>
                   </View>
 
-                  <Text style={styles.recomTitle}>{item.title}</Text>
-                  <Text style={styles.recomLevel}>{item.level}</Text>
+                  <Text style={[styles.recomTitle, { color: colors.text }]}>{item.title}</Text>
+                  <Text style={[styles.recomLevel, { color: colors.textSecondary }]}>{item.level}</Text>
 
                   <View style={styles.recomFooter}>
-                    <Ionicons name="time-outline" size={14} color="#94A3B8" />
-                    <Text style={styles.recomTime}>{item.duration}</Text>
-                    <View style={styles.miniProgressBg}>
+                    <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.recomTime, { color: colors.textSecondary }]}>{item.duration}</Text>
+                    <View style={[styles.miniProgressBg, { backgroundColor: colors.border }]}>
                       <View style={[styles.miniProgressFill, { width: `${item.progress}%`, backgroundColor: item.color }]} />
                     </View>
                   </View>
                 </View>
 
-                <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
               </Pressable>
             );
           })}
@@ -151,8 +155,8 @@ const RecommendationsScreen = () => {
         {sortedRecommendations.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="document-outline" size={48} color={PURPLE} />
-            <Text style={styles.emptyStateTitle}>Tidak ada rekomendasi</Text>
-            <Text style={styles.emptyStateDesc}>
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>Tidak ada rekomendasi</Text>
+            <Text style={[styles.emptyStateDesc, { color: colors.textSecondary }]}>
               Bergabunglah dengan kelas untuk mendapatkan rekomendasi belajar
             </Text>
           </View>
@@ -163,7 +167,7 @@ const RecommendationsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },

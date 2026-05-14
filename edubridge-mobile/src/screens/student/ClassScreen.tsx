@@ -7,11 +7,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { classAPI } from '../../services/api';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
 const ClassScreen = () => {
   const navigation = useNavigation<any>();
+  const { colors, isDarkMode } = useTheme();
+  const { triggerLight } = useHapticFeedback();
   const [activeTab, setActiveTab] = useState<'aktif' | 'selesai'>('aktif');
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<any[]>([]);
@@ -36,48 +40,48 @@ const ClassScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
           {showSearch ? (
-            <View style={styles.searchInputWrapper}>
-              <Ionicons name="search-outline" size={20} color="#94A3B8" />
+            <View style={[styles.searchInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Cari kelas..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.placeholder}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
-              <Pressable onPress={() => { setShowSearch(false); setSearchQuery(''); }}>
-                <Ionicons name="close" size={20} color="#94A3B8" />
+              <Pressable onPress={() => { triggerLight(); setShowSearch(false); setSearchQuery(''); }}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
               </Pressable>
             </View>
           ) : (
             <>
-              <Text style={styles.headerTitle}>Kelas Saya</Text>
-              <Pressable style={styles.searchBtn} onPress={() => setShowSearch(true)}>
-                <Ionicons name="search-outline" size={24} color="#1E293B" />
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Kelas Saya</Text>
+              <Pressable style={[styles.searchBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => { triggerLight(); setShowSearch(true); }}>
+                <Ionicons name="search-outline" size={24} color={colors.text} />
               </Pressable>
             </>
           )}
         </View>
 
         {/* Tab Pills */}
-        <View style={styles.tabContainer}>
-          <Pressable 
-            style={[styles.tab, activeTab === 'aktif' && styles.tabActive]}
-            onPress={() => setActiveTab('aktif')}
+        <View style={[styles.tabContainer, { backgroundColor: colors.surface }]}>
+          <Pressable
+            style={[styles.tab, activeTab === 'aktif' && [styles.tabActive, { backgroundColor: colors.card }]]}
+            onPress={() => { triggerLight(); setActiveTab('aktif'); }}
           >
-            <Text style={[styles.tabText, activeTab === 'aktif' && styles.tabTextActive]}>Sedang Aktif</Text>
+            <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'aktif' && [styles.tabTextActive, { color: PURPLE }]]}>Sedang Aktif</Text>
           </Pressable>
-          <Pressable 
-            style={[styles.tab, activeTab === 'selesai' && styles.tabActive]}
-            onPress={() => setActiveTab('selesai')}
+          <Pressable
+            style={[styles.tab, activeTab === 'selesai' && [styles.tabActive, { backgroundColor: colors.card }]]}
+            onPress={() => { triggerLight(); setActiveTab('selesai'); }}
           >
-            <Text style={[styles.tabText, activeTab === 'selesai' && styles.tabTextActive]}>Selesai</Text>
+            <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'selesai' && [styles.tabTextActive, { color: PURPLE }]]}>Selesai</Text>
           </Pressable>
         </View>
 
@@ -85,27 +89,27 @@ const ClassScreen = () => {
         <View style={styles.classList}>
           {filteredClasses.length === 0 ? (
             <View style={{ alignItems: 'center', marginTop: 40 }}>
-              <Text style={{ color: '#94A3B8' }}>
+              <Text style={{ color: colors.textSecondary }}>
                 {classes.length === 0 ? 'Belum bergabung di kelas mana pun.' : 'Kelas tidak ditemukan'}
               </Text>
             </View>
           ) : filteredClasses.map((cls) => (
-            <Pressable 
-              key={cls.id} 
-              style={styles.classCard}
-              onPress={() => navigation.navigate('SubjectModules', { classId: cls.id, className: cls.name })}
+            <Pressable
+              key={cls.id}
+              style={[styles.classCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => { triggerLight(); navigation.navigate('SubjectModules', { classId: cls.id, className: cls.name }); }}
             >
               <View style={styles.classCardTop}>
-                <View style={styles.classIconBox}>
+                <View style={[styles.classIconBox, { backgroundColor: colors.primaryLight }]}>
                   <Text style={styles.classEmoji}>{cls.icon || '📗'}</Text>
                 </View>
                 <View style={styles.classInfo}>
-                  <Text style={styles.className}>{cls.name}</Text>
-                  <Text style={styles.teacherName}>{cls.teacher?.name || 'Guru'}</Text>
+                  <Text style={[styles.className, { color: colors.text }]}>{cls.name}</Text>
+                  <Text style={[styles.teacherName, { color: colors.textSecondary }]}>{cls.teacher?.name || 'Guru'}</Text>
                 </View>
                 <Text style={styles.progressPercent}>{cls.progress || 0}%</Text>
               </View>
-              <View style={styles.progressBarBg}>
+              <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
                 <View style={[styles.progressBarFill, { width: `${cls.progress || 0}%` }]} />
               </View>
             </Pressable>
@@ -113,16 +117,16 @@ const ClassScreen = () => {
         </View>
 
         {/* Join Class Button */}
-        <Pressable 
-          style={styles.joinBtn} 
-          onPress={() => navigation.navigate('JoinClass')}
+        <Pressable
+          style={[styles.joinBtn, { borderColor: colors.border }]}
+          onPress={() => { triggerLight(); navigation.navigate('JoinClass'); }}
         >
-          <View style={styles.joinIconBox}>
+          <View style={[styles.joinIconBox, { backgroundColor: colors.primaryLight }]}>
             <Ionicons name="add" size={30} color={PURPLE} />
           </View>
           <View>
-            <Text style={styles.joinTitle}>Gabung Kelas Baru</Text>
-            <Text style={styles.joinSub}>Masukkan kode kelas</Text>
+            <Text style={[styles.joinTitle, { color: colors.text }]}>Gabung Kelas Baru</Text>
+            <Text style={[styles.joinSub, { color: colors.textSecondary }]}>Masukkan kode kelas</Text>
           </View>
         </Pressable>
       </ScrollView>
@@ -131,7 +135,7 @@ const ClassScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 90 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 20 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },

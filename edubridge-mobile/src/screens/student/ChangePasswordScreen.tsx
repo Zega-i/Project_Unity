@@ -9,12 +9,14 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const PURPLE = '#7C3AED';
 
 const ChangePasswordScreen = () => {
   const navigation = useNavigation<any>();
   const { triggerMedium } = useHapticFeedback();
+  const { colors, isDarkMode } = useTheme();
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -129,8 +131,8 @@ const ChangePasswordScreen = () => {
   const strengthColor = passwordStrength === 5 ? '#10B981' : passwordStrength >= 3 ? '#F59E0B' : '#EF4444';
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -139,17 +141,17 @@ const ChangePasswordScreen = () => {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Header */}
           <View style={styles.header}>
-            <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={24} color="#1E293B" />
+            <Pressable onPress={() => { triggerMedium(); navigation.goBack(); }} style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="chevron-back" size={24} color={colors.text} />
             </Pressable>
-            <Text style={styles.headerTitle}>Ganti Password</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Ganti Password</Text>
             <View style={{ width: 40 }} />
           </View>
 
           {/* Info Card */}
-          <View style={styles.infoCard}>
+          <View style={[styles.infoCard, { backgroundColor: colors.primary + '10' }]}>
             <Ionicons name="information-circle" size={20} color={PURPLE} />
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, { color: colors.text }]}>
               Password harus minimal 8 karakter dengan kombinasi huruf besar, kecil, angka, dan karakter spesial
             </Text>
           </View>
@@ -158,27 +160,27 @@ const ChangePasswordScreen = () => {
           {error && (
             <View style={styles.errorCard}>
               <Ionicons name="alert-circle" size={18} color="#EF4444" />
-              <Text style={styles.errorText}>{error}</Text>
+              <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
             </View>
           )}
 
           {/* Old Password */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Password Lama</Text>
-            <View style={styles.passwordInputWrapper}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Password Lama</Text>
+            <View style={[styles.passwordInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.text }]}
                 placeholder="Masukkan password lama Anda"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.placeholder}
                 secureTextEntry={!showOldPassword}
                 value={oldPassword}
                 onChangeText={setOldPassword}
               />
-              <Pressable onPress={() => setShowOldPassword(!showOldPassword)}>
+              <Pressable onPress={() => { triggerMedium(); setShowOldPassword(!showOldPassword); }}>
                 <Ionicons
                   name={showOldPassword ? 'eye' : 'eye-off'}
                   size={20}
-                  color="#94A3B8"
+                  color={colors.textSecondary}
                 />
               </Pressable>
             </View>
@@ -186,21 +188,21 @@ const ChangePasswordScreen = () => {
 
           {/* New Password */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Password Baru</Text>
-            <View style={styles.passwordInputWrapper}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Password Baru</Text>
+            <View style={[styles.passwordInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.text }]}
                 placeholder="Masukkan password baru"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.placeholder}
                 secureTextEntry={!showNewPassword}
                 value={newPassword}
                 onChangeText={setNewPassword}
               />
-              <Pressable onPress={() => setShowNewPassword(!showNewPassword)}>
+              <Pressable onPress={() => { triggerMedium(); setShowNewPassword(!showNewPassword); }}>
                 <Ionicons
                   name={showNewPassword ? 'eye' : 'eye-off'}
                   size={20}
-                  color="#94A3B8"
+                  color={colors.textSecondary}
                 />
               </Pressable>
             </View>
@@ -214,7 +216,7 @@ const ChangePasswordScreen = () => {
                       key={i}
                       style={[
                         styles.strengthBar,
-                        { backgroundColor: i < passwordStrength ? strengthColor : '#E2E8F0' }
+                        { backgroundColor: i < passwordStrength ? strengthColor : colors.border }
                       ]}
                     />
                   ))}
@@ -227,10 +229,10 @@ const ChangePasswordScreen = () => {
 
             {/* Validation Requirements */}
             {newPassword && newPasswordErrors.length > 0 && (
-              <View style={styles.requirementsContainer}>
-                <Text style={styles.requirementsTitle}>Kriteria yang belum terpenuhi:</Text>
+              <View style={[styles.requirementsContainer, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.requirementsTitle, { color: colors.text }]}>Kriteria yang belum terpenuhi:</Text>
                 {newPasswordErrors.map((error, idx) => (
-                  <Text key={idx} style={styles.requirementItem}>
+                  <Text key={idx} style={[styles.requirementItem, { color: colors.textSecondary }]}>
                     • {error}
                   </Text>
                 ))}
@@ -238,7 +240,7 @@ const ChangePasswordScreen = () => {
             )}
 
             {newPassword && newPasswordErrors.length === 0 && (
-              <View style={styles.requirementsContainer}>
+              <View style={[styles.requirementsContainer, { backgroundColor: colors.surface, borderLeftColor: '#10B981' }]}>
                 <Text style={[styles.requirementsTitle, { color: '#10B981' }]}>✓ Password memenuhi semua kriteria</Text>
               </View>
             )}
@@ -246,21 +248,21 @@ const ChangePasswordScreen = () => {
 
           {/* Confirm Password */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Konfirmasi Password Baru</Text>
-            <View style={styles.passwordInputWrapper}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Konfirmasi Password Baru</Text>
+            <View style={[styles.passwordInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { color: colors.text }]}
                 placeholder="Ketik ulang password baru"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.placeholder}
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />
-              <Pressable onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+              <Pressable onPress={() => { triggerMedium(); setShowConfirmPassword(!showConfirmPassword); }}>
                 <Ionicons
                   name={showConfirmPassword ? 'eye' : 'eye-off'}
                   size={20}
-                  color="#94A3B8"
+                  color={colors.textSecondary}
                 />
               </Pressable>
             </View>
@@ -292,21 +294,18 @@ const ChangePasswordScreen = () => {
       {/* Success Modal */}
       <Modal visible={successModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
             <View style={styles.successIcon}>
               <Ionicons name="checkmark-circle" size={48} color="#10B981" />
             </View>
-            <Text style={styles.modalTitle}>Password Berhasil Diubah</Text>
-            <Text style={styles.modalDesc}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Password Berhasil Diubah</Text>
+            <Text style={[styles.modalDesc, { color: colors.textSecondary }]}>
               Password Anda telah berhasil diperbarui. Gunakan password baru saat login berikutnya.
             </Text>
 
             <Pressable
               style={styles.modalBtn}
-              onPress={() => {
-                setSuccessModalVisible(false);
-                navigation.goBack();
-              }}
+              onPress={() => { triggerMedium(); setSuccessModalVisible(false); navigation.goBack(); }}
             >
               <Text style={styles.modalBtnText}>Kembali ke Pengaturan</Text>
             </Pressable>
@@ -318,7 +317,7 @@ const ChangePasswordScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingVertical: 16, paddingBottom: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },

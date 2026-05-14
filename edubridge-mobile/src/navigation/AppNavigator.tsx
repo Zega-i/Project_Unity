@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet } from 'react-native';
 import { authStore } from '../store/authStore';
+import { useTheme } from '../contexts/ThemeContext';
 
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -28,20 +29,25 @@ const Tab = createBottomTabNavigator();
 
 const PURPLE = '#7C3AED';
 
-const TabIcon = ({ name, label, focused }: { name: any; label: string; focused: boolean }) => (
-  <View style={styles.tabIconWrap}>
-    <Ionicons name={focused ? name : `${name}-outline`} size={22} color={focused ? PURPLE : '#94A3B8'} />
-    <Text
-      style={[styles.tabLabel, { color: focused ? PURPLE : '#94A3B8' }]}
-      numberOfLines={1}
-      ellipsizeMode="tail"
-    >
-      {label}
-    </Text>
-  </View>
-);
+const TabIcon = ({ name, label, focused }: { name: any; label: string; focused: boolean }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.tabIconWrap}>
+      <Ionicons name={focused ? name : `${name}-outline`} size={22} color={focused ? PURPLE : colors.textSecondary} />
+      <Text
+        style={[styles.tabLabel, { color: focused ? PURPLE : colors.textSecondary }]}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        {label}
+      </Text>
+    </View>
+  );
+};
 
-const StudentTabs = () => (
+const StudentTabs = () => {
+  const { colors } = useTheme();
+  return (
   <Tab.Navigator
     screenOptions={{
       headerShown: false,
@@ -50,9 +56,9 @@ const StudentTabs = () => (
         height: 65,
         paddingBottom: 8,
         paddingTop: 4,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.card,
         borderTopWidth: 1,
-        borderTopColor: '#F1F5F9',
+        borderTopColor: colors.border,
         elevation: 0,
         shadowOpacity: 0,
       },
@@ -87,7 +93,8 @@ const StudentTabs = () => (
       }}
     />
   </Tab.Navigator>
-);
+  );
+};
 
 const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
   return (

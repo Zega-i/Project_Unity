@@ -6,6 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
@@ -18,6 +20,8 @@ interface Section {
 
 const PrivacyDataScreen = () => {
   const navigation = useNavigation<any>();
+  const { colors, isDarkMode } = useTheme();
+  const { triggerLight } = useHapticFeedback();
 
   const sections: Section[] = [
     {
@@ -83,24 +87,24 @@ const PrivacyDataScreen = () => {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#1E293B" />
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <Pressable onPress={() => { triggerLight(); navigation.goBack(); }} style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitle}>Privasi & Data</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Privasi & Data</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Introduction Card */}
-        <View style={styles.introCard}>
+        <View style={[styles.introCard, { backgroundColor: colors.primary + '10' }]}>
           <Ionicons name="shield-outline" size={32} color={PURPLE} />
-          <Text style={styles.introTitle}>Komitmen Kami terhadap Privasi Anda</Text>
-          <Text style={styles.introText}>
+          <Text style={[styles.introTitle, { color: colors.text }]}>Komitmen Kami terhadap Privasi Anda</Text>
+          <Text style={[styles.introText, { color: colors.textSecondary }]}>
             EduBridge berkomitmen untuk melindungi privasi dan keamanan data Anda. Kami mengikuti praktik terbaik industri dan peraturan privasi internasional.
           </Text>
         </View>
@@ -117,7 +121,7 @@ const PrivacyDataScreen = () => {
 
             <View style={styles.sectionContent}>
               {section.content.map((item, i) => (
-                <Text key={i} style={styles.contentItem}>
+                <Text key={i} style={[styles.contentItem, { color: colors.text }]}>
                   {item}
                 </Text>
               ))}
@@ -126,23 +130,23 @@ const PrivacyDataScreen = () => {
         ))}
 
         {/* Last Updated */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
+        <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             Kebijakan Privasi terakhir diperbarui pada 14 Mei 2026
           </Text>
-          <Text style={styles.footerDesc}>
+          <Text style={[styles.footerDesc, { color: colors.textSecondary }]}>
             Kami akan memberitahu Anda tentang perubahan signifikan melalui email atau notifikasi di aplikasi
           </Text>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <Pressable style={styles.downloadBtn}>
-            <Ionicons name="download-outline" size={20} color={PURPLE} />
-            <Text style={styles.downloadBtnText}>Unduh Kebijakan Privasi (PDF)</Text>
+          <Pressable style={[styles.downloadBtn, { borderColor: colors.primary }]} onPress={() => triggerLight()}>
+            <Ionicons name="download-outline" size={20} color={colors.primary} />
+            <Text style={[styles.downloadBtnText, { color: colors.primary }]}>Unduh Kebijakan Privasi (PDF)</Text>
           </Pressable>
 
-          <Pressable style={styles.contactBtn}>
+          <Pressable style={styles.contactBtn} onPress={() => triggerLight()}>
             <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
             <Text style={styles.contactBtnText}>Hubungi Tim Privasi</Text>
           </Pressable>
@@ -153,7 +157,7 @@ const PrivacyDataScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B' },
