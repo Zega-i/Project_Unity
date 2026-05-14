@@ -6,9 +6,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import { authStore } from '../store/authStore';
 import { useTheme } from '../contexts/ThemeContext';
 
+// ── Auth ──────────────────────────────────────────────
 import SplashScreen from '../screens/SplashScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
+
+// ── Student ───────────────────────────────────────────
 import DashboardScreen from '../screens/student/DashboardScreen';
 import ClassScreen from '../screens/student/ClassScreen';
 import QuizScreen from '../screens/student/QuizScreen';
@@ -28,18 +31,38 @@ import AboutScreen from '../screens/student/AboutScreen';
 import MaterialsScreen from '../screens/student/MaterialsScreen';
 import AssignmentsScreen from '../screens/student/AssignmentsScreen';
 
+// ── Teacher ───────────────────────────────────────────
+import TeacherDashboardScreen from '../screens/teacher/TeacherDashboardScreen';
+import TeacherClassScreen from '../screens/teacher/TeacherClassScreen';
+import TeacherStudentsScreen from '../screens/teacher/TeacherStudentsScreen';
+import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
+import TeacherClassDetailScreen from '../screens/teacher/TeacherClassDetailScreen';
+import TeacherStudentDetailScreen from '../screens/teacher/TeacherStudentDetailScreen';
+
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Tab   = createBottomTabNavigator();
 
 const PURPLE = '#7C3AED';
+const GREEN  = '#16A34A';
 
-const TabIcon = ({ name, label, focused }: { name: any; label: string; focused: boolean }) => {
+// ──────────────────────────────────────────────────────
+// Generic Tab Icon (accepts accentColor for active state)
+// ──────────────────────────────────────────────────────
+const TabIcon = ({
+  name, label, focused, accentColor,
+}: {
+  name: any; label: string; focused: boolean; accentColor: string;
+}) => {
   const { colors } = useTheme();
   return (
     <View style={styles.tabIconWrap}>
-      <Ionicons name={focused ? name : `${name}-outline`} size={22} color={focused ? PURPLE : colors.textSecondary} />
+      <Ionicons
+        name={focused ? name : `${name}-outline`}
+        size={22}
+        color={focused ? accentColor : colors.textSecondary}
+      />
       <Text
-        style={[styles.tabLabel, { color: focused ? PURPLE : colors.textSecondary }]}
+        style={[styles.tabLabel, { color: focused ? accentColor : colors.textSecondary }]}
         numberOfLines={1}
         ellipsizeMode="tail"
       >
@@ -49,83 +72,135 @@ const TabIcon = ({ name, label, focused }: { name: any; label: string; focused: 
   );
 };
 
+// ──────────────────────────────────────────────────────
+// STUDENT TABS  (purple accent)
+// ──────────────────────────────────────────────────────
 const StudentTabs = () => {
   const { colors } = useTheme();
   return (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarShowLabel: false,
-      tabBarStyle: {
-        height: 65,
-        paddingBottom: 8,
-        paddingTop: 4,
-        backgroundColor: colors.card,
-        borderTopWidth: 1,
-        borderTopColor: colors.border,
-        elevation: 0,
-        shadowOpacity: 0,
-      },
-    }}
-  >
-    <Tab.Screen
-      name="StudentDashboard"
-      component={DashboardScreen}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon name="home" label="Beranda" focused={focused} />,
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          height: 65, paddingBottom: 8, paddingTop: 4,
+          backgroundColor: colors.card,
+          borderTopWidth: 1, borderTopColor: colors.border,
+          elevation: 0, shadowOpacity: 0,
+        },
       }}
-    />
-    <Tab.Screen
-      name="Kelas"
-      component={ClassScreen}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon name="library" label="Kelas" focused={focused} />,
-      }}
-    />
-    <Tab.Screen
-      name="Progress"
-      component={ProgressScreen}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon name="bar-chart" label="Progress" focused={focused} />,
-      }}
-    />
-    <Tab.Screen
-      name="StudentProfile"
-      component={ProfileScreen}
-      options={{
-        tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profil" focused={focused} />,
-      }}
-    />
-  </Tab.Navigator>
+    >
+      <Tab.Screen
+        name="StudentDashboard"
+        component={DashboardScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="home" label="Beranda" focused={focused} accentColor={PURPLE} /> }}
+      />
+      <Tab.Screen
+        name="Kelas"
+        component={ClassScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="library" label="Kelas" focused={focused} accentColor={PURPLE} /> }}
+      />
+      <Tab.Screen
+        name="Progress"
+        component={ProgressScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="bar-chart" label="Progress" focused={focused} accentColor={PURPLE} /> }}
+      />
+      <Tab.Screen
+        name="StudentProfile"
+        component={ProfileScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profil" focused={focused} accentColor={PURPLE} /> }}
+      />
+    </Tab.Navigator>
   );
 };
 
+// ──────────────────────────────────────────────────────
+// TEACHER TABS  (green accent — Beranda | Kelas | Siswa | Profil)
+// ──────────────────────────────────────────────────────
+const TeacherTabs = () => {
+  const { colors } = useTheme();
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          height: 65, paddingBottom: 8, paddingTop: 4,
+          backgroundColor: colors.card,
+          borderTopWidth: 1, borderTopColor: colors.border,
+          elevation: 0, shadowOpacity: 0,
+        },
+      }}
+    >
+      <Tab.Screen
+        name="TeacherDashboard"
+        component={TeacherDashboardScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="home" label="Beranda" focused={focused} accentColor={GREEN} /> }}
+      />
+      <Tab.Screen
+        name="TeacherKelas"
+        component={TeacherClassScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="library" label="Kelas" focused={focused} accentColor={GREEN} /> }}
+      />
+      <Tab.Screen
+        name="TeacherSiswa"
+        component={TeacherStudentsScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="people" label="Siswa" focused={focused} accentColor={GREEN} /> }}
+      />
+      <Tab.Screen
+        name="TeacherProfil"
+        component={TeacherProfileScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="person" label="Profil" focused={focused} accentColor={GREEN} /> }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+// ──────────────────────────────────────────────────────
+// ROOT NAVIGATOR  (role-based)
+// ──────────────────────────────────────────────────────
 const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
+  const user = authStore.getUserSync();
+  const isTeacher = user?.role?.toUpperCase() === 'TEACHER';
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isLoggedIn ? (
         <>
-          <Stack.Screen name="Splash" component={SplashScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Splash"    component={SplashScreen}    />
+          <Stack.Screen name="Login"     component={LoginScreen}     />
+          <Stack.Screen name="Register"  component={RegisterScreen}  />
+        </>
+      ) : isTeacher ? (
+        /* ── TEACHER STACK ── */
+        <>
+          <Stack.Screen name="TeacherTabs"         component={TeacherTabs}              />
+          <Stack.Screen name="TeacherClassDetail"     component={TeacherClassDetailScreen}   />
+          <Stack.Screen name="TeacherStudentDetail"   component={TeacherStudentDetailScreen} />
+          <Stack.Screen name="TeacherSettings" component={SettingsScreen}       />
+          <Stack.Screen name="TeacherHelp"    component={HelpScreen}            />
+          <Stack.Screen name="TeacherAbout"   component={AboutScreen}           />
+          <Stack.Screen name="ChangePassword"  component={ChangePasswordScreen} />
+          <Stack.Screen name="PrivacyData"     component={PrivacyDataScreen}    />
         </>
       ) : (
+        /* ── STUDENT STACK ── */
         <>
-          <Stack.Screen name="StudentTabs" component={StudentTabs} />
-          <Stack.Screen name="Recommendations" component={RecommendationsScreen} />
-          <Stack.Screen name="Notifications" component={NotificationsScreen} />
-          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-          <Stack.Screen name="PrivacyData" component={PrivacyDataScreen} />
-          <Stack.Screen name="JoinClass" component={JoinClassScreen} />
-          <Stack.Screen name="SubjectModules" component={SubjectModulesScreen} />
-          <Stack.Screen name="MaterialDetail" component={MaterialDetailScreen} />
-          <Stack.Screen name="Quiz" component={QuizScreen} />
-          <Stack.Screen name="AITutor" component={AITutorScreen} />
-          <Stack.Screen name="Materials" component={MaterialsScreen} />
-          <Stack.Screen name="Assignments" component={AssignmentsScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="Help" component={HelpScreen} />
-          <Stack.Screen name="About" component={AboutScreen} />
+          <Stack.Screen name="StudentTabs"     component={StudentTabs}          />
+          <Stack.Screen name="Recommendations" component={RecommendationsScreen}/>
+          <Stack.Screen name="Notifications"   component={NotificationsScreen}  />
+          <Stack.Screen name="ChangePassword"  component={ChangePasswordScreen} />
+          <Stack.Screen name="PrivacyData"     component={PrivacyDataScreen}    />
+          <Stack.Screen name="JoinClass"       component={JoinClassScreen}      />
+          <Stack.Screen name="SubjectModules"  component={SubjectModulesScreen} />
+          <Stack.Screen name="MaterialDetail"  component={MaterialDetailScreen} />
+          <Stack.Screen name="Quiz"            component={QuizScreen}           />
+          <Stack.Screen name="AITutor"         component={AITutorScreen}        />
+          <Stack.Screen name="Materials"       component={MaterialsScreen}      />
+          <Stack.Screen name="Assignments"     component={AssignmentsScreen}    />
+          <Stack.Screen name="Settings"        component={SettingsScreen}       />
+          <Stack.Screen name="Help"            component={HelpScreen}           />
+          <Stack.Screen name="About"           component={AboutScreen}          />
         </>
       )}
     </Stack.Navigator>
@@ -134,7 +209,7 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
 
 const styles = StyleSheet.create({
   tabIconWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: 6, width: '100%' },
-  tabLabel: { fontSize: 9, fontWeight: '600', marginTop: 2, lineHeight: 11, maxWidth: '100%' },
+  tabLabel:    { fontSize: 9, fontWeight: '600', marginTop: 2, lineHeight: 11, maxWidth: '100%' },
 });
 
 export default AppNavigator;

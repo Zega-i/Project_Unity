@@ -1,200 +1,233 @@
-﻿import React from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  Pressable,
-  ScrollView,
-  Alert,
+  View, Text, StyleSheet, ScrollView, Pressable,
+  SafeAreaView, StatusBar, Alert, Image,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
-const PURPLE = '#7C3AED';
+const GREEN = '#16A34A';
+const GREEN_LIGHT = '#F0FDF4';
+const GREEN_MID = '#DCFCE7';
 
 const TeacherProfileScreen = () => {
-  const user = {
-    name: 'Siti Rahayu',
-    email: 'siti.rahayu@edubridge.com',
-    role: 'Guru',
-    subject: 'Matematika',
-    school: 'SMA Maju Jaya',
-  };
+  const navigation = useNavigation<any>();
+  const { colors, isDarkMode } = useTheme();
+  const { triggerLight, triggerMedium } = useHapticFeedback();
+  const user = authStore.getUserSync();
 
-  const handleLogout = async () => {
+  const name    = user?.name    || 'Pak Budi';
+  const email   = user?.email   || 'budi.guru@gmail.com';
+  const school  = user?.school  || 'SMA Negeri 1 Jakarta';
+  const subject = user?.subject || 'Matematika';
+  const initial = name.charAt(0).toUpperCase();
+
+  const handleLogout = () => {
+    triggerMedium();
     Alert.alert(
-      'Logout',
-      'Apakah Anda yakin ingin keluar?',
+      'Keluar',
+      'Apakah Anda yakin ingin keluar dari akun?',
       [
         { text: 'Batal', style: 'cancel' },
         {
           text: 'Keluar',
           style: 'destructive',
-          onPress: async () => {
-            await authStore.clearAuth();
-          },
+          onPress: async () => { await authStore.clearAuth(); },
         },
       ]
     );
   };
 
+  const menuItems = [
+    {
+      id: 'settings',
+      label: 'Pengaturan',
+      icon: 'settings-outline' as const,
+      iconColor: GREEN,
+      iconBg: GREEN_LIGHT,
+      onPress: () => { triggerLight(); navigation.navigate('TeacherSettings' as any); },
+    },
+    {
+      id: 'help',
+      label: 'Bantuan',
+      icon: 'information-circle-outline' as const,
+      iconColor: GREEN,
+      iconBg: GREEN_LIGHT,
+      onPress: () => { triggerLight(); navigation.navigate('TeacherHelp' as any); },
+    },
+    {
+      id: 'about',
+      label: 'Tentang Aplikasi',
+      icon: 'information-circle-outline' as const,
+      iconColor: GREEN,
+      iconBg: GREEN_LIGHT,
+      onPress: () => { triggerLight(); navigation.navigate('TeacherAbout' as any); },
+    },
+    {
+      id: 'logout',
+      label: 'Keluar',
+      icon: 'log-out-outline' as const,
+      iconColor: '#EF4444',
+      iconBg: '#FEF2F2',
+      onPress: handleLogout,
+      isDestructive: true,
+    },
+  ];
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>👩‍🏫</Text>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background },
+      ]}
+    >
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Page Title */}
+        <Text style={[styles.pageTitle, { color: colors.text }]}>Profil Saya</Text>
+
+        {/* ── Profile Card ── */}
+        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Avatar */}
+          <View style={styles.avatarWrap}>
+            <View style={[styles.avatarCircle, { backgroundColor: GREEN_MID }]}>
+              <Text style={[styles.avatarInitial, { color: GREEN }]}>{initial}</Text>
+            </View>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user.name}</Text>
-            <Text style={styles.profileRole}>{user.role}</Text>
+
+          {/* Name + role */}
+          <Text style={[styles.profileName, { color: colors.text }]}>{name}</Text>
+          <Text style={[styles.profileRole, { color: colors.textSecondary }]}>
+            Guru {subject}
+          </Text>
+
+          {/* Divider */}
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          {/* Info Rows */}
+          <View style={styles.infoTable}>
+            {[
+              { label: 'Email',    value: email   },
+              { label: 'Sekolah', value: school  },
+              { label: 'Mengajar',value: subject },
+            ].map((row, i) => (
+              <View key={i} style={styles.infoRow}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{row.label}</Text>
+                <Text style={[styles.infoValue, { color: colors.text }]} numberOfLines={1}>{row.value}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {/* Profile Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informasi Profil</Text>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Email</Text>
-            <Text style={styles.detailValue}>{user.email}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Mata Pelajaran</Text>
-            <Text style={styles.detailValue}>{user.subject}</Text>
-          </View>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Sekolah</Text>
-            <Text style={styles.detailValue}>{user.school}</Text>
-          </View>
+        {/* ── Menu Card ── */}
+        <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {menuItems.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <Pressable
+                style={({ pressed }) => [styles.menuRow, pressed && { opacity: 0.7 }]}
+                onPress={item.onPress}
+              >
+                {/* Icon */}
+                <View style={[styles.menuIconBox, { backgroundColor: item.iconBg }]}>
+                  <Ionicons name={item.icon} size={20} color={item.iconColor} />
+                </View>
+
+                {/* Label */}
+                <Text
+                  style={[
+                    styles.menuLabel,
+                    { color: item.isDestructive ? '#EF4444' : colors.text },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+
+                {/* Chevron */}
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={item.isDestructive ? '#EF4444' : colors.textSecondary}
+                />
+              </Pressable>
+
+              {/* Separator (not after last item) */}
+              {index < menuItems.length - 1 && (
+                <View style={[styles.menuSep, { backgroundColor: colors.border }]} />
+              )}
+            </React.Fragment>
+          ))}
         </View>
 
-        {/* Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pengaturan</Text>
-          <Pressable style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Notifikasi</Text>
-            <Text style={styles.settingIcon}>→</Text>
-          </Pressable>
-          <Pressable style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Privasi</Text>
-            <Text style={styles.settingIcon}>→</Text>
-          </Pressable>
-          <Pressable style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Bantuan</Text>
-            <Text style={styles.settingIcon}>→</Text>
-          </Pressable>
-        </View>
-
-        {/* Logout Button */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && { opacity: 0.8 },
-          ]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.logoutButtonText}>Keluar</Text>
-        </Pressable>
+        {/* Version footer */}
+        <Text style={[styles.versionText, { color: colors.textSecondary }]}>
+          EduBridge v1.0.0 • Guru Edition
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  container:    { flex: 1 },
+  scrollContent:{ paddingHorizontal: 20, paddingBottom: 50 },
+
+  pageTitle: {
+    fontSize: 22, fontWeight: 'bold', marginTop: 16, marginBottom: 20,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+
+  // Profile Card
+  profileCard: {
+    borderRadius: 20, borderWidth: 1, paddingBottom: 20,
+    marginBottom: 16, overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  avatarWrap:   { alignItems: 'center', marginTop: 28, marginBottom: 14 },
+  avatarCircle: {
+    width: 88, height: 88, borderRadius: 44,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: '#16A34A40',
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: PURPLE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 20,
+  avatarInitial:{ fontSize: 36, fontWeight: 'bold' },
+  profileName:  { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 4 },
+  profileRole:  { fontSize: 14, textAlign: 'center', marginBottom: 20 },
+
+  divider: { height: 1, marginHorizontal: 20, marginBottom: 16 },
+
+  infoTable: { paddingHorizontal: 20, gap: 12 },
+  infoRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
-  avatarText: {
-    fontSize: 48,
+  infoLabel: { fontSize: 14, fontWeight: '600', flex: 1 },
+  infoValue: { fontSize: 14, flex: 2, textAlign: 'right' },
+
+  // Menu Card
+  menuCard: {
+    borderRadius: 20, borderWidth: 1, overflow: 'hidden',
+    marginBottom: 28,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
   },
-  profileInfo: {
-    flex: 1,
+  menuRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 16, gap: 14,
   },
-  profileName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
+  menuIconBox: {
+    width: 38, height: 38, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
   },
-  profileRole: {
-    fontSize: 14,
-    color: '#666',
-  },
-  section: {
-    marginBottom: 25,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 12,
-  },
-  detailItem: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 14,
-    color: '#1a1a1a',
-    fontWeight: '500',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  settingLabel: {
-    fontSize: 14,
-    color: '#1a1a1a',
-  },
-  settingIcon: {
-    fontSize: 16,
-    color: PURPLE,
-  },
-  logoutButton: {
-    backgroundColor: '#FF6B6B',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  menuLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
+  menuSep:   { height: 1, marginHorizontal: 16 },
+
+  versionText: { fontSize: 12, textAlign: 'center' },
 });
 
 export default TeacherProfileScreen;
