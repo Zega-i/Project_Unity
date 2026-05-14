@@ -95,10 +95,10 @@ const LoginScreen = () => {
           {/* Form */}
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email atau Username</Text>
+              <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
-                placeholder="contoh@email.com"
+                placeholder="Masukkan email Anda"
                 placeholderTextColor="#94A3B8"
                 value={email}
                 onChangeText={setEmail}

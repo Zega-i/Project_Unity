@@ -21,13 +21,8 @@ export const authAPI = {
     const response = await api.post('/auth/register', { email, password, name, role, ...extra });
     return response.data.data;
   },
-  login: async (identifier: string, password: string) => {
-    // Send as both email and username so backend can use whichever field it supports
-    const response = await api.post('/auth/login', {
-      email: identifier,
-      username: identifier,
-      password,
-    });
+  login: async (email: string, password: string) => {
+    const response = await api.post('/auth/login', { email, password });
     return response.data.data;
   },
   forgotPassword: async (email: string) => {

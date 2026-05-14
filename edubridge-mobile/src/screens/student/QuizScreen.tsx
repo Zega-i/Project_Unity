@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { aiAPI } from '../../services/api';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 
@@ -334,6 +335,31 @@ const QuizScreen = () => {
   }
 
   // --- Subject Selection Screen ---
+  const currentUser = authStore.getUserSync();
+  const hasClass = !!(currentUser?.className || currentUser?.class);
+
+  if (!hasClass) {
+    return (
+      <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Pressable onPress={() => { triggerLight(); navigation.goBack(); }} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Kuis</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.centerState}>
+          <Ionicons name="lock-closed-outline" size={56} color={PURPLE + '50'} />
+          <Text style={[styles.centerStateTitle, { color: colors.text }]}>Kuis Belum Tersedia</Text>
+          <Text style={[styles.centerStateText, { color: colors.textSecondary }]}>
+            Masuk ke kelas terlebih dahulu untuk mengakses kuis
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
