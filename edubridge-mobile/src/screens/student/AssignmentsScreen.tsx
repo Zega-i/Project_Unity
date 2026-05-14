@@ -9,7 +9,6 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
-import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 
@@ -36,19 +35,8 @@ const TYPE_META: Record<Assignment['type'], { icon: string; label: string }> = {
   quiz:     { icon: 'extension-puzzle-outline', label: 'Kuis'           },
 };
 
-const PENDING: Assignment[] = [
-  { id: '1', title: 'Latihan Soal PLSV Bab 3', subject: 'Matematika', teacher: 'Bu Sari', relatedMaterial: 'Pengantar Persamaan Linear Satu Variabel', dueDate: '16 Mei 2026', daysLeft: 2, type: 'multiple', color: '#6366F1', icon: '📐', description: 'Kerjakan 20 soal pilihan ganda mengenai PLSV dari bab 3. Waktu pengerjaan 60 menit.', maxScore: 100 },
-  { id: '2', title: 'Analisis Hukum Newton dalam Kehidupan Sehari-hari', subject: 'Fisika', teacher: 'Pak Budi', relatedMaterial: 'Hukum Newton & Aplikasinya', dueDate: '18 Mei 2026', daysLeft: 4, type: 'essay', color: '#F59E0B', icon: '⚡', description: 'Tulis minimal 3 contoh penerapan hukum Newton. Sertakan gambar/diagram.', maxScore: 100 },
-  { id: '3', title: 'Diagram Proses Fotosintesis', subject: 'Biologi', teacher: 'Bu Dewi', relatedMaterial: 'Fotosintesis & Respirasi Sel', dueDate: '20 Mei 2026', daysLeft: 6, type: 'project', color: '#10B981', icon: '🌱', description: 'Buat diagram alur proses fotosintesis secara lengkap dengan keterangan setiap tahap.', maxScore: 100 },
-  { id: '4', title: 'Kuis Simple Past Tense', subject: 'Bahasa Inggris', teacher: 'Pak Arif', relatedMaterial: 'Simple Past Tense – Grammar Guide', dueDate: '15 Mei 2026', daysLeft: 1, type: 'quiz', color: '#06B6D4', icon: '📚', description: '15 soal kuis grammar Simple Past Tense. Dikerjakan langsung dalam sistem.', maxScore: 100 },
-  { id: '5', title: 'Peta Konsep Peradaban Mesopotamia', subject: 'Sejarah', teacher: 'Bu Ratna', relatedMaterial: 'Peradaban Mesopotamia', dueDate: '22 Mei 2026', daysLeft: 8, type: 'project', color: '#EF4444', icon: '📜', description: 'Buat peta konsep mencakup aspek politik, ekonomi, dan kebudayaan.', maxScore: 100 },
-];
-
-const COMPLETED: Assignment[] = [
-  { id: 'c1', title: 'Ulangan Harian Aljabar', subject: 'Matematika', teacher: 'Bu Sari', relatedMaterial: 'Aljabar Dasar', dueDate: '5 Mei 2026', daysLeft: -9, type: 'multiple', color: '#6366F1', icon: '📐', description: 'Ulangan harian materi aljabar dasar bab 1-2.', maxScore: 100, score: 85 },
-  { id: 'c2', title: 'Laporan Praktikum Gerak Lurus', subject: 'Fisika', teacher: 'Pak Budi', relatedMaterial: 'Gerak Lurus Beraturan', dueDate: '3 Mei 2026', daysLeft: -11, type: 'essay', color: '#F59E0B', icon: '⚡', description: 'Laporan hasil praktikum GLB dan GLBB.', maxScore: 100, score: 92 },
-  { id: 'c3', title: 'Esai Sel Tumbuhan vs Sel Hewan', subject: 'Biologi', teacher: 'Bu Dewi', relatedMaterial: 'Sel dan Fungsinya', dueDate: '1 Mei 2026', daysLeft: -13, type: 'essay', color: '#10B981', icon: '🌱', description: 'Bandingkan struktur dan fungsi sel tumbuhan dan sel hewan.', maxScore: 100, score: 78 },
-];
+const PENDING: Assignment[]   = [];
+const COMPLETED: Assignment[] = [];
 
 const getDueBadge = (daysLeft: number) => {
   if (daysLeft < 0)   return { label: 'Terlambat',          bg: '#FEE2E2', text: '#EF4444' };
@@ -89,8 +77,7 @@ const AssignmentsScreen = () => {
     setRefreshing(false);
   };
 
-  const hasClass = !!(authStore.getUserSync()?.className || authStore.getUserSync()?.class);
-  const source   = hasClass ? (activeTab === 'pending' ? PENDING : COMPLETED) : [];
+  const source   = activeTab === 'pending' ? PENDING : COMPLETED;
   const filtered = source.filter(a => activeFilter === 'all' || a.type === activeFilter);
   const sorted = [...filtered].sort((a, b) => a.daysLeft - b.daysLeft);
 

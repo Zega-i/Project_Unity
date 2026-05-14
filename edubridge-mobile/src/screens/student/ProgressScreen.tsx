@@ -1,52 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, ActivityIndicator, RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import { authAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
-const subjects = [
-  { name: 'Matematika', icon: '📐', color: '#6366F1', percentage: 75 },
-  { name: 'Fisika', icon: '⚡', color: '#F59E0B', percentage: 60 },
-  { name: 'Biologi', icon: '🧬', color: '#10B981', percentage: 40 },
-  { name: 'Bahasa Inggris', icon: '📚', color: '#3B82F6', percentage: 80 },
-];
-
-const weeklyStats = [
-  { day: 'Sen', score: 85 }, { day: 'Sel', score: 90 },
-  { day: 'Rab', score: 78 }, { day: 'Kam', score: 92 },
-  { day: 'Jum', score: 88 }, { day: 'Sab', score: 95 }, { day: 'Min', score: 80 },
-];
-
-const dailyStats = [
-  { time: '08:00', score: 80 }, { time: '10:30', score: 85 },
-  { time: '13:00', score: 75 }, { time: '15:45', score: 88 },
-  { time: '18:00', score: 92 }, { time: '20:15', score: 78 },
-];
-
-const monthlyStats = [
-  { week: 'Ming 1', score: 72 },
-  { week: 'Ming 2', score: 78 },
-  { week: 'Ming 3', score: 85 },
-  { week: 'Ming 4', score: 81 },
-];
 
 const ProgressScreen = () => {
-  const { colors, isDarkMode } = useTheme();
-  const { triggerLight } = useHapticFeedback();
+  const { colors } = useTheme();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('Minggu Ini');
-  const [showPeriodMenu, setShowPeriodMenu] = useState(false);
 
   const loadData = async () => {
     try {
@@ -64,15 +30,7 @@ const ProgressScreen = () => {
 
   useEffect(() => { loadData(); }, []);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
-
-  const maxScore = Math.max(...weeklyStats.map(s => s.score));
-
-  if (loading) {
+if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={PURPLE} />
@@ -82,144 +40,24 @@ const ProgressScreen = () => {
 
   const hasClass = !!(user?.className || user?.class);
 
-  if (!hasClass) {
-    return (
-      <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Progress Belajar</Text>
-        </View>
-        <View style={styles.emptyState}>
-          <Ionicons name="bar-chart-outline" size={60} color={PURPLE + '40'} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Progress</Text>
-          <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-            Bergabung ke kelas terlebih dahulu untuk melihat progress belajarmu.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
+  // Always show empty state until real progress data is available from the API
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Progress Belajar</Text>
-          <Pressable
-            style={[styles.periodBtn, { backgroundColor: colors.primaryLight }]}
-            onPress={() => { triggerLight(); setShowPeriodMenu(!showPeriodMenu); }}
-          >
-            <Text style={[styles.periodBtnText, { color: colors.primary }]}>{selectedPeriod}</Text>
-            <Ionicons
-              name={showPeriodMenu ? "chevron-up" : "chevron-down"}
-              size={14}
-              color={colors.primary}
-            />
-          </Pressable>
-        </View>
-
-        {/* Period Menu */}
-        {showPeriodMenu && (
-          <View style={[styles.periodMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {['Hari Ini', 'Minggu Ini', 'Bulan Ini'].map((period) => (
-              <Pressable
-                key={period}
-                style={[styles.periodMenuItem, { borderBottomColor: colors.border }, selectedPeriod === period && [styles.periodMenuItemActive, { backgroundColor: colors.primaryLight }]]}
-                onPress={() => { triggerLight(); setSelectedPeriod(period); setShowPeriodMenu(false); }}
-              >
-                <Text style={[styles.periodMenuText, { color: colors.textSecondary }, selectedPeriod === period && [styles.periodMenuTextActive, { color: colors.primary }]]}>
-                  {period}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* Summary Cards */}
-        <View style={styles.summaryRow}>
-          {[
-            { icon: 'ribbon-outline', val: '75%', label: 'Rata-rata Nilai', color: PURPLE },
-            { icon: 'time-outline', val: '12 Jam', label: 'Waktu Belajar', color: '#F59E0B' },
-            { icon: 'checkmark-circle-outline', val: '8', label: 'Quiz Dikerjakan', color: '#10B981' },
-          ].map((item, i) => (
-            <View key={i} style={[styles.summaryCard, { backgroundColor: colors.card }]}>
-              <View style={[styles.summaryIconBox, { backgroundColor: item.color + '15' }]}>
-                <Ionicons name={item.icon as any} size={20} color={item.color} />
-              </View>
-              <Text style={[styles.summaryVal, { color: item.color }]}>{item.val}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Activity Chart */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {selectedPeriod === 'Hari Ini' ? 'Aktivitas Hari Ini' : selectedPeriod === 'Minggu Ini' ? 'Aktivitas Mingguan' : 'Aktivitas Bulanan'}
-          </Text>
-          <View style={[styles.barChart, { backgroundColor: colors.card }]}>
-            {(selectedPeriod === 'Hari Ini' ? dailyStats : selectedPeriod === 'Minggu Ini' ? weeklyStats : monthlyStats).map((stat, idx) => {
-              let data: any;
-              let maxVal: number;
-              let label: string;
-
-              if (selectedPeriod === 'Hari Ini') {
-                data = stat;
-                maxVal = Math.max(...dailyStats.map(s => s.score));
-                label = (data as any).time;
-              } else if (selectedPeriod === 'Minggu Ini') {
-                data = stat;
-                maxVal = maxScore;
-                label = (data as any).day;
-              } else {
-                data = stat;
-                maxVal = Math.max(...monthlyStats.map(s => s.score));
-                label = (data as any).week;
-              }
-
-              return (
-                <View key={idx} style={styles.barColumn}>
-                  <Text style={[styles.barValue, { color: colors.textSecondary }]}>{data.score}%</Text>
-                  <LinearGradient
-                    colors={[PURPLE, '#5B21B6']}
-                    start={{ x: 0, y: 1 }}
-                    end={{ x: 0, y: 0 }}
-                    style={[styles.bar, { height: (data.score / maxVal) * 120 }]}
-                  />
-                  <Text style={[styles.barDay, { color: colors.textSecondary }]}>{label}</Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Subject Performance */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Performa per Mata Pelajaran</Text>
-          {subjects.map((subj, idx) => (
-            <View key={idx} style={[styles.subjectCard, { backgroundColor: colors.card }]}>
-              <View style={[styles.subjectIconBox, { backgroundColor: subj.color + '15' }]}>
-                <Text style={styles.subjectIcon}>{subj.icon}</Text>
-              </View>
-              <View style={styles.subjectInfo}>
-                <View style={styles.subjectHeader}>
-                  <Text style={[styles.subjectName, { color: colors.text }]}>{subj.name}</Text>
-                  <Text style={[styles.subjectPct, { color: subj.color }]}>{subj.percentage}%</Text>
-                </View>
-                <View style={[styles.subjBarBg, { backgroundColor: colors.border }]}>
-                  <View style={[styles.subjBarFill, { width: `${subj.percentage}%`, backgroundColor: subj.color }]} />
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Progress Belajar</Text>
+      </View>
+      <View style={styles.emptyState}>
+        <Ionicons name="bar-chart-outline" size={60} color={PURPLE + '40'} />
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Progress</Text>
+        <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+          {hasClass
+            ? 'Data progressmu akan muncul setelah kamu mulai mengerjakan materi dan kuis.'
+            : 'Bergabung ke kelas terlebih dahulu untuk melihat progress belajarmu.'}
+        </Text>
+      </View>
     </SafeAreaView>
   );
+
 };
 
 const styles = StyleSheet.create({

@@ -117,17 +117,17 @@ const DashboardScreen = () => {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Sudah Dipelajari</Text>
-                <Text style={styles.statValue}>{hasClass ? '5' : '0'}</Text>
+                <Text style={styles.statValue}>0</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Belum Dipelajari</Text>
-                <Text style={styles.statValue}>{hasClass ? '3' : '0'}</Text>
+                <Text style={styles.statValue}>0</Text>
               </View>
             </View>
           </View>
           <View style={styles.progressCircle}>
-            <Text style={styles.progressText}>{hasClass ? '63%' : '0%'}</Text>
+            <Text style={styles.progressText}>0%</Text>
             <Text style={styles.progressSub}>Selesai</Text>
           </View>
         </View>

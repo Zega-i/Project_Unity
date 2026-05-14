@@ -11,7 +11,6 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
-import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 const READ_KEY = 'read_materials';
@@ -37,16 +36,7 @@ const TYPE_META: Record<Material['type'], { icon: string; label: string; color: 
   link:  { icon: 'link',          label: 'Tautan',  color: '#10B981' },
 };
 
-const MOCK_MATERIALS: Material[] = [
-  { id: '1', title: 'Pengantar Persamaan Linear Satu Variabel', subject: 'Matematika',    teacher: 'Bu Sari',  type: 'pdf',   size: '2.4 MB', uploadedAt: '12 Mei 2026', isNew: true,  color: '#6366F1', icon: '📐', description: 'Materi dasar PLSV meliputi definisi, contoh soal, dan latihan mandiri.' },
-  { id: '2', title: 'Hukum Newton & Aplikasinya',              subject: 'Fisika',         teacher: 'Pak Budi', type: 'video', size: '45 Min', uploadedAt: '11 Mei 2026', isNew: true,  color: '#F59E0B', icon: '⚡', description: 'Video pembelajaran hukum I, II, III Newton beserta contoh kasus nyata.' },
-  { id: '3', title: 'Fotosintesis & Respirasi Sel',            subject: 'Biologi',        teacher: 'Bu Dewi',  type: 'doc',   size: '1.8 MB', uploadedAt: '10 Mei 2026', isNew: true,  color: '#10B981', icon: '🌱', description: 'Penjelasan lengkap proses fotosintesis dan respirasi sel tumbuhan.' },
-  { id: '4', title: 'Simple Past Tense – Grammar Guide',       subject: 'Bahasa Inggris', teacher: 'Pak Arif', type: 'pdf',   size: '1.2 MB', uploadedAt: '9 Mei 2026',  isNew: false, color: '#06B6D4', icon: '📚', description: 'Panduan lengkap penggunaan Simple Past Tense disertai latihan soal.' },
-  { id: '5', title: 'Peradaban Mesopotamia',                   subject: 'Sejarah',        teacher: 'Bu Ratna', type: 'link',  size: '—',      uploadedAt: '8 Mei 2026',  isNew: false, color: '#EF4444', icon: '📜', description: 'Referensi eksternal mengenai peradaban Mesopotamia dan kontribusinya.' },
-  { id: '6', title: 'Fungsi Kuadrat & Grafiknya',              subject: 'Matematika',     teacher: 'Bu Sari',  type: 'video', size: '32 Min', uploadedAt: '7 Mei 2026',  isNew: false, color: '#8B5CF6', icon: '📊', description: 'Video eksplorasi fungsi kuadrat, vertex, dan cara menggambar grafik.' },
-  { id: '7', title: 'Gelombang & Bunyi',                       subject: 'Fisika',         teacher: 'Pak Budi', type: 'pdf',   size: '3.1 MB', uploadedAt: '6 Mei 2026',  isNew: false, color: '#F59E0B', icon: '🔊', description: 'Konsep gelombang mekanik dan elektromagnetik serta aplikasinya.' },
-  { id: '8', title: 'Sistem Pencernaan Manusia',               subject: 'Biologi',        teacher: 'Bu Dewi',  type: 'doc',   size: '2.0 MB', uploadedAt: '5 Mei 2026',  isNew: false, color: '#10B981', icon: '🧬', description: 'Anatomi dan fisiologi sistem pencernaan manusia secara lengkap.' },
-];
+const MOCK_MATERIALS: Material[] = [];
 
 const TYPE_FILTERS: Array<{ key: 'all' | Material['type']; label: string }> = [
   { key: 'all',   label: 'Semua'   },
@@ -94,11 +84,8 @@ const MaterialsScreen = () => {
     setRefreshing(false);
   };
 
-  const hasClass = !!(authStore.getUserSync()?.className || authStore.getUserSync()?.class);
-  const SOURCE   = hasClass ? MOCK_MATERIALS : [];
-
   // Filter pipeline — tab filter and type filter are fully independent
-  const filtered = SOURCE.filter(m => {
+  const filtered = MOCK_MATERIALS.filter(m => {
     if (activeTab === 'baru' && !m.isNew) return false;
     if (activeFilter !== 'all' && m.type !== activeFilter) return false;
     if (search.trim()) {

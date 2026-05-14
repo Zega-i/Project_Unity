@@ -28,14 +28,7 @@ const RecommendationsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([
-    { id: '1', title: 'Persamaan Linear', subject: 'Matematika', level: 'Dasar', duration: '15 Min', progress: 60, color: '#6366F1', icon: '📐', importance: 1 },
-    { id: '2', title: 'Hukum Newton', subject: 'Fisika', level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡', importance: 1 },
-    { id: '3', title: 'Fungsi Kuadrat', subject: 'Matematika', level: 'Menengah', duration: '25 Min', progress: 35, color: '#8B5CF6', icon: '📊', importance: 2 },
-    { id: '4', title: 'Fotosintesis', subject: 'Biologi', level: 'Dasar', duration: '18 Min', progress: 20, color: '#10B981', icon: '🌱', importance: 2 },
-    { id: '5', title: 'Sejarah Peradaban', subject: 'Sejarah', level: 'Menengah', duration: '30 Min', progress: 50, color: '#EF4444', icon: '📜', importance: 3 },
-    { id: '6', title: 'Grammar Bahasa Inggris', subject: 'Bahasa Inggris', level: 'Dasar', duration: '22 Min', progress: 45, color: '#06B6D4', icon: '📚', importance: 2 },
-  ]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -43,8 +36,6 @@ const RecommendationsScreen = () => {
     setLoading(true);
     try {
       // TODO: Fetch from API when backend is ready
-      // For now, using mock data
-      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
       console.log('Error loading recommendations:', error);
     } finally {
