@@ -25,6 +25,8 @@ import ChangePasswordScreen from '../screens/student/ChangePasswordScreen';
 import PrivacyDataScreen from '../screens/student/PrivacyDataScreen';
 import HelpScreen from '../screens/student/HelpScreen';
 import AboutScreen from '../screens/student/AboutScreen';
+import MaterialsScreen from '../screens/student/MaterialsScreen';
+import AssignmentsScreen from '../screens/student/AssignmentsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -119,6 +121,8 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           <Stack.Screen name="MaterialDetail" component={MaterialDetailScreen} />
           <Stack.Screen name="Quiz" component={QuizScreen} />
           <Stack.Screen name="AITutor" component={AITutorScreen} />
+          <Stack.Screen name="Materials" component={MaterialsScreen} />
+          <Stack.Screen name="Assignments" component={AssignmentsScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="Help" component={HelpScreen} />
           <Stack.Screen name="About" component={AboutScreen} />

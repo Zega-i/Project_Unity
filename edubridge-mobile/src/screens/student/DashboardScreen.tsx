@@ -176,10 +176,10 @@ const DashboardScreen = () => {
 
         <View style={styles.menuGrid}>
           {[
-            { id: '1', name: 'Kelas', icon: 'people', color: '#8B5CF6', route: 'Kelas', desc: 'Bergabung kelas' },
+            { id: '1', name: 'AI Tutor', icon: 'chatbubble-ellipses', color: '#10B981', route: 'AITutor', desc: 'Bantuan belajar' },
             { id: '2', name: 'Kuis', icon: 'extension-puzzle', color: '#F59E0B', route: 'Quiz', desc: 'Tes pengetahuan' },
-            { id: '3', name: 'AI Tutor', icon: 'chatbubble-ellipses', color: '#10B981', route: 'AITutor', desc: 'Bantuan pembelajaran' },
-            { id: '4', name: 'Progres', icon: 'trending-up', color: '#3B82F6', route: 'Progress', desc: 'Lihat kemajuan' },
+            { id: '3', name: 'Materi', icon: 'book', color: '#6366F1', route: 'Materials', desc: 'Materi dari guru' },
+            { id: '4', name: 'Tugas', icon: 'clipboard', color: '#EF4444', route: 'Assignments', desc: 'Tugas belum selesai' },
           ].map((item) => (
             <Pressable
               key={item.id}
