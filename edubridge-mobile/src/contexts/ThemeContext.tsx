@@ -101,23 +101,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           darkModeEnabled: newValue,
         });
 
-        // Send to backend
-        try {
-          const response = await fetch('http://your-backend-url/api/profile/preferences', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${await authStore.getToken()}`,
-            },
-            body: JSON.stringify({ darkModeEnabled: newValue }),
-          });
-
-          if (!response.ok) {
-            console.warn('Failed to sync dark mode preference to backend');
-          }
-        } catch (syncError) {
-          console.warn('Failed to sync dark mode to backend:', syncError);
-        }
       }
     } catch (error) {
       console.error('Error toggling dark mode:', error);
@@ -135,18 +118,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           darkModeEnabled: isDark,
         });
 
-        try {
-          await fetch('http://your-backend-url/api/profile/preferences', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${await authStore.getToken()}`,
-            },
-            body: JSON.stringify({ darkModeEnabled: isDark }),
-          });
-        } catch (syncError) {
-          console.warn('Failed to sync dark mode to backend:', syncError);
-        }
       }
     } catch (error) {
       console.error('Error setting dark mode:', error);
