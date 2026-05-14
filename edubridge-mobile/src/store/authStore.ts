@@ -16,6 +16,7 @@ interface AuthState {
     parentName?: string;
     parentPhone?: string;
     nisn?: string;
+    subject?: string;
   } | null;
 }
 
