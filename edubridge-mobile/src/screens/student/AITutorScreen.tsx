@@ -5,6 +5,7 @@ import {
   ActivityIndicator, Image, Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { aiAPI } from '../../services/api';
 
 const PURPLE = '#7C3AED';
@@ -18,10 +19,10 @@ interface Message {
 
 const AITutorScreen = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { 
-      id: '1', 
-      text: 'Persamaan linear satu variabel adalah persamaan matematika yang hanya memiliki satu variabel dengan pangkat tertingginya adalah 1.\n\nContoh:\n2x + 3 = 11\n\nMau contoh soal lainnya? 😉', 
-      isUser: false 
+    {
+      id: '1',
+      text: 'Persamaan linear satu variabel adalah persamaan matematika yang hanya memiliki satu variabel dengan pangkat tertingginya adalah 1.\n\nContoh:\n2x + 3 = 11\n\nMau contoh soal lainnya? 😉',
+      isUser: false
     },
   ]);
   const [input, setInput] = useState('');
@@ -40,9 +41,9 @@ const AITutorScreen = () => {
     try {
       const res = await aiAPI.tutorChat(msg);
       const aiReply = res.data?.response || res.response || 'Maaf, saya tidak mengerti. Bisa ulangi?';
-      setMessages(prev => [...prev, { id: (Date.now()+1).toString(), text: aiReply, isUser: false }]);
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: aiReply, isUser: false }]);
     } catch {
-      setMessages(prev => [...prev, { id: (Date.now()+1).toString(), text: 'Koneksi bermasalah, coba lagi ya!', isUser: false }]);
+      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: 'Koneksi bermasalah, coba lagi ya!', isUser: false }]);
     } finally {
       setLoading(false);
       setTimeout(() => flatListRef.current?.scrollToEnd(), 100);
@@ -63,7 +64,7 @@ const AITutorScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => Keyboard.dismiss()}>

@@ -4,6 +4,7 @@ import {
   SafeAreaView, Image, ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
@@ -11,6 +12,7 @@ import { authAPI } from '../../services/api';
 const PURPLE = '#7C3AED';
 
 const ProfileScreen = () => {
+  const navigation = useNavigation<any>();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);

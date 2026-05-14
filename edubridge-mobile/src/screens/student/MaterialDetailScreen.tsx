@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Constants from 'expo-constants';
 
 const { width } = Dimensions.get('window');
 const PURPLE = '#7C3AED';
@@ -16,7 +17,7 @@ const MaterialDetailScreen = () => {
   const { title } = route.params || { title: 'Detail Materi' };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight }]}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
