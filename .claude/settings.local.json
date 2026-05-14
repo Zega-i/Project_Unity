@@ -15,7 +15,8 @@
       "Bash(Start-Sleep -Seconds 3)",
       "Bash(Get-Content \"C:\\\\Users\\\\agust\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--EduBridge\\\\fdff5a61-3fdf-477f-8e4f-c19a43603e51\\\\tasks\\\\bm990wj0l.output\" -Tail 15)",
       "Bash(node *)",
-      "Bash(npx prisma *)"
+      "Bash(npx prisma *)",
+      "Bash(xargs git show --format=\"%H %B\" --no-patch)"
     ]
   }
 }

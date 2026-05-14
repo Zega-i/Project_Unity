@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { EditProfilePictureModal } from './EditProfilePictureModal';
@@ -26,28 +27,26 @@ const ProfileScreen = () => {
 
   const fetchProfile = async () => {
     try {
-      // Pertama cek dari cache
       const cachedUser = authStore.getUserSync();
-      console.log('[ProfileScreen] Cached user:', cachedUser?.name);
       if (cachedUser?.name) {
-        setUser(cachedUser);
+        const savedAvatar = cachedUser.id ? await AsyncStorage.getItem(`avatar_${cachedUser.id}`) : null;
+        setUser({ ...cachedUser, avatar: savedAvatar || cachedUser.avatar });
       }
 
-      // Fetch fresh data dari API
       const res = await authAPI.getProfile();
-      console.log('[ProfileScreen] API response:', res?.name, res?.school);
       if (res && res.id) {
-        // Preserve locally-saved avatar — backend doesn't store it yet
-        const merged = { ...res, avatar: res.avatar || cachedUser?.avatar };
+        const savedAvatar = await AsyncStorage.getItem(`avatar_${res.id}`);
+        const merged = { ...res, avatar: savedAvatar || res.avatar };
         setUser(merged);
         const token = await authStore.getToken();
         await authStore.setAuth(token || '', merged);
       }
-    } catch (err) {
-      console.log('[ProfileScreen] Fetch error:', err);
-      // Fallback ke cached data
+    } catch {
       const cachedUser = authStore.getUserSync();
-      setUser(cachedUser);
+      if (cachedUser) {
+        const savedAvatar = cachedUser.id ? await AsyncStorage.getItem(`avatar_${cachedUser.id}`) : null;
+        setUser({ ...cachedUser, avatar: savedAvatar || cachedUser.avatar });
+      }
     } finally {
       setLoading(false);
     }
@@ -84,13 +83,14 @@ const ProfileScreen = () => {
       // if (!response.ok) throw new Error('Upload failed');
 
       // Simulate successful upload
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 600));
 
-      // Update local user state with new avatar
       const updatedUser = { ...user, avatar: imageUri };
       setUser(updatedUser);
 
-      // Update AuthStore
+      if (user?.id) {
+        await AsyncStorage.setItem(`avatar_${user.id}`, imageUri);
+      }
       const token = await authStore.getToken();
       await authStore.setAuth(token || '', updatedUser);
 

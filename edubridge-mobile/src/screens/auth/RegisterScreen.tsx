@@ -44,13 +44,18 @@ const RegisterScreen = () => {
     return isNaN(iso.getTime()) ? undefined : iso.toISOString();
   };
 
-  // Password rules
+  // Password rules — same as ChangePasswordScreen
   const pwRules = [
-    { ok: password.length >= 8,      text: 'Minimal 8 karakter' },
-    { ok: /[A-Z]/.test(password),    text: 'Huruf kapital (A–Z)' },
-    { ok: /[0-9]/.test(password),    text: 'Mengandung angka (0–9)' },
+    { ok: password.length >= 8,                      text: 'Minimal 8 karakter'       },
+    { ok: /[A-Z]/.test(password),                    text: 'Huruf kapital (A–Z)'       },
+    { ok: /[a-z]/.test(password),                    text: 'Huruf kecil (a–z)'         },
+    { ok: /[0-9]/.test(password),                    text: 'Mengandung angka (0–9)'    },
+    { ok: /[!@#$%^&*(),.?":{}|<>]/.test(password),  text: 'Karakter spesial (!@#$%)'  },
   ];
+  const pwScore = pwRules.filter(r => r.ok).length;
   const pwValid = pwRules.every(r => r.ok);
+  const strengthColor = pwScore >= 5 ? '#10B981' : pwScore >= 3 ? '#F59E0B' : '#EF4444';
+  const strengthLabel = pwScore >= 5 ? 'Kuat' : pwScore >= 3 ? 'Sedang' : 'Lemah';
 
   const handleRegister = async () => {
     if (!name || !email || !password || (role === 'STUDENT' && (!school || !className))) {
@@ -58,7 +63,7 @@ const RegisterScreen = () => {
       return;
     }
     if (!pwValid) {
-      Alert.alert('Password Tidak Valid', 'Password harus minimal 8 karakter, mengandung huruf kapital dan angka.');
+      Alert.alert('Password Tidak Valid', 'Password harus minimal 8 karakter, mengandung huruf besar, kecil, angka, dan karakter spesial.');
       return;
     }
     setLoading(true);
@@ -208,22 +213,31 @@ const RegisterScreen = () => {
                   />
                 </Pressable>
               </View>
-              {/* Password requirements */}
               {password.length > 0 && (
-                <View style={styles.pwRules}>
-                  {pwRules.map((rule, i) => (
-                    <View key={i} style={styles.pwRule}>
-                      <Ionicons
-                        name={rule.ok ? 'checkmark-circle' : 'ellipse-outline'}
-                        size={14}
-                        color={rule.ok ? '#16A34A' : '#94A3B8'}
-                      />
-                      <Text style={[styles.pwRuleText, { color: rule.ok ? '#16A34A' : '#94A3B8' }]}>
-                        {rule.text}
-                      </Text>
+                <>
+                  <View style={styles.strengthRow}>
+                    <View style={styles.strengthBars}>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <View key={i} style={[styles.strengthBar, { backgroundColor: i < pwScore ? strengthColor : '#E2E8F0' }]} />
+                      ))}
                     </View>
-                  ))}
-                </View>
+                    <Text style={[styles.strengthLabel, { color: strengthColor }]}>{strengthLabel}</Text>
+                  </View>
+                  <View style={styles.pwRules}>
+                    {pwRules.map((rule, i) => (
+                      <View key={i} style={styles.pwRule}>
+                        <Ionicons
+                          name={rule.ok ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={14}
+                          color={rule.ok ? '#16A34A' : '#94A3B8'}
+                        />
+                        <Text style={[styles.pwRuleText, { color: rule.ok ? '#16A34A' : '#94A3B8' }]}>
+                          {rule.text}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
               )}
             </View>
 
@@ -279,7 +293,12 @@ const styles = StyleSheet.create({
   passwordInput:   { flex: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 14, color: '#1E293B' },
   eyeBtn:          { paddingHorizontal: 12 },
 
-  pwRules:    { marginTop: 10, gap: 6 },
+  strengthRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  strengthBars: { flexDirection: 'row', flex: 1, gap: 4 },
+  strengthBar:  { flex: 1, height: 4, borderRadius: 2 },
+  strengthLabel:{ fontSize: 12, fontWeight: '700' },
+
+  pwRules:    { marginTop: 8, gap: 6 },
   pwRule:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
   pwRuleText: { fontSize: 12, fontWeight: '500' },
 
