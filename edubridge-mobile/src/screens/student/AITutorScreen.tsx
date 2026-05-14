@@ -27,8 +27,8 @@ const AITutorScreen = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Persamaan linear satu variabel adalah persamaan matematika yang hanya memiliki satu variabel dengan pangkat tertingginya adalah 1.\n\nContoh:\n2x + 3 = 11\n\nMau contoh soal lainnya? 😉',
-      isUser: false
+      text: 'Halo! Aku AI Tutor EduBridge 👋\n\nAda yang bisa aku bantu? Kamu bisa tanya soal pelajaran, minta penjelasan materi, atau latihan soal apa saja.',
+      isUser: false,
     },
   ]);
   const [input, setInput] = useState('');

@@ -9,6 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 
@@ -88,7 +89,8 @@ const AssignmentsScreen = () => {
     setRefreshing(false);
   };
 
-  const source = activeTab === 'pending' ? PENDING : COMPLETED;
+  const hasClass = !!(authStore.getUserSync()?.className || authStore.getUserSync()?.class);
+  const source   = hasClass ? (activeTab === 'pending' ? PENDING : COMPLETED) : [];
   const filtered = source.filter(a => activeFilter === 'all' || a.type === activeFilter);
   const sorted = [...filtered].sort((a, b) => a.daysLeft - b.daysLeft);
 

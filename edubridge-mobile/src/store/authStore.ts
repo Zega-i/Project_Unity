@@ -7,6 +7,7 @@ interface AuthState {
     email: string;
     name: string;
     role: string;
+    avatar?: string;
     school?: string;
     className?: string;
     grade?: number;

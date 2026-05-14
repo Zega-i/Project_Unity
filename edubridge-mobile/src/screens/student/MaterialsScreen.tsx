@@ -11,6 +11,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 const READ_KEY = 'read_materials';
@@ -93,8 +94,11 @@ const MaterialsScreen = () => {
     setRefreshing(false);
   };
 
+  const hasClass = !!(authStore.getUserSync()?.className || authStore.getUserSync()?.class);
+  const SOURCE   = hasClass ? MOCK_MATERIALS : [];
+
   // Filter pipeline — tab filter and type filter are fully independent
-  const filtered = MOCK_MATERIALS.filter(m => {
+  const filtered = SOURCE.filter(m => {
     if (activeTab === 'baru' && !m.isNew) return false;
     if (activeFilter !== 'all' && m.type !== activeFilter) return false;
     if (search.trim()) {

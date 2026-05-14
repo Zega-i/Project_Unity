@@ -80,6 +80,25 @@ const ProgressScreen = () => {
     );
   }
 
+  const hasClass = !!(user?.className || user?.class);
+
+  if (!hasClass) {
+    return (
+      <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Progress Belajar</Text>
+        </View>
+        <View style={styles.emptyState}>
+          <Ionicons name="bar-chart-outline" size={60} color={PURPLE + '40'} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Progress</Text>
+          <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+            Bergabung ke kelas terlebih dahulu untuk melihat progress belajarmu.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <ScrollView
@@ -207,6 +226,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 90 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 12 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 8 },
+  emptyDesc:  { fontSize: 14, textAlign: 'center', lineHeight: 21 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },
   periodBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EDE9FE', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },

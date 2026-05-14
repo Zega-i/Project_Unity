@@ -82,13 +82,14 @@ const DashboardScreen = () => {
     setRefreshing(false);
   };
 
+  const hasClass = !!(user?.className || user?.class);
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        scrollEnabled={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PURPLE]} />
         }
@@ -116,55 +117,81 @@ const DashboardScreen = () => {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Sudah Dipelajari</Text>
-                <Text style={styles.statValue}>5</Text>
+                <Text style={styles.statValue}>{hasClass ? '5' : '0'}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Belum Dipelajari</Text>
-                <Text style={styles.statValue}>3</Text>
+                <Text style={styles.statValue}>{hasClass ? '3' : '0'}</Text>
               </View>
             </View>
           </View>
           <View style={styles.progressCircle}>
-            <Text style={styles.progressText}>63%</Text>
+            <Text style={styles.progressText}>{hasClass ? '63%' : '0%'}</Text>
             <Text style={styles.progressSub}>Selesai</Text>
           </View>
         </View>
 
-        {/* Recommendations - Vertical List (Max 3 items) */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Rekomendasi Belajar</Text>
-          <Pressable style={[styles.seeAllBtn, { backgroundColor: colors.primary + '15' }]} onPress={() => { triggerLight(); navigation.navigate('Recommendations' as any); }}>
-            <Text style={[styles.seeAll, { color: colors.primary }]}>Lihat Semua</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-          </Pressable>
-        </View>
+        {/* Recommendations - only shown when student has joined a class */}
+        {(() => {
+          const DUMMY_RECOM = [
+            { id: '1', title: 'Persamaan Linear', subject: 'Matematika', level: 'Dasar',    duration: '15 Min', progress: 60, color: '#6366F1', icon: '📐' },
+            { id: '2', title: 'Hukum Newton',     subject: 'Fisika',     level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡' },
+            { id: '3', title: 'Fungsi Kuadrat',   subject: 'Matematika', level: 'Menengah', duration: '25 Min', progress: 35, color: '#8B5CF6', icon: '📊' },
+          ];
 
-        <View style={styles.recomList}>
-          {[
-            { id: '1', title: 'Persamaan Linear', subject: 'Matematika', level: 'Dasar', duration: '15 Min', progress: 60, color: '#6366F1', icon: '📐' },
-            { id: '2', title: 'Hukum Newton', subject: 'Fisika', level: 'Menengah', duration: '20 Min', progress: 40, color: '#F59E0B', icon: '⚡' },
-            { id: '3', title: 'Fungsi Kuadrat', subject: 'Matematika', level: 'Menengah', duration: '25 Min', progress: 35, color: '#8B5CF6', icon: '📊' },
-          ].slice(0, 3).map((item) => (
-            <Pressable key={item.id} style={[styles.recomCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => triggerLight()}>
-              <View style={[styles.recomIconBox, { backgroundColor: item.color + '10' }]}>
-                <Text style={styles.recomIconText}>{item.icon}</Text>
+          return (
+            <>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Rekomendasi Belajar</Text>
+                {hasClass && (
+                  <Pressable style={[styles.seeAllBtn, { backgroundColor: colors.primary + '15' }]} onPress={() => { triggerLight(); navigation.navigate('Recommendations' as any); }}>
+                    <Text style={[styles.seeAll, { color: colors.primary }]}>Lihat Semua</Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+                  </Pressable>
+                )}
               </View>
-              <View style={styles.recomInfo}>
-                <Text style={[styles.recomSubject, { color: colors.textSecondary }]}>{item.subject} • {item.level}</Text>
-                <Text style={[styles.recomTitle, { color: colors.text }]}>{item.title}</Text>
-                <View style={styles.recomFooter}>
-                  <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
-                  <Text style={[styles.recomTime, { color: colors.textSecondary }]}>{item.duration}</Text>
-                  <View style={[styles.miniProgressBg, { backgroundColor: colors.border }]}>
-                    <View style={[styles.miniProgressFill, { width: `${item.progress}%`, backgroundColor: item.color }]} />
-                  </View>
+
+              {hasClass ? (
+                <View style={styles.recomList}>
+                  {DUMMY_RECOM.map((item) => (
+                    <Pressable key={item.id} style={[styles.recomCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => triggerLight()}>
+                      <View style={[styles.recomIconBox, { backgroundColor: item.color + '10' }]}>
+                        <Text style={styles.recomIconText}>{item.icon}</Text>
+                      </View>
+                      <View style={styles.recomInfo}>
+                        <Text style={[styles.recomSubject, { color: colors.textSecondary }]}>{item.subject} • {item.level}</Text>
+                        <Text style={[styles.recomTitle, { color: colors.text }]}>{item.title}</Text>
+                        <View style={styles.recomFooter}>
+                          <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                          <Text style={[styles.recomTime, { color: colors.textSecondary }]}>{item.duration}</Text>
+                          <View style={[styles.miniProgressBg, { backgroundColor: colors.border }]}>
+                            <View style={[styles.miniProgressFill, { width: `${item.progress}%`, backgroundColor: item.color }]} />
+                          </View>
+                        </View>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                    </Pressable>
+                  ))}
                 </View>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-            </Pressable>
-          ))}
-        </View>
+              ) : (
+                <View style={[styles.emptyRecom, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Ionicons name="book-outline" size={36} color={colors.textSecondary} />
+                  <Text style={[styles.emptyRecomTitle, { color: colors.text }]}>Belum Ada Rekomendasi</Text>
+                  <Text style={[styles.emptyRecomDesc, { color: colors.textSecondary }]}>
+                    Bergabung ke kelas terlebih dahulu untuk melihat rekomendasi belajarmu.
+                  </Text>
+                  <Pressable
+                    style={[styles.joinClassBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => { triggerLight(); navigation.navigate('JoinClass' as any); }}
+                  >
+                    <Text style={styles.joinClassText}>Gabung Kelas</Text>
+                  </Pressable>
+                </View>
+              )}
+            </>
+          );
+        })()}
 
         {/* Spacer - Push Menu Cepat to bottom */}
         <View style={styles.spacer} />
@@ -233,6 +260,14 @@ const styles = StyleSheet.create({
   menuDesc: { fontSize: 10, color: '#94A3B8', textAlign: 'center' },
   
   recomList: { gap: 10, marginBottom: 8 },
+  emptyRecom: {
+    borderRadius: 20, borderWidth: 1, padding: 24,
+    alignItems: 'center', gap: 8, marginBottom: 8,
+  },
+  emptyRecomTitle: { fontSize: 15, fontWeight: '700', marginTop: 4 },
+  emptyRecomDesc:  { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  joinClassBtn:    { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 },
+  joinClassText:   { color: '#FFF', fontSize: 14, fontWeight: '700' },
   spacer: { minHeight: 5 },
   recomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },
   recomIconBox: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },

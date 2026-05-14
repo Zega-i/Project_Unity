@@ -37,9 +37,11 @@ const ProfileScreen = () => {
       const res = await authAPI.getProfile();
       console.log('[ProfileScreen] API response:', res?.name, res?.school);
       if (res && res.id) {
-        setUser(res);
+        // Preserve locally-saved avatar — backend doesn't store it yet
+        const merged = { ...res, avatar: res.avatar || cachedUser?.avatar };
+        setUser(merged);
         const token = await authStore.getToken();
-        await authStore.setAuth(token || '', res);
+        await authStore.setAuth(token || '', merged);
       }
     } catch (err) {
       console.log('[ProfileScreen] Fetch error:', err);

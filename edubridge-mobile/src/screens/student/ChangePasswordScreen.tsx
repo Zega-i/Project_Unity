@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
+import { authAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -89,30 +90,7 @@ const ChangePasswordScreen = () => {
     setLoading(true);
 
     try {
-      const token = await authStore.getToken();
-
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await fetch('http://your-backend-url/api/auth/change-password', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`
-      //   },
-      //   body: JSON.stringify({
-      //     oldPassword,
-      //     newPassword,
-      //     confirmPassword
-      //   })
-      // });
-
-      // if (!response.ok) {
-      //   const data = await response.json();
-      //   throw new Error(data.message || 'Gagal mengubah password');
-      // }
-
-      // Simulate successful response
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
+      await authAPI.changePassword(oldPassword, newPassword);
       triggerMedium();
       setOldPassword('');
       setNewPassword('');
@@ -120,7 +98,11 @@ const ChangePasswordScreen = () => {
       setSuccessModalVisible(true);
     } catch (err: any) {
       triggerMedium();
-      setError(err.message || 'Terjadi kesalahan saat mengubah password');
+      const msg = err?.response?.data?.message ||
+                  err?.response?.data?.error   ||
+                  err?.message                 ||
+                  'Terjadi kesalahan saat mengubah password';
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -236,16 +236,21 @@ const NotificationsScreen = () => {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <View>
+        <Pressable style={styles.backBtn} onPress={() => { triggerLight(); navigation.goBack(); }}>
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
+        </Pressable>
+        <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Notifikasi</Text>
           {unreadCount > 0 && (
             <Text style={[styles.unreadLabel, { color: colors.textSecondary }]}>{unreadCount} notifikasi baru</Text>
           )}
         </View>
-        {unreadCount > 0 && (
+        {unreadCount > 0 ? (
           <Pressable style={[styles.markAllBtn, { backgroundColor: colors.primary + '15' }]} onPress={markAllAsRead}>
             <Text style={[styles.markAllText, { color: colors.primary }]}>Tandai Semua</Text>
           </Pressable>
+        ) : (
+          <View style={styles.markAllBtn} />
         )}
       </View>
 
@@ -274,11 +279,13 @@ const NotificationsScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B' },
-  unreadLabel: { fontSize: 12, color: '#94A3B8', marginTop: 4 },
-  markAllBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: PURPLE + '10' },
-  markAllText: { fontSize: 12, color: PURPLE, fontWeight: '600' },
+  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, gap: 8 },
+  backBtn:      { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  headerCenter: { flex: 1 },
+  headerTitle:  { fontSize: 20, fontWeight: 'bold' },
+  unreadLabel:  { fontSize: 12, marginTop: 2 },
+  markAllBtn:   { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  markAllText:  { fontSize: 12, fontWeight: '600' },
 
   listContent: { paddingHorizontal: 20, paddingVertical: 12, paddingBottom: 20 },
   notifCard: { borderRadius: 16, padding: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 4, borderLeftColor: 'transparent' },
