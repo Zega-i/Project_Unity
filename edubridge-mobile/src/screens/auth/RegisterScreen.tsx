@@ -19,7 +19,6 @@ const RegisterScreen = () => {
   const [email, setEmail]         = useState('');
   const [password, setPassword]   = useState('');
   const [school, setSchool]       = useState('');
-  const [className, setClassName] = useState('');
   const [dob, setDob]             = useState('');
   const [role, setRole]           = useState<Role>('STUDENT');
   const [loading, setLoading]     = useState(false);
@@ -58,7 +57,7 @@ const RegisterScreen = () => {
   const strengthLabel = pwScore >= 5 ? 'Kuat' : pwScore >= 3 ? 'Sedang' : 'Lemah';
 
   const handleRegister = async () => {
-    if (!name || !email || !password || (role === 'STUDENT' && (!school || !className))) {
+    if (!name || !email || !password || (role === 'STUDENT' && !school)) {
       Alert.alert('Error', 'Mohon isi semua kolom yang wajib');
       return;
     }
@@ -70,7 +69,6 @@ const RegisterScreen = () => {
     try {
       const extra = role === 'STUDENT' ? {
         school,
-        className,
         grade: 10,
         dateOfBirth: dob ? parseDob(dob) : undefined,
       } : {};
@@ -162,17 +160,6 @@ const RegisterScreen = () => {
                     placeholderTextColor="#94A3B8"
                     value={school}
                     onChangeText={setSchool}
-                    editable={!loading}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Kelas</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Contoh: 10A"
-                    placeholderTextColor="#94A3B8"
-                    value={className}
-                    onChangeText={setClassName}
                     editable={!loading}
                   />
                 </View>
