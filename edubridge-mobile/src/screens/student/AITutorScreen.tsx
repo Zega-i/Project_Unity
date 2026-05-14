@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { aiAPI } from '../../services/api';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 const AI_GRAY = '#F1F5F9';
@@ -18,6 +19,7 @@ interface Message {
 }
 
 const AITutorScreen = () => {
+  const { triggerMedium } = useHapticFeedback();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -120,8 +122,10 @@ const AITutorScreen = () => {
             placeholder="Ketik pertanyaanmu..."
             placeholderTextColor="#94A3B8"
             onFocus={() => setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200)}
+            multiline={true}
+            numberOfLines={4}
           />
-          <Pressable style={styles.sendBtn} onPress={() => sendMessage()}>
+          <Pressable style={styles.sendBtn} onPress={() => { triggerMedium(); sendMessage(); }}>
             <Ionicons name="send" size={20} color="#fff" />
           </Pressable>
         </View>
@@ -154,9 +158,9 @@ const styles = StyleSheet.create({
   chipsRow: { paddingHorizontal: 16, paddingVertical: 12 },
   chip: { backgroundColor: '#F5F3FF', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, marginRight: 8, borderWidth: 1, borderColor: '#E9E4FF' },
   chipText: { fontSize: 13, color: PURPLE, fontWeight: '600' },
-  inputBar: { flexDirection: 'row', alignItems: 'center', padding: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9', gap: 12 },
-  textInput: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 25, paddingHorizontal: 20, paddingVertical: 12, fontSize: 15, color: '#1E293B', borderWidth: 1, borderColor: '#E2E8F0' },
-  sendBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center', shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  inputBar: { flexDirection: 'row', alignItems: 'flex-end', padding: 16, borderTopWidth: 1, borderTopColor: '#F1F5F9', gap: 12, paddingBottom: 20 },
+  textInput: { flex: 1, backgroundColor: '#F8FAFC', borderRadius: 20, paddingHorizontal: 20, paddingVertical: 14, fontSize: 15, color: '#1E293B', borderWidth: 1, borderColor: '#E2E8F0', maxHeight: 150 },
+  sendBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center', shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4, marginBottom: 0 },
 });
 
 export default AITutorScreen;

@@ -8,6 +8,8 @@ import { authAPI } from './src/services/api';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { QuizProvider } from './src/contexts/QuizContext';
 import { TutorProvider } from './src/contexts/TutorContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import { HapticProvider } from './src/contexts/HapticContext';
 
 const PURPLE = '#7C3AED';
 
@@ -61,15 +63,19 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <QuizProvider>
-          <TutorProvider>
-            <NavigationContainer>
-              <AppNavigator isLoggedIn={isLoggedIn} />
-            </NavigationContainer>
-          </TutorProvider>
-        </QuizProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <HapticProvider>
+          <AuthProvider>
+            <QuizProvider>
+              <TutorProvider>
+                <NavigationContainer>
+                  <AppNavigator isLoggedIn={isLoggedIn} />
+                </NavigationContainer>
+              </TutorProvider>
+            </QuizProvider>
+          </AuthProvider>
+        </HapticProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

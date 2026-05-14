@@ -12,5 +12,6 @@ router.post("/login", asyncHandler(AuthController.login.bind(AuthController)));
 // Protected routes
 router.get("/me", authMiddleware, asyncHandler(AuthController.me.bind(AuthController)));
 router.post("/logout", authMiddleware, asyncHandler(AuthController.logout.bind(AuthController)));
+router.post("/change-password", authMiddleware, asyncHandler(AuthController.changePassword.bind(AuthController)));
 
 export default router;

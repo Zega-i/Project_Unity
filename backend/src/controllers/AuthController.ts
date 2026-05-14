@@ -221,4 +221,94 @@ export class AuthController {
       throw error;
     }
   }
+
+  static async changePassword(req: AuthRequest, res: Response) {
+    try {
+      if (!req.userId) {
+        throw new ApiError(401, ERROR_MESSAGES.UNAUTHORIZED, 'UNAUTHORIZED');
+      }
+
+      const { oldPassword, newPassword, confirmPassword } = req.body;
+
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        throw new ApiError(400, 'Old password, new password, and confirmation are required', 'MISSING_FIELDS');
+      }
+
+      if (newPassword !== confirmPassword) {
+        throw new ApiError(400, 'New password and confirmation do not match', 'PASSWORD_MISMATCH');
+      }
+
+      if (newPassword.length < 8) {
+        throw new ApiError(400, 'New password must be at least 8 characters', 'PASSWORD_TOO_SHORT');
+      }
+
+      const hasUpperCase = /[A-Z]/.test(newPassword);
+      const hasLowerCase = /[a-z]/.test(newPassword);
+      const hasNumbers = /\d/.test(newPassword);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+
+      if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+        throw new ApiError(400, 'Password must contain uppercase, lowercase, number, and special character', 'WEAK_PASSWORD');
+      }
+
+      if (oldPassword === newPassword) {
+        throw new ApiError(400, 'New password must be different from old password', 'SAME_PASSWORD');
+      }
+
+      const role = req.user?.role || '';
+      let user: any = null;
+
+      if (role === 'STUDENT') {
+        user = await prisma.student.findUnique({ where: { id: req.userId } });
+      } else if (role === 'TEACHER') {
+        user = await prisma.teacher.findUnique({ where: { id: req.userId } });
+      } else if (role === 'ADMIN') {
+        user = await prisma.admin.findUnique({ where: { id: req.userId } });
+      }
+
+      if (!user) {
+        throw new ApiError(404, ERROR_MESSAGES.NOT_FOUND.replace('{resource}', 'User'), 'USER_NOT_FOUND');
+      }
+
+      const passwordMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!passwordMatch) {
+        throw new ApiError(401, 'Old password is incorrect', 'INVALID_OLD_PASSWORD');
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, VALIDATION.BCRYPT_ROUNDS);
+
+      if (role === 'STUDENT') {
+        await prisma.student.update({
+          where: { id: req.userId },
+          data: {
+            password: hashedPassword,
+            passwordUpdatedAt: new Date()
+          }
+        });
+      } else if (role === 'TEACHER') {
+        await prisma.teacher.update({
+          where: { id: req.userId },
+          data: { password: hashedPassword }
+        });
+      } else if (role === 'ADMIN') {
+        await prisma.admin.update({
+          where: { id: req.userId },
+          data: { password: hashedPassword }
+        });
+      }
+
+      logger.info(`Password changed for user: ${user.email}`);
+
+      const response: ApiResponse = {
+        success: true,
+        message: 'Password changed successfully',
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (error) {
+      logger.error('Change password error', error);
+      throw error;
+    }
+  }
 }

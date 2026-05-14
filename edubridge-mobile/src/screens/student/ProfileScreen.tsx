@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, Image, ActivityIndicator, Modal,
+  SafeAreaView, Image, ActivityIndicator, Modal, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
+import { EditProfilePictureModal } from './EditProfilePictureModal';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
 const ProfileScreen = () => {
   const navigation = useNavigation<any>();
+  const { triggerLight } = useHapticFeedback();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [editAvatarModalVisible, setEditAvatarModalVisible] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -50,6 +55,51 @@ const ProfileScreen = () => {
     // No need to navigate, AppNavigator will switch stack based on auth state
   };
 
+  const handleAvatarSelected = async (imageUri: string) => {
+    setUploadingAvatar(true);
+    try {
+      triggerLight();
+
+      // TODO: Upload to backend when API is ready
+      // const formData = new FormData();
+      // formData.append('avatar', {
+      //   uri: imageUri,
+      //   name: 'avatar.jpg',
+      //   type: 'image/jpeg'
+      // });
+
+      // const token = await authStore.getToken();
+      // const response = await fetch('http://your-backend-url/api/profile/avatar', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Authorization': `Bearer ${token}`
+      //   },
+      //   body: formData
+      // });
+
+      // if (!response.ok) throw new Error('Upload failed');
+
+      // Simulate successful upload
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Update local user state with new avatar
+      const updatedUser = { ...user, avatar: imageUri };
+      setUser(updatedUser);
+
+      // Update AuthStore
+      const token = await authStore.getToken();
+      await authStore.setAuth(token || '', updatedUser);
+
+      triggerLight();
+      Alert.alert('Sukses', 'Foto profil berhasil diubah');
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      Alert.alert('Error', 'Gagal mengubah foto profil');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -73,12 +123,20 @@ const ProfileScreen = () => {
 
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=2080&auto=format&fit=crop' }}
-              style={styles.avatar}
-            />
-          </View>
+          <Pressable
+            style={styles.avatarPressable}
+            onPress={() => { triggerLight(); setEditAvatarModalVisible(true); }}
+          >
+            <View style={styles.avatarContainer}>
+              <Image
+                source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=2080&auto=format&fit=crop' }}
+                style={styles.avatar}
+              />
+              <View style={styles.editAvatarOverlay}>
+                <Ionicons name="camera" size={24} color="#FFFFFF" />
+              </View>
+            </View>
+          </Pressable>
           <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
           <Text style={styles.userRole}>{user?.role === 'TEACHER' ? 'Guru' : 'Siswa'}</Text>
         </View>
@@ -131,7 +189,16 @@ const ProfileScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Modern Logout Modal */}
+      {/* Edit Avatar Modal */}
+      <EditProfilePictureModal
+        visible={editAvatarModalVisible}
+        currentAvatar={user?.avatar}
+        onClose={() => setEditAvatarModalVisible(false)}
+        onImageSelected={handleAvatarSelected}
+        loading={uploadingAvatar}
+      />
+
+      {/* Logout Modal */}
       <Modal visible={logoutModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -168,8 +235,10 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 25, paddingTop: 20, paddingBottom: 90 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 30 },
   avatarSection: { alignItems: 'center', marginBottom: 40 },
-  avatarContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F1F5F9', padding: 4, marginBottom: 16, overflow: 'hidden' },
+  avatarPressable: { position: 'relative' },
+  avatarContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F1F5F9', padding: 4, marginBottom: 16, overflow: 'hidden', position: 'relative' },
   avatar: { width: '100%', height: '100%', borderRadius: 50 },
+  editAvatarOverlay: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderRadius: 20, backgroundColor: '#7C3AED', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#FFFFFF' },
   userName: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 6 },
   userRole: { fontSize: 14, color: '#94A3B8' },
   infoSection: { marginBottom: 40 },

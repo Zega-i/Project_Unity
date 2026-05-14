@@ -9,11 +9,13 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
+import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
 const PURPLE = '#7C3AED';
 
 const DashboardScreen = () => {
   const navigation = useNavigation<any>();
+  const { triggerLight } = useHapticFeedback();
   const [user, setUser] = useState<any>(authStore.getUserSync());
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,8 +73,11 @@ const DashboardScreen = () => {
             <Text style={styles.welcomeText}>Halo, {user?.name?.split(' ')[0] || 'Siswa'} 👋</Text>
             <Text style={styles.subWelcome}>Mari lanjutkan belajarmu hari ini</Text>
           </View>
-          <Pressable style={styles.notificationBtn}>
+          <Pressable style={styles.notificationBtn} onPress={() => { triggerLight(); navigation.navigate('Notifications' as any); }}>
             <Ionicons name="notifications-outline" size={24} color="#1E293B" />
+            <View style={styles.notificationBadge}>
+              <Text style={styles.badgeText}>2</Text>
+            </View>
           </Pressable>
         </View>
 
@@ -101,7 +106,7 @@ const DashboardScreen = () => {
         {/* Recommendations - Vertical List (Max 3 items) */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Rekomendasi Belajar</Text>
-          <Pressable style={styles.seeAllBtn}>
+          <Pressable style={styles.seeAllBtn} onPress={() => navigation.navigate('Recommendations' as any)}>
             <Text style={styles.seeAll}>Lihat Semua</Text>
             <Ionicons name="chevron-forward" size={16} color={PURPLE} />
           </Pressable>
@@ -172,7 +177,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 10 },
   welcomeText: { fontSize: 22, fontWeight: 'bold', color: '#1E293B' },
   subWelcome: { fontSize: 14, color: '#64748B', marginTop: 4 },
-  notificationBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F1F5F9' },
+  notificationBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F1F5F9', position: 'relative' },
+  notificationBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: '#EF4444', width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
+  badgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' },
   
   summaryCard: { backgroundColor: PURPLE, borderRadius: 24, padding: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: PURPLE, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 15, elevation: 8, marginBottom: 15 },
   summaryInfo: { flex: 1 },

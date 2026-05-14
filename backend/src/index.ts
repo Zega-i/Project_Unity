@@ -8,6 +8,8 @@ import aiRoutes from "./routes/ai";
 import uploadRoutes from "./routes/upload";
 import classRoutes from "./routes/class";
 import progressRoutes from "./routes/progress";
+import profileRoutes from "./routes/profile";
+import notificationsRoutes from "./routes/notifications";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { logger } from "./utils/logger";
@@ -58,6 +60,8 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/class", classRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

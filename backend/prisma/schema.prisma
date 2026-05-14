@@ -54,6 +54,11 @@ model Student {
   parentPhone   String?
   learningStyle String? // visual, auditory, kinesthetic
   riskScore     Float    @default(0)
+  avatar        String?
+  darkModeEnabled Boolean @default(false)
+  hapticEnabled Boolean @default(true)
+  notificationsEnabled Boolean @default(true)
+  passwordUpdatedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

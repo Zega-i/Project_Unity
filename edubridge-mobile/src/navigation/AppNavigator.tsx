@@ -18,6 +18,10 @@ import SettingsScreen from '../screens/student/SettingsScreen';
 import JoinClassScreen from '../screens/student/JoinClassScreen';
 import SubjectModulesScreen from '../screens/student/SubjectModulesScreen';
 import MaterialDetailScreen from '../screens/student/MaterialDetailScreen';
+import RecommendationsScreen from '../screens/student/RecommendationsScreen';
+import NotificationsScreen from '../screens/student/NotificationsScreen';
+import ChangePasswordScreen from '../screens/student/ChangePasswordScreen';
+import PrivacyDataScreen from '../screens/student/PrivacyDataScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -97,6 +101,10 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
       ) : (
         <>
           <Stack.Screen name="StudentTabs" component={StudentTabs} />
+          <Stack.Screen name="Recommendations" component={RecommendationsScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="PrivacyData" component={PrivacyDataScreen} />
           <Stack.Screen name="JoinClass" component={JoinClassScreen} />
           <Stack.Screen name="SubjectModules" component={SubjectModulesScreen} />
           <Stack.Screen name="MaterialDetail" component={MaterialDetailScreen} />
