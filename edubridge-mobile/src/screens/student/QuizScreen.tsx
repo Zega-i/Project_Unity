@@ -336,7 +336,7 @@ const QuizScreen = () => {
 
   // --- Subject Selection Screen ---
   const currentUser = authStore.getUserSync();
-  const hasClass = !!(currentUser?.className || currentUser?.class);
+  const hasClass = !!currentUser?.className;
 
   if (!hasClass) {
     return (

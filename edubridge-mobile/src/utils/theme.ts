@@ -108,7 +108,7 @@ export const FontWeight = {
   bold: '700',
   extrabold: '800',
   black: '900',
-};
+} as const;
 
 export const Shadows = {
   sm: {

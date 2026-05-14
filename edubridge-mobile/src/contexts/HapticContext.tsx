@@ -38,13 +38,13 @@ export const HapticProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       switch (type) {
         case 'light':
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Light);
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           break;
         case 'medium':
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           break;
         case 'heavy':
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Heavy);
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
           break;
       }
     } catch (error) {

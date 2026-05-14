@@ -82,7 +82,7 @@ const DashboardScreen = () => {
     setRefreshing(false);
   };
 
-  const hasClass = !!(user?.className || user?.class);
+  const hasClass = !!(user?.className || user?.['class']);
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>

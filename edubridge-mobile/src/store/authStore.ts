@@ -17,6 +17,8 @@ interface AuthState {
     parentPhone?: string;
     nisn?: string;
     subject?: string;
+    darkModeEnabled?: boolean;
+    hapticEnabled?: boolean;
   } | null;
 }
 
