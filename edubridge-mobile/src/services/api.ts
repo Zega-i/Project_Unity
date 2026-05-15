@@ -59,12 +59,28 @@ export const aiAPI = {
     const response = await api.post('/ai/tutor', { message, context });
     return response.data;
   },
-  generateQuiz: async (text: string, questionCount: number = 5) => {
-    const response = await api.post('/ai/generate-quiz', { text, questionCount });
+  generateQuiz: async (text: string, questionCount: number = 5, materialId?: string) => {
+    const response = await api.post('/ai/generate-quiz', { text, questionCount, materialId });
+    return response.data;
+  },
+  generateAssignment: async (text: string, materialId?: string) => {
+    const response = await api.post('/ai/generate-assignment', { text, materialId });
+    return response.data;
+  },
+  analyzeRisk: async (studentId: string, name: string, avgScore: number) => {
+    const response = await api.post('/ai/analyze-risk', { studentId, name, avgScore });
     return response.data;
   },
   analyzeErrors: async (wrongAnswers: any[]) => {
     const response = await api.post('/ai/analyze-errors', { wrongAnswers });
+    return response.data;
+  },
+  getLearningPath: async () => {
+    const response = await api.get('/ai/learning-path');
+    return response.data;
+  },
+  generateLessonPlan: async (text: string, materialId?: string) => {
+    const response = await api.post('/ai/generate-lesson-plan', { text, materialId });
     return response.data;
   },
 };
@@ -111,6 +127,30 @@ export const teacherAPI = {
   getClassStudents: async (classId: string) => {
     const response = await api.get(`/teacher/class/${classId}/students`);
     return response.data.data;
+  },
+  getClassMaterials: async (classId: string) => {
+    const response = await api.get(`/teacher/class/${classId}/materials`);
+    return response.data;
+  },
+  createClass: async (data: { name: string; level: string; schedule: string; description: string; token: string }) => {
+    const response = await api.post('/teacher/class', data);
+    return response.data;
+  },
+  getClassAssignments: async (classId: string) => {
+    const response = await api.get(`/teacher/class/${classId}/assignments`);
+    return response.data;
+  },
+  getClassQuizzes: async (classId: string) => {
+    const response = await api.get(`/teacher/class/${classId}/quizzes`);
+    return response.data;
+  },
+  addQuiz: async (classId: string, data: { title: string; duration: string; questions: any[] }) => {
+    const response = await api.post(`/teacher/class/${classId}/quiz`, data);
+    return response.data;
+  },
+  getAllStudents: async () => {
+    const response = await api.get('/teacher/students');
+    return response.data;
   },
 };
 
