@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, FlatList, TextInput, Alert,
+  SafeAreaView, FlatList, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+
+import { classAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
@@ -21,11 +23,30 @@ const TeacherClassScreen = () => {
   const { colors } = useTheme();
   const { triggerLight, triggerMedium } = useHapticFeedback();
   const [activeTab, setActiveTab] = useState('active');
-  const [classes, setClasses] = useState(MOCK_CLASSES.map(c => ({ ...c, archived: false })));
+  const [classes, setClasses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchClasses = async () => {
+    setLoading(true);
+    try {
+      const res = await classAPI.getMyClasses();
+      if (res.success) {
+        setClasses(res.data.map((c: any) => ({ ...c, archived: false })));
+      }
+    } catch (error) {
+      console.log('Error fetching classes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchClasses();
+  }, []);
 
   const handleArchive = (id: string) => {
     triggerMedium();
-    Alert.alert('Arsipkan Kelas', 'Apakah Anda yakin ingin mengarsipkan kelas ini? Kelas tidak akan muncul di daftar utama.', [
+    Alert.alert('Arsipkan Kelas', 'Apakah Anda yakin ingin mengarsipkan kelas ini?', [
       { text: 'Batal', style: 'cancel' },
       { text: 'Arsipkan', onPress: () => {
         setClasses(prev => prev.map(c => c.id === id ? { ...c, archived: true } : c));
@@ -93,18 +114,25 @@ const TeacherClassScreen = () => {
         </Pressable>
       </View>
 
-      <FlatList
-        data={classes.filter(c => activeTab === 'active' ? !c.archived : c.archived)}
-        renderItem={renderClassItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="folder-open-outline" size={60} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Tidak ada kelas di kategori ini</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.emptyState}>
+          <ActivityIndicator size="large" color={GREEN} />
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Memuat kelas...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={classes.filter(c => activeTab === 'active' ? !c.archived : c.archived)}
+          renderItem={renderClassItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="folder-open-outline" size={60} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Tidak ada kelas di kategori ini</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };

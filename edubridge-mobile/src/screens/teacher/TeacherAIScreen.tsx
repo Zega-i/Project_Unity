@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Pressable, StatusBar, TextInput, Image, Platform,
+  Pressable, StatusBar, TextInput, Platform,
+  ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +10,7 @@ import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { authStore } from '../../store/authStore';
+import { aiAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
@@ -41,15 +43,49 @@ const AI_TOOLS = [
     icon: 'list-outline', 
     color: '#3B82F6' 
   },
+  { 
+    id: '5', 
+    title: 'Buat RPP Otomatis', 
+    desc: 'Ubah materi menjadi Rencana Pelaksanaan Pembelajaran (RPP) yang kreatif.', 
+    icon: 'calendar-outline', 
+    color: '#EC4899' 
+  },
 ];
 
 const TeacherAIScreen = () => {
+  const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
   const user = authStore.getUserSync();
   const firstName = user?.name?.split(' ')[0] || 'Budi';
 
   const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    if (!message.trim() || loading) return;
+
+    const userMsg = { id: Date.now().toString(), text: message, sender: 'user' };
+    setMessages([...messages, userMsg]);
+    setMessage('');
+    setLoading(true);
+    triggerLight();
+
+    try {
+      const response = await aiAPI.tutorChat(message, { role: 'TEACHER' });
+      const aiMsg = { 
+        id: (Date.now() + 1).toString(), 
+        text: response.data?.response || 'Maaf, saya sedang tidak bisa menjawab.', 
+        sender: 'ai' 
+      };
+      setMessages(prev => [...prev, aiMsg]);
+    } catch (error) {
+      Alert.alert('Error', 'Gagal menghubungi asisten AI.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
@@ -69,31 +105,65 @@ const TeacherAIScreen = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>Hai Pak {firstName}! 👋</Text>
-          <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
-            Saya siap membantu Anda mengajar lebih cerdas. Pilih bantuan yang Anda butuhkan di bawah ini.
-          </Text>
-        </View>
+        {messages.length === 0 ? (
+          <>
+            <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.heroTitle, { color: colors.text }]}>Hai Pak {firstName}! 👋</Text>
+              <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
+                Saya siap membantu Anda mengajar lebih cerdas. Pilih bantuan yang Anda butuhkan atau langsung tanya di bawah.
+              </Text>
+            </View>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Rekomendasi AI</Text>
-        
-        {AI_TOOLS.map((tool) => (
-          <Pressable 
-            key={tool.id} 
-            style={[styles.toolCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => triggerLight()}
-          >
-            <View style={[styles.iconBox, { backgroundColor: tool.color + '15' }]}>
-              <Ionicons name={tool.icon as any} size={24} color={tool.color} />
-            </View>
-            <View style={styles.toolInfo}>
-              <Text style={[styles.toolTitle, { color: colors.text }]}>{tool.title}</Text>
-              <Text style={[styles.toolDesc, { color: colors.textSecondary }]}>{tool.desc}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </Pressable>
-        ))}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Alat Bantu AI</Text>
+            
+            {AI_TOOLS.map((tool) => (
+              <Pressable 
+                key={tool.id} 
+                style={[styles.toolCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => {
+                  triggerLight();
+                  if (tool.id === '1' || tool.id === '5') {
+                    navigation.navigate('TeacherKelas');
+                  } else if (tool.id === '2' || tool.id === '3') {
+                    navigation.navigate('TeacherAnalytics');
+                  } else if (tool.id === '4') {
+                    navigation.navigate('TeacherKelas');
+                  }
+                }}
+              >
+                <View style={[styles.iconBox, { backgroundColor: tool.color + '15' }]}>
+                  <Ionicons name={tool.icon as any} size={24} color={tool.color} />
+                </View>
+                <View style={styles.toolInfo}>
+                  <Text style={[styles.toolTitle, { color: colors.text }]}>{tool.title}</Text>
+                  <Text style={[styles.toolDesc, { color: colors.textSecondary }]}>{tool.desc}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </Pressable>
+            ))}
+          </>
+        ) : (
+          <View style={styles.chatWrap}>
+            {messages.map((msg) => (
+              <View 
+                key={msg.id} 
+                style={[
+                  styles.msgBubble, 
+                  msg.sender === 'user' ? styles.userBubble : [styles.aiBubble, { backgroundColor: colors.card, borderColor: colors.border }]
+                ]}
+              >
+                <Text style={[styles.msgText, { color: msg.sender === 'user' ? '#FFF' : colors.text }]}>
+                  {msg.text}
+                </Text>
+              </View>
+            ))}
+            {loading && (
+              <View style={[styles.aiBubble, { backgroundColor: colors.card, borderColor: colors.border, width: 60, alignItems: 'center' }]}>
+                <ActivityIndicator size="small" color={GREEN} />
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -106,8 +176,10 @@ const TeacherAIScreen = () => {
           placeholderTextColor={colors.textSecondary}
           value={message}
           onChangeText={setMessage}
+          multiline={false}
+          onSubmitEditing={handleSend}
         />
-        <Pressable style={styles.sendBtn} onPress={() => triggerLight()}>
+        <Pressable style={[styles.sendBtn, loading && { opacity: 0.5 }]} onPress={handleSend} disabled={loading}>
           <Ionicons name="arrow-forward" size={24} color="#FFF" />
         </Pressable>
       </View>
@@ -137,6 +209,11 @@ const styles = StyleSheet.create({
   inputContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, paddingBottom: Platform.OS === 'ios' ? 34 : 16, borderTopWidth: 1, flexDirection: 'row', gap: 12, alignItems: 'center' },
   input: { flex: 1, height: 50, borderRadius: 25, paddingHorizontal: 20, borderWidth: 1 },
   sendBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center' },
+  chatWrap: { gap: 16 },
+  msgBubble: { padding: 16, borderRadius: 20, maxWidth: '85%' },
+  userBubble: { alignSelf: 'flex-end', backgroundColor: GREEN },
+  aiBubble: { alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderWidth: 1 },
+  msgText: { fontSize: 14, lineHeight: 20 },
 });
 
 export default TeacherAIScreen;

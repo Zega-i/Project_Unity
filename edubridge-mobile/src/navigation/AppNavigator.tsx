@@ -191,6 +191,8 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           <Stack.Screen name="TeacherAddQuiz"       component={TeacherAddQuizScreen}     />
           <Stack.Screen name="TeacherAddMaterial"   component={TeacherAddMaterialScreen} />
           <Stack.Screen name="TeacherAddAssignment" component={TeacherAddAssignmentScreen} />
+          <Stack.Screen name="TeacherAI"            component={TeacherAIScreen} />
+          <Stack.Screen name="TeacherAnalytics"     component={TeacherAnalyticsScreen} />
 
           {/* Student Only */}
           <Stack.Screen name="Recommendations" component={RecommendationsScreen}/>
