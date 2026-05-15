@@ -10,6 +10,7 @@ import classRoutes from "./routes/class";
 import progressRoutes from "./routes/progress";
 import profileRoutes from "./routes/profile";
 import notificationsRoutes from "./routes/notifications";
+import teacherRoutes from "./routes/teacher";
 
 import { errorHandler } from "./middleware/errorHandler";
 import { logger } from "./utils/logger";
@@ -62,6 +63,7 @@ app.use("/api/class", classRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/teacher", teacherRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

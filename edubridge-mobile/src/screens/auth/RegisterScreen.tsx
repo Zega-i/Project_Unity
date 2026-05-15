@@ -91,7 +91,7 @@ const RegisterScreen = () => {
       } : {
         school,
         nip,
-        subject,
+        subjectTaught: subject,
       };
       const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.token, response.user);

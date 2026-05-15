@@ -41,6 +41,9 @@ import TeacherStudentDetailScreen from '../screens/teacher/TeacherStudentDetailS
 import TeacherAddMaterialScreen from '../screens/teacher/TeacherAddMaterialScreen';
 import TeacherAddAssignmentScreen from '../screens/teacher/TeacherAddAssignmentScreen';
 import TeacherAddClassScreen from '../screens/teacher/TeacherAddClassScreen';
+import TeacherAddQuizScreen from '../screens/teacher/TeacherAddQuizScreen';
+import TeacherAIScreen from '../screens/teacher/TeacherAIScreen';
+import TeacherAnalyticsScreen from '../screens/teacher/TeacherAnalyticsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -136,9 +139,14 @@ const TeacherTabs = () => {
         options={{ tabBarIcon: ({ focused }) => <TabIcon name="library" label="Kelas" focused={focused} accentColor={GREEN} /> }}
       />
       <Tab.Screen
-        name="TeacherSiswa"
-        component={TeacherStudentsScreen}
-        options={{ tabBarIcon: ({ focused }) => <TabIcon name="people" label="Siswa" focused={focused} accentColor={GREEN} /> }}
+        name="TeacherAI"
+        component={TeacherAIScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="sparkles" label="AI" focused={focused} accentColor={GREEN} /> }}
+      />
+      <Tab.Screen
+        name="TeacherInsight"
+        component={TeacherAnalyticsScreen}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon name="bar-chart" label="Insight" focused={focused} accentColor={GREEN} /> }}
       />
       <Tab.Screen
         name="TeacherProfil"
@@ -180,6 +188,7 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           <Stack.Screen name="TeacherClassDetail"   component={TeacherClassDetailScreen} />
           <Stack.Screen name="TeacherStudentDetail" component={TeacherStudentDetailScreen} />
           <Stack.Screen name="TeacherAddClass"      component={TeacherAddClassScreen}    />
+          <Stack.Screen name="TeacherAddQuiz"       component={TeacherAddQuizScreen}     />
           <Stack.Screen name="TeacherAddMaterial"   component={TeacherAddMaterialScreen} />
           <Stack.Screen name="TeacherAddAssignment" component={TeacherAddAssignmentScreen} />
 

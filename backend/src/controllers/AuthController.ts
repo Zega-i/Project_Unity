@@ -11,7 +11,8 @@ export class AuthController {
   static async register(req: Request, res: Response) {
     try {
       // Validate request
-      const { email, password, name, role } = validateRegisterRequest(req.body);
+      const validatedData = validateRegisterRequest(req.body);
+      const { email, password, name, role, school, nip, subjectTaught } = validatedData;
 
       // Check uniqueness across ALL tables
       const [student, teacher, admin] = await Promise.all([
@@ -34,7 +35,7 @@ export class AuthController {
             email,
             password: hashedPassword,
             name,
-            phone: req.body.phone || null,
+            phone: validatedData.phone || null,
           },
         });
       } else if (role === "TEACHER") {
@@ -43,10 +44,11 @@ export class AuthController {
             email,
             password: hashedPassword,
             name,
-            nip: req.body.nip || null,
-            subjectTaught: req.body.subjectTaught || null,
-            phone: req.body.phone || null,
-            position: req.body.position || null,
+            nip: nip || null,
+            subjectTaught: subjectTaught || null,
+            school: school || null,
+            phone: validatedData.phone || null,
+            position: validatedData.position || null,
           },
         });
       } else {
@@ -55,14 +57,14 @@ export class AuthController {
             email,
             password: hashedPassword,
             name,
-            grade: parseInt(req.body.grade) || 10,
-            className: req.body.className || null,
-            school: req.body.school || null,
-            nisn: req.body.nisn || null,
-            dateOfBirth: req.body.dateOfBirth ? new Date(req.body.dateOfBirth) : null,
-            address: req.body.address || null,
-            parentName: req.body.parentName || null,
-            parentPhone: req.body.parentPhone || null,
+            grade: parseInt(validatedData.grade) || 10,
+            className: validatedData.className || null,
+            school: school || null,
+            nisn: validatedData.nisn || null,
+            dateOfBirth: validatedData.dateOfBirth ? new Date(validatedData.dateOfBirth) : null,
+            address: validatedData.address || null,
+            parentName: validatedData.parentName || null,
+            parentPhone: validatedData.parentPhone || null,
           },
         });
       }
@@ -77,7 +79,8 @@ export class AuthController {
           token,
           user: { 
             id: user.id, email: user.email, name: user.name, role,
-            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
+            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth,
+            nip: user.nip, subject: user.subjectTaught
           },
         },
         message: SUCCESS_MESSAGES.REGISTERED,
@@ -148,7 +151,8 @@ export class AuthController {
           token,
           user: { 
             id: user.id, email: user.email, name: user.name, role,
-            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
+            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth,
+            nip: user.nip, subject: user.subjectTaught
           },
         },
         message: SUCCESS_MESSAGES.LOGGED_IN,
@@ -191,7 +195,8 @@ export class AuthController {
           token: '',
           user: {
             id: user.id, email: user.email, name: user.name, role,
-            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth
+            school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth,
+            nip: user.nip, subject: user.subjectTaught
           },
         },
         message: SUCCESS_MESSAGES.PROFILE_RETRIEVED,
@@ -288,12 +293,18 @@ export class AuthController {
       } else if (role === 'TEACHER') {
         await prisma.teacher.update({
           where: { id: req.userId },
-          data: { password: hashedPassword }
+          data: { 
+            password: hashedPassword,
+            passwordUpdatedAt: new Date()
+          }
         });
       } else if (role === 'ADMIN') {
         await prisma.admin.update({
           where: { id: req.userId },
-          data: { password: hashedPassword }
+          data: { 
+            password: hashedPassword,
+            passwordUpdatedAt: new Date()
+          }
         });
       }
 

@@ -15,6 +15,7 @@ model Admin {
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  passwordUpdatedAt DateTime?
 
   notifications AdminNotification[]
 
@@ -28,10 +29,12 @@ model Teacher {
   name          String
   nip           String?  @unique
   subjectTaught String?
+  school        String?
   phone         String?
   position      String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  passwordUpdatedAt DateTime?
 
   classes       Class[]
   notifications TeacherNotification[]

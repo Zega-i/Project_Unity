@@ -75,7 +75,7 @@ export const validateRegisterRequest = (body: any) => {
   const roleError = validateRole(role);
   if (roleError) throw new ValidationError(roleError);
 
-  return { email, password, name, role };
+  return { ...body, email, password, name, role };
 };
 
 export const validateLoginRequest = (body: any) => {
