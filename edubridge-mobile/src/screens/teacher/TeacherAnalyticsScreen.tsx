@@ -94,6 +94,21 @@ const TeacherAnalyticsScreen = () => {
           </Pressable>
         ))}
 
+        {/* AI Strategist Section */}
+        <View style={[styles.aiCard, { backgroundColor: GREEN, borderColor: GREEN }]}>
+          <View style={styles.aiHeader}>
+            <Ionicons name="sparkles" size={20} color="#FFF" />
+            <Text style={styles.aiTitle}>AI Strategist</Text>
+          </View>
+          <Text style={styles.aiContent}>
+            Berdasarkan data minggu ini, terdapat tren penurunan nilai di materi Aljabar (Kelas 10A). Saya merekomendasikan sesi kuis interaktif singkat besok pagi untuk memperkuat konsep dasar sebelum lanjut ke materi baru.
+          </Text>
+          <Pressable style={styles.aiAction} onPress={() => { triggerLight(); navigation.navigate('TeacherAI'); }}>
+            <Text style={styles.aiActionText}>Tanya Strategi Detail</Text>
+            <Ionicons name="arrow-forward" size={16} color={GREEN} />
+          </Pressable>
+        </View>
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -129,6 +144,12 @@ const styles = StyleSheet.create({
   issue: { fontSize: 12 },
   actionBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   actionText: { fontSize: 11, fontWeight: 'bold' },
+  aiCard: { padding: 24, borderRadius: 28, marginBottom: 20, elevation: 8, shadowColor: GREEN, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  aiTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
+  aiContent: { fontSize: 14, color: '#FFF', lineHeight: 22, marginBottom: 20, opacity: 0.9 },
+  aiAction: { backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  aiActionText: { color: GREEN, fontWeight: 'bold', fontSize: 14 },
 });
 
 export default TeacherAnalyticsScreen;
