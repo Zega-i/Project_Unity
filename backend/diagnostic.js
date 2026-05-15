@@ -1,4 +1,4 @@
-﻿// Diagnostic script for AI Tutor endpoint
+// Diagnostic script for AI Tutor endpoint
 require("dotenv").config();
 
 // Check environment setup
@@ -9,59 +9,63 @@ console.log("╚═════════════════════�
 console.log("\n1️⃣ Environment Variables:");
 console.log("────────────────────────────────────────");
 console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
-console.log(`GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? '✅ Set (' + process.env.GEMINI_API_KEY.substring(0, 10) + '...)' : '❌ Missing'}`);
+console.log(`GROQ_API_KEY: ${process.env.GROQ_API_KEY ? '✅ Set (' + process.env.GROQ_API_KEY.substring(0, 10) + '...)' : '❌ Missing'}`);
 console.log(`JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
 console.log(`PORT: ${process.env.PORT || '3000'} ✅`);
 
-console.log("\n2️⃣ Testing GoogleGenerativeAI import:");
+console.log("\n2️⃣ Testing Groq import:");
 console.log("────────────────────────────────────────");
 try {
-  const { GoogleGenerativeAI } = require("@google/generative-ai");
-  console.log("✅ @google/generative-ai imported successfully");
+  const Groq = require("groq-sdk");
+  console.log("✅ groq-sdk imported successfully");
   
-  if (!process.env.GEMINI_API_KEY) {
-    console.log("⚠️  WARNING: GEMINI_API_KEY is not set, this will cause errors at runtime");
+  if (!process.env.GROQ_API_KEY) {
+    console.log("⚠️  WARNING: GROQ_API_KEY is not set, this will cause errors at runtime");
   } else {
-    console.log("✅ GEMINI_API_KEY is set, will initialize GoogleGenerativeAI");
+    console.log("✅ GROQ_API_KEY is set, will initialize Groq");
     
     // Try to initialize
     try {
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-      console.log("✅ GoogleGenerativeAI initialized successfully");
-      
-      try {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        console.log("✅ Model 'gemini-1.5-flash' loaded successfully");
-      } catch (err) {
-        console.log("❌ Error loading model: " + err.message);
-      }
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      console.log("✅ Groq initialized successfully");
     } catch (err) {
-      console.log("❌ Error initializing GoogleGenerativeAI: " + err.message);
+      console.log("❌ Error initializing Groq: " + err.message);
     }
   }
 } catch (err) {
-  console.log("❌ Error importing @google/generative-ai: " + err.message);
-  console.log("   Run: npm install @google/generative-ai");
+  console.log("❌ Error importing groq-sdk: " + err.message);
+  console.log("   Run: npm install groq-sdk");
 }
 
 console.log("\n3️⃣ Checking AIController:");
 console.log("────────────────────────────────────────");
 try {
-  const AIController = require("./dist/controllers/AIController").AIController;
+  // Use .ts if in development, or .js if built
+  let AIController;
+  try {
+    AIController = require("./src/controllers/AIController").AIController;
+  } catch {
+    AIController = require("./dist/controllers/AIController").AIController;
+  }
   console.log("✅ AIController imported successfully");
   console.log("   Methods: " + Object.getOwnPropertyNames(AIController).filter(m => m !== 'length' && m !== 'prototype' && m !== 'name').join(", "));
 } catch (err) {
   console.log("❌ Error loading AIController: " + err.message);
 }
 
-console.log("\n4️⃣ Checking GeminiService:");
+console.log("\n4️⃣ Checking AIService:");
 console.log("────────────────────────────────────────");
 try {
-  const GeminiService = require("./dist/services/GeminiService").GeminiService;
-  console.log("✅ GeminiService imported successfully");
-  console.log("   Methods: " + Object.getOwnPropertyNames(GeminiService).filter(m => m !== 'length' && m !== 'prototype' && m !== 'name').join(", "));
+  let AIService;
+  try {
+    AIService = require("./src/services/AIService").AIService;
+  } catch {
+    AIService = require("./dist/services/AIService").AIService;
+  }
+  console.log("✅ AIService imported successfully");
+  console.log("   Methods: " + Object.getOwnPropertyNames(AIService).filter(m => m !== 'length' && m !== 'prototype' && m !== 'name').join(", "));
 } catch (err) {
-  console.log("❌ Error loading GeminiService: " + err.message);
+  console.log("❌ Error loading AIService: " + err.message);
 }
 
 console.log("\n════════════════════════════════════════════════════════════");

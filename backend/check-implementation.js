@@ -1,53 +1,46 @@
-﻿// Check if there are any async issues in GeminiService
+// Check if there are any async issues in AIService
 const fs = require('fs');
 const path = require('path');
 
-const geminServicePath = path.join('D:', 'EduBridge', 'backend', 'src', 'services', 'GeminiService.ts');
+const aiServicePath = path.join('D:', 'EduBridge', 'backend', 'src', 'services', 'AIService.ts');
 const aiControllerPath = path.join('D:', 'EduBridge', 'backend', 'src', 'controllers', 'AIController.ts');
 
 console.log("╔════════════════════════════════════════════════════════════╗");
 console.log("║     Checking AI Tutor Implementation                       ║");
 console.log("╚════════════════════════════════════════════════════════════╝\n");
 
-// Check GeminiService
-console.log("1️⃣ GeminiService.ts Analysis:");
+// Check AIService
+console.log("1️⃣ AIService.ts Analysis:");
 console.log("─────────────────────────────────────────");
 
-const geminContent = fs.readFileSync(geminServicePath, 'utf-8');
+const aiServiceContent = fs.readFileSync(aiServicePath, 'utf-8');
 
-if (geminContent.includes('static async chatWithTutor')) {
+if (aiServiceContent.includes('static async chatWithTutor')) {
   console.log("✅ chatWithTutor method exists");
   
-  // Check for GoogleGenerativeAI
-  if (geminContent.includes('new GoogleGenerativeAI')) {
-    console.log("✅ GoogleGenerativeAI initialization found");
+  // Check for Groq
+  if (aiServiceContent.includes('new Groq')) {
+    console.log("✅ Groq initialization found");
   } else {
-    console.log("❌ GoogleGenerativeAI initialization missing");
+    console.log("❌ Groq initialization missing");
   }
   
-  // Check for getGenerativeModel
-  if (geminContent.includes('getGenerativeModel')) {
-    console.log("✅ getGenerativeModel call found");
+  // Check for chat.completions.create
+  if (aiServiceContent.includes('chat.completions.create')) {
+    console.log("✅ chat.completions.create call found");
   } else {
-    console.log("❌ getGenerativeModel call missing");
-  }
-  
-  // Check for generateContent
-  if (geminContent.includes('generateContent')) {
-    console.log("✅ generateContent call found");
-  } else {
-    console.log("❌ generateContent call missing");
+    console.log("❌ chat.completions.create call missing");
   }
   
   // Check for proper error handling
-  if (geminContent.includes('catch (error)')) {
+  if (aiServiceContent.includes('catch (error)')) {
     console.log("✅ Error handling present");
   } else {
     console.log("❌ Error handling missing");
   }
   
   // Check for logger
-  if (geminContent.includes('logger.')) {
+  if (aiServiceContent.includes('logger.')) {
     console.log("✅ Logger calls present");
   } else {
     console.log("⚠️ Logger calls missing");
@@ -64,18 +57,11 @@ const aiContent = fs.readFileSync(aiControllerPath, 'utf-8');
 if (aiContent.includes('static async tutorChat')) {
   console.log("✅ tutorChat method exists");
   
-  // Check for validation
-  if (aiContent.includes('validateTutorChatRequest')) {
-    console.log("✅ Input validation present");
+  // Check for AIService call
+  if (aiContent.includes('AIService.chatWithTutor')) {
+    console.log("✅ AIService.chatWithTutor call found");
   } else {
-    console.log("❌ Input validation missing");
-  }
-  
-  // Check for GeminiService call
-  if (aiContent.includes('GeminiService.chatWithTutor')) {
-    console.log("✅ GeminiService.chatWithTutor call found");
-  } else {
-    console.log("❌ GeminiService.chatWithTutor call missing");
+    console.log("❌ AIService.chatWithTutor call missing");
   }
   
   // Check for response formatting
@@ -91,13 +77,6 @@ if (aiContent.includes('static async tutorChat')) {
   } else {
     console.log("❌ Error handling missing");
   }
-  
-  // Check for logging
-  if (aiContent.includes('logger.')) {
-    console.log("✅ Logger calls present");
-  } else {
-    console.log("⚠️ Logger calls missing");
-  }
 } else {
   console.log("❌ tutorChat method NOT FOUND");
 }
@@ -106,7 +85,7 @@ console.log("\n3️⃣ Potential Issues:");
 console.log("─────────────────────────────────────────");
 
 // Check for async/await issues
-const tutorChatMatch = geminContent.match(/static async chatWithTutor[\s\S]*?\n  \}/);
+const tutorChatMatch = aiServiceContent.match(/static async chatWithTutor[\s\S]*?\n  \}/);
 if (tutorChatMatch) {
   const methodContent = tutorChatMatch[0];
   
@@ -125,8 +104,8 @@ if (tutorChatMatch) {
 
 console.log("\n4️⃣ Common Issues Checklist:");
 console.log("─────────────────────────────────────────");
-console.log("[ ] GEMINI_API_KEY is valid");
-console.log("[ ] GoogleGenerativeAI package is installed");
+console.log("[ ] GROQ_API_KEY is valid");
+console.log("[ ] groq-sdk package is installed");
 console.log("[ ] Network connection is available");
 console.log("[ ] Rate limiting not exceeded");
 console.log("[ ] Prompt is valid and complete");
