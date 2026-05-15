@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, Pressable,
-  ScrollView, Dimensions,
+  ScrollView, Dimensions, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -12,11 +12,11 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 const GREEN = '#16A34A';
 
 const TeacherClassDetailScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { colors } = useTheme();
-  const { triggerLight } = useHapticFeedback();
-  const { class: classData } = route.params;
+  const { triggerLight, triggerMedium } = useHapticFeedback();
+  const { class: classData } = route.params || {};
   const [activeTab, setActiveTab] = useState('Materials');
 
   const tabs = [
@@ -32,8 +32,8 @@ const TeacherClassDetailScreen = () => {
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </Pressable>
         <View style={styles.headerTitleWrap}>
-          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{classData.name}</Text>
-          <Text style={[styles.headerSub, { color: colors.textSecondary }]}>Token: {classData.token}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{classData?.name || 'Detail Kelas'}</Text>
+          <Text style={[styles.headerSub, { color: colors.textSecondary }]}>Token: {classData?.token || '------'}</Text>
         </View>
         <Pressable onPress={() => triggerLight()}>
           <Ionicons name="settings-outline" size={24} color={colors.text} />
@@ -69,7 +69,19 @@ const TeacherClassDetailScreen = () => {
         </View>
       </ScrollView>
 
-      <Pressable style={styles.fab} onPress={() => triggerLight()}>
+      <Pressable 
+        style={styles.fab} 
+        onPress={() => {
+          triggerMedium();
+          if (activeTab === 'Materials') {
+            navigation.navigate('TeacherAddMaterial', { classId: classData?.id });
+          } else if (activeTab === 'Assignments') {
+            navigation.navigate('TeacherAddAssignment', { classId: classData?.id });
+          } else {
+            Alert.alert('Info', 'Fitur diskusi segera hadir!');
+          }
+        }}
+      >
         <Ionicons name="add" size={32} color="#fff" />
       </Pressable>
     </SafeAreaView>

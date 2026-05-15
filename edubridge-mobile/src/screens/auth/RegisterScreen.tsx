@@ -20,6 +20,8 @@ const RegisterScreen = () => {
   const [password, setPassword]   = useState('');
   const [school, setSchool]       = useState('');
   const [dob, setDob]             = useState('');
+  const [nip, setNip]             = useState('');
+  const [subject, setSubject]     = useState('');
   const [role, setRole]           = useState<Role>('STUDENT');
   const [loading, setLoading]     = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -58,13 +60,19 @@ const RegisterScreen = () => {
   const strengthLabel = pwScore >= 5 ? 'Kuat' : pwScore >= 3 ? 'Sedang' : 'Lemah';
 
   const handleRegister = async () => {
-    if (!name || !email || !password || (role === 'STUDENT' && !school)) {
-      setErrorModal({ 
-        visible: true, 
-        title: 'Kolom Wajib', 
-        message: 'Mohon isi semua kolom yang wajib untuk melanjutkan pendaftaran.' 
-      });
+    if (!name || !email || !password) {
+      setErrorModal({ visible: true, title: 'Kolom Wajib', message: 'Mohon isi semua kolom utama.' });
       return;
+    }
+    if (role === 'STUDENT' && !school) {
+      setErrorModal({ visible: true, title: 'Data Sekolah', message: 'Mohon isi nama sekolah kamu.' });
+      return;
+    }
+    if (role === 'TEACHER') {
+      if (!nip || !subject) {
+        setErrorModal({ visible: true, title: 'Data Guru', message: 'Mohon isi NIP dan Mata Pelajaran.' });
+        return;
+      }
     }
     if (!pwValid) {
       setErrorModal({ 
@@ -80,7 +88,11 @@ const RegisterScreen = () => {
         school,
         grade: 10,
         dateOfBirth: dob ? parseDob(dob) : undefined,
-      } : {};
+      } : {
+        school,
+        nip,
+        subject,
+      };
       const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.token, response.user);
     } catch (error: any) {
@@ -163,7 +175,7 @@ const RegisterScreen = () => {
               </View>
             </View>
 
-            {role === 'STUDENT' && (
+            {role === 'STUDENT' ? (
               <>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Sekolah</Text>
@@ -189,6 +201,43 @@ const RegisterScreen = () => {
                     maxLength={10}
                   />
                   <Text style={styles.inputHint}>Contoh: 17-08-2007</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Sekolah / Instansi</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nama Sekolah"
+                    placeholderTextColor="#94A3B8"
+                    value={school}
+                    onChangeText={setSchool}
+                    editable={!loading}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>NIP / Nomor Induk Guru</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Masukkan NIP"
+                    placeholderTextColor="#94A3B8"
+                    value={nip}
+                    onChangeText={setNip}
+                    keyboardType="number-pad"
+                    editable={!loading}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Mata Pelajaran yang Diampu</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Contoh: Matematika"
+                    placeholderTextColor="#94A3B8"
+                    value={subject}
+                    onChangeText={setSubject}
+                    editable={!loading}
+                  />
                 </View>
               </>
             )}

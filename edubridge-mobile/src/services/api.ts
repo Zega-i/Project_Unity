@@ -95,4 +95,23 @@ export const progressAPI = {
   },
 };
 
+export const teacherAPI = {
+  getDashboardStats: async () => {
+    const response = await api.get('/teacher/dashboard');
+    return response.data.data;
+  },
+  addMaterial: async (classId: string, data: { title: string; description: string }) => {
+    const response = await api.post(`/teacher/class/${classId}/material`, data);
+    return response.data;
+  },
+  addAssignment: async (classId: string, data: { title: string; description: string; deadline: string; points: number }) => {
+    const response = await api.post(`/teacher/class/${classId}/assignment`, data);
+    return response.data;
+  },
+  getClassStudents: async (classId: string) => {
+    const response = await api.get(`/teacher/class/${classId}/students`);
+    return response.data.data;
+  },
+};
+
 export default api;

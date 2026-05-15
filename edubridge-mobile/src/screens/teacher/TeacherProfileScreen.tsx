@@ -41,9 +41,29 @@ const TeacherProfileScreen = () => {
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email || 'guru@edubridge.com'}</Text>
         </View>
         <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.infoRow}><Ionicons name="school-outline" size={20} color={GREEN} /><View><Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Sekolah</Text><Text style={[styles.infoValue, { color: colors.text }]}>SMA Negeri 1 Jakarta</Text></View></View>
+          <View style={styles.infoRow}>
+            <Ionicons name="school-outline" size={20} color={GREEN} />
+            <View>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Sekolah</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{user?.school || 'Belum diatur'}</Text>
+            </View>
+          </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <View style={styles.infoRow}><Ionicons name="book-outline" size={20} color={GREEN} /><View><Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Mengajar</Text><Text style={[styles.infoValue, { color: colors.text }]}>Matematika, Fisika</Text></View></View>
+          <View style={styles.infoRow}>
+            <Ionicons name="book-outline" size={20} color={GREEN} />
+            <View>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Mata Pelajaran</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{user?.subject || 'Belum diatur'}</Text>
+            </View>
+          </View>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={styles.infoRow}>
+            <Ionicons name="id-card-outline" size={20} color={GREEN} />
+            <View>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>NIP / ID Guru</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{user?.nip || '-'}</Text>
+            </View>
+          </View>
         </View>
         <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {menuItems.map((item, i) => (

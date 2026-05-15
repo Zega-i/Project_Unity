@@ -38,6 +38,8 @@ import TeacherStudentsScreen from '../screens/teacher/TeacherStudentsScreen';
 import TeacherProfileScreen from '../screens/teacher/TeacherProfileScreen';
 import TeacherClassDetailScreen from '../screens/teacher/TeacherClassDetailScreen';
 import TeacherStudentDetailScreen from '../screens/teacher/TeacherStudentDetailScreen';
+import TeacherAddMaterialScreen from '../screens/teacher/TeacherAddMaterialScreen';
+import TeacherAddAssignmentScreen from '../screens/teacher/TeacherAddAssignmentScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -176,6 +178,8 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           {/* Teacher Only */}
           <Stack.Screen name="TeacherClassDetail"   component={TeacherClassDetailScreen} />
           <Stack.Screen name="TeacherStudentDetail" component={TeacherStudentDetailScreen} />
+          <Stack.Screen name="TeacherAddMaterial"   component={TeacherAddMaterialScreen} />
+          <Stack.Screen name="TeacherAddAssignment" component={TeacherAddAssignmentScreen} />
 
           {/* Student Only */}
           <Stack.Screen name="Recommendations" component={RecommendationsScreen}/>
