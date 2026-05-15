@@ -1,5 +1,5 @@
-﻿import prisma from "../config/database";
-import { GeminiService } from "./GeminiService";
+import prisma from "../config/database";
+import { AIService } from "./AIService";
 import { logger } from "../utils/logger";
 
 export class LearningPathService {
@@ -13,7 +13,7 @@ export class LearningPathService {
 
       logger.info(`Generating learning path for ${student.name}`);
 
-      const learningPath = await GeminiService.generateLearningPath({
+      const learningPath = await AIService.generateLearningPath({
         studentName: student.name,
         subject,
         grade: `Kelas ${grade}`,

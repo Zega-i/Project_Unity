@@ -1,5 +1,5 @@
-﻿import prisma from "../config/database";
-import { GeminiService } from "./GeminiService";
+import prisma from "../config/database";
+import { AIService } from "./AIService";
 import { logger } from "../utils/logger";
 
 export class EarlyWarningService {
@@ -148,7 +148,7 @@ export class EarlyWarningService {
         take: 5,
       });
 
-      const geminiAnalysis = await GeminiService.analyzeStudentRisk({
+      const aiAnalysis = await AIService.analyzeStudentRisk({
         studentName: student.name,
         grade: student.grade?.toString() || "Unknown",
         riskScore,
@@ -159,7 +159,7 @@ export class EarlyWarningService {
         lastScores: lastScores.map((s) => s.score || 0),
       });
 
-      const reason = `${geminiAnalysis.analysis}\n\nRekomendasi:\n${geminiAnalysis.recommendations.join("\n")}`;
+      const reason = `${aiAnalysis.analysis}\n\nRekomendasi:\n${aiAnalysis.recommendations.join("\n")}`;
       const today = new Date().toISOString().split("T")[0];
 
       const riskData = await prisma.studentRiskScore.upsert({
