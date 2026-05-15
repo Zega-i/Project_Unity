@@ -51,6 +51,17 @@ const MaterialsScreen = () => {
         renderItem={renderItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: PURPLE + '10' }]}>
+              <Ionicons name="book-outline" size={60} color={PURPLE} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Materi Belum Tersedia</Text>
+            <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+              Bergabunglah dengan kelas menggunakan token untuk melihat materi belajar dari guru kamu.
+            </Text>
+          </View>
+        }
       />
     </SafeAreaView>
   );
@@ -69,6 +80,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: 'bold', marginBottom: 8 },
   footer: { flexDirection: 'row', alignItems: 'center' },
   meta: { fontSize: 12 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100, paddingHorizontal: 40 },
+  emptyIconCircle: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
 });
 
 export default MaterialsScreen;

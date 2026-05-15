@@ -51,8 +51,13 @@ const AssignmentsScreen = () => {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="checkmark-circle-outline" size={64} color={colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Semua tugas sudah selesai!</Text>
+            <View style={[styles.emptyIconCircle, { backgroundColor: PURPLE + '10' }]}>
+              <Ionicons name="clipboard-outline" size={60} color={PURPLE} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Tugas</Text>
+            <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+              Tugas akan muncul di sini setelah kamu masuk ke dalam kelas.
+            </Text>
           </View>
         }
       />
@@ -73,8 +78,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 15, fontWeight: 'bold', marginBottom: 8 },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   deadline: { fontSize: 12 },
-  empty: { alignItems: 'center', marginTop: 100, gap: 16 },
-  emptyText: { fontSize: 16, textAlign: 'center' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100, paddingHorizontal: 40 },
+  emptyIconCircle: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  emptyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
 });
 
 export default AssignmentsScreen;
