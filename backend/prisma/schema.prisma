@@ -84,6 +84,7 @@ model Class {
   teacherId     String
   grade         Int
   subject       String
+  archived      Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   teacher       Teacher        @relation(fields: [teacherId], references: [id])
@@ -187,6 +188,7 @@ model Material {
   title       String
   description String?               @db.Text
   content     String                @db.Text
+  extractedText String?             @db.Text
   type        MaterialType
   url         String?
   aiGenerated Boolean               @default(false)
