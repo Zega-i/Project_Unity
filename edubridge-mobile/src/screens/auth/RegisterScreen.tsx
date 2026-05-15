@@ -87,21 +87,36 @@ const RegisterScreen = () => {
     try {
       const extra = role === 'STUDENT' ? {
         school,
-        grade: parseInt(grade.match(/\d+/)?.[0] || '10'),
-        className: grade,
+        grade: grade ? (parseInt(grade.match(/\d+/)?.[0] || '10')) : 10,
+        className: grade || 'Umum',
         dateOfBirth: dob ? parseDob(dob) : undefined,
       } : {
         school,
-        nip,
-        subjectTaught: subject,
+        nip: nip || undefined,
+        subjectTaught: subject || undefined,
       };
+
+      console.log('Registering with:', { email, name, role, ...extra });
       const response = await authAPI.register(email, password, name, role, extra);
       await authStore.setAuth(response.token, response.user);
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'Pendaftaran gagal';
+      console.error('Registration error detail:', error);
+      let msg = 'Pendaftaran gagal';
+      
+      if (error.response) {
+        // Server responded with a status code outside of 2xx
+        msg = error.response.data?.error || error.response.data?.message || `Error ${error.response.status}`;
+      } else if (error.request) {
+        // Request was made but no response was received
+        msg = 'Tidak ada respon dari server. Periksa koneksi internet Anda.';
+      } else {
+        // Something else happened
+        msg = error.message || 'Terjadi kesalahan sistem';
+      }
+
       setErrorModal({ 
         visible: true, 
-        title: 'Error', 
+        title: 'Gagal Daftar', 
         message: msg 
       });
     } finally {

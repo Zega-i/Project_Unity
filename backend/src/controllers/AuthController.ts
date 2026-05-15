@@ -88,8 +88,15 @@ export class AuthController {
       };
 
       res.status(201).json(response);
-    } catch (error) {
-      logger.error('Registration error', error);
+    } catch (error: any) {
+      logger.error('Registration error detail:', error);
+      
+      // Handle Prisma unique constraint errors
+      if (error.code === 'P2002') {
+        const field = error.meta?.target?.[0] || 'data';
+        throw new ApiError(409, `Pendaftaran gagal: ${field} sudah terdaftar`, 'CONFLICT');
+      }
+
       throw error;
     }
   }

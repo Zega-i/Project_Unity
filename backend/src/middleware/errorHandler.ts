@@ -46,12 +46,19 @@ export const errorHandler = (
   }
 
   // Handle Database Errors (Prisma)
-  if (error.name === 'PrismaClientKnownRequestError') {
+  if (error.name === 'PrismaClientKnownRequestError' || (error as any).code?.startsWith('P')) {
     logger.error('Database Error', error);
+    const prismaError = error as any;
+    let msg = ERROR_MESSAGES.DATABASE_ERROR;
+
+    if (prismaError.code === 'P2002') {
+      const field = prismaError.meta?.target?.[0] || 'Data';
+      msg = `${field} sudah digunakan oleh akun lain`;
+    }
 
     return res.status(HTTP_STATUS.BAD_REQUEST).json({
       success: false,
-      error: ERROR_MESSAGES.DATABASE_ERROR,
+      error: msg,
       code: 'DATABASE_ERROR',
       timestamp,
     });
