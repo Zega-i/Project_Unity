@@ -8,6 +8,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { teacherAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
@@ -30,12 +31,12 @@ const TeacherAddMaterialScreen = () => {
     setLoading(true);
     try {
       triggerMedium();
-      // TODO: Connect to teacherAPI.addMaterial(classId, { title, description })
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API
+      await teacherAPI.addMaterial(classId, { title, description });
       Alert.alert('Sukses', 'Materi berhasil ditambahkan!');
       navigation.goBack();
-    } catch (error) {
-      Alert.alert('Error', 'Gagal menambahkan materi.');
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || 'Gagal menambahkan materi.';
+      Alert.alert('Error', msg);
     } finally {
       setLoading(false);
     }

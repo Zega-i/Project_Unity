@@ -7,7 +7,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { aiAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -39,6 +39,8 @@ const INITIAL_MESSAGE: Message = {
 
 const AITutorScreen = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { subject, topic } = route.params || {};
   const { triggerMedium, triggerLight } = useHapticFeedback();
   const { colors } = useTheme();
 
@@ -55,7 +57,15 @@ const AITutorScreen = () => {
 
   useEffect(() => {
     loadHistory();
-  }, []);
+    if (subject) {
+      const introMsg: Message = {
+        id: 'intro-ctx',
+        text: `Aku melihat kamu sedang belajar **${subject}**${topic ? ` (Topik: ${topic})` : ''}. Ada bagian yang ingin kamu tanyakan spesifik tentang materi ini?`,
+        isUser: false
+      };
+      setMessages(prev => [...prev, introMsg]);
+    }
+  }, [subject, topic]);
 
   const loadHistory = async () => {
     try {
@@ -137,7 +147,8 @@ const AITutorScreen = () => {
     }
 
     try {
-      const res = await aiAPI.tutorChat(msg);
+      const context = { subject, topic, role: 'STUDENT' };
+      const res = await aiAPI.tutorChat(msg, context);
       const aiReply = res.data?.response || res.response || 'Maaf, saya tidak mengerti. Bisa ulangi?';
       const aiMsg: Message = { id: (Date.now() + 1).toString(), text: aiReply, isUser: false };
       const finalMessages = [...newMessages, aiMsg];

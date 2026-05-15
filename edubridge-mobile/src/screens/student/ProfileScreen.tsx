@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, Image, ActivityIndicator, Modal, Alert,
+  SafeAreaView, Image, ActivityIndicator, Modal, Alert, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -63,39 +63,26 @@ const ProfileScreen = () => {
     try {
       triggerLight();
 
-      // TODO: Upload to backend when API is ready
-      // const formData = new FormData();
-      // formData.append('avatar', {
-      //   uri: imageUri,
-      //   name: 'avatar.jpg',
-      //   type: 'image/jpeg'
-      // });
+      const formData = new FormData();
+      // @ts-ignore
+      formData.append('avatar', {
+        uri: Platform.OS === 'ios' ? imageUri.replace('file://', '') : imageUri,
+        name: 'avatar.jpg',
+        type: 'image/jpeg',
+      });
 
-      // const token = await authStore.getToken();
-      // const response = await fetch('http://your-backend-url/api/profile/avatar', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`
-      //   },
-      //   body: formData
-      // });
+      const res = await authAPI.uploadAvatar(formData);
+      
+      if (res.success) {
+        const updatedUser = { ...user, avatar: res.data.avatarUrl };
+        setUser(updatedUser);
 
-      // if (!response.ok) throw new Error('Upload failed');
+        const token = await authStore.getToken();
+        await authStore.setAuth(token || '', updatedUser);
 
-      // Simulate successful upload
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      const updatedUser = { ...user, avatar: imageUri };
-      setUser(updatedUser);
-
-      if (user?.id) {
-        await AsyncStorage.setItem(`avatar_${user.id}`, imageUri);
+        triggerLight();
+        Alert.alert('Sukses', 'Foto profil berhasil diubah');
       }
-      const token = await authStore.getToken();
-      await authStore.setAuth(token || '', updatedUser);
-
-      triggerLight();
-      Alert.alert('Sukses', 'Foto profil berhasil diubah');
     } catch (error) {
       console.error('Avatar upload error:', error);
       Alert.alert('Error', 'Gagal mengubah foto profil');

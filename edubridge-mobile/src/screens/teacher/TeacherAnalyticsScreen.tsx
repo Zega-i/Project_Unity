@@ -8,6 +8,8 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { teacherAPI } from '../../services/api';
+import { ActivityIndicator } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const GREEN = '#16A34A';
@@ -16,6 +18,30 @@ const TeacherAnalyticsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
+  
+  const [loading, setLoading] = React.useState(false);
+  const [data, setData] = React.useState<any>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Assuming we can use the same dashboard stats for now or a specific one if available
+      const res = await teacherAPI.getDashboardStats();
+      if (res && res.atRisk?.length > 0) {
+        setData(res);
+      } else {
+        setData(null);
+      }
+    } catch (error) {
+      console.log('Analytics load error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
@@ -27,87 +53,73 @@ const TeacherAnalyticsScreen = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* Attendance Donut Section */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Ringkasan Kehadiran</Text>
-          <Text style={[styles.cardSub, { color: colors.textSecondary }]}>Minggu Ini (Semua Kelas)</Text>
-          
-          <View style={styles.donutRow}>
-            <View style={styles.donutContainer}>
-              <View style={[styles.donutInner, { borderColor: GREEN }]}>
-                <Text style={[styles.donutPercent, { color: colors.text }]}>92%</Text>
-                <Text style={[styles.donutLabel, { color: colors.textSecondary }]}>Hadir</Text>
+        {loading ? (
+          <ActivityIndicator color={GREEN} style={{ marginTop: 100 }} />
+        ) : !data ? (
+          <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 40 }}>
+            <Ionicons name="bar-chart-outline" size={80} color={colors.border} />
+            <Text style={[styles.cardTitle, { color: colors.text, marginTop: 20, textAlign: 'center' }]}>Belum Ada Analitik</Text>
+            <Text style={[styles.cardSub, { color: colors.textSecondary, textAlign: 'center' }]}>
+              Data performa dan insight akan muncul di sini setelah Anda membuat kelas dan siswa mulai mengerjakan tugas.
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Attendance Donut Section */}
+            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Ringkasan Kehadiran</Text>
+              <Text style={[styles.cardSub, { color: colors.textSecondary }]}>Minggu Ini (Semua Kelas)</Text>
+              
+              <View style={styles.donutRow}>
+                <View style={styles.donutContainer}>
+                  <View style={[styles.donutInner, { borderColor: GREEN }]}>
+                    <Text style={[styles.donutPercent, { color: colors.text }]}>{data.summary?.activeRate || 0}%</Text>
+                    <Text style={[styles.donutLabel, { color: colors.textSecondary }]}>Aktif</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.legend}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.dot, { backgroundColor: GREEN }]} />
+                    <Text style={[styles.legendText, { color: colors.textSecondary }]}>Siswa: {data.summary?.totalStudents || 0}</Text>
+                  </View>
+                </View>
               </View>
             </View>
-            
-            <View style={styles.legend}>
-              <View style={styles.legendItem}>
-                <View style={[styles.dot, { backgroundColor: GREEN }]} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Hadir: 118</Text>
+
+            {/* Needs Attention Section */}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Siswa Perlu Perhatian</Text>
+            {data.atRisk?.map((s: any, i: number) => (
+              <Pressable 
+                key={i} 
+                style={[styles.studentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: s }); }}
+              >
+                <View style={[styles.avatar, { backgroundColor: s.color + '25' }]}><Text style={[styles.avatarText, { color: s.color }]}>{s.name[0]}</Text></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.name, { color: colors.text }]}>{s.name}</Text>
+                  <Text style={[styles.issue, { color: colors.textSecondary }]}>Rata-rata: {s.avg}</Text>
+                </View>
+                <View style={[styles.actionBtn, { backgroundColor: '#EF4444' + '15' }]}><Text style={[styles.actionText, { color: '#EF4444' }]}>Perhatian</Text></View>
+              </Pressable>
+            ))}
+
+            {/* AI Strategist Section */}
+            <View style={[styles.aiCard, { backgroundColor: GREEN, borderColor: GREEN }]}>
+              <View style={styles.aiHeader}>
+                <Ionicons name="sparkles" size={20} color="#FFF" />
+                <Text style={styles.aiTitle}>AI Strategist</Text>
               </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.dot, { backgroundColor: '#F59E0B' }]} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Izin: 6</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.dot, { backgroundColor: '#3B82F6' }]} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Sakit: 4</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.dot, { backgroundColor: '#EF4444' }]} />
-                <Text style={[styles.legendText, { color: colors.textSecondary }]}>Alpha: 0</Text>
-              </View>
+              <Text style={styles.aiContent}>
+                AI sedang menganalisis data kelas Anda untuk memberikan strategi pengajaran terbaik.
+              </Text>
+              <Pressable style={styles.aiAction} onPress={() => { triggerLight(); navigation.navigate('TeacherAI'); }}>
+                <Text style={styles.aiActionText}>Tanya Strategi Detail</Text>
+                <Ionicons name="arrow-forward" size={16} color={GREEN} />
+              </Pressable>
             </View>
-          </View>
-        </View>
-
-        {/* Action Button: Download Report */}
-        <Pressable 
-          style={[styles.reportBtn, { backgroundColor: GREEN + '15', borderColor: GREEN + '30' }]}
-          onPress={() => triggerLight()}
-        >
-          <Ionicons name="document-text" size={24} color={GREEN} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.reportTitle, { color: GREEN }]}>Laporan Lengkap</Text>
-            <Text style={[styles.reportSub, { color: GREEN }]}>Unduh laporan performa kelas (PDF)</Text>
-          </View>
-          <Ionicons name="download-outline" size={20} color={GREEN} />
-        </Pressable>
-
-        {/* Needs Attention Section */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Siswa Perlu Perhatian</Text>
-        {[
-          { id: 'at-1', name: 'Rina Amelia', kelas: '10A - MTK', avg: 65, issue: 'Nilai turun di Matematika', color: '#EF4444' },
-          { id: 'at-2', name: 'Dika Pratama', kelas: '11B - FIS', avg: 58, issue: 'Aktivitas rendah di Fisika', color: '#F59E0B' },
-        ].map((s, i) => (
-          <Pressable 
-            key={i} 
-            style={[styles.studentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: s }); }}
-          >
-            <View style={[styles.avatar, { backgroundColor: colors.surface }]}><Text style={[styles.avatarText, { color: colors.text }]}>{s.name[0]}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.name, { color: colors.text }]}>{s.name}</Text>
-              <Text style={[styles.issue, { color: colors.textSecondary }]}>{s.issue}</Text>
-            </View>
-            <View style={[styles.actionBtn, { backgroundColor: s.color + '15' }]}><Text style={[styles.actionText, { color: s.color }]}>Perhatian</Text></View>
-          </Pressable>
-        ))}
-
-        {/* AI Strategist Section */}
-        <View style={[styles.aiCard, { backgroundColor: GREEN, borderColor: GREEN }]}>
-          <View style={styles.aiHeader}>
-            <Ionicons name="sparkles" size={20} color="#FFF" />
-            <Text style={styles.aiTitle}>AI Strategist</Text>
-          </View>
-          <Text style={styles.aiContent}>
-            Berdasarkan data minggu ini, terdapat tren penurunan nilai di materi Aljabar (Kelas 10A). Saya merekomendasikan sesi kuis interaktif singkat besok pagi untuk memperkuat konsep dasar sebelum lanjut ke materi baru.
-          </Text>
-          <Pressable style={styles.aiAction} onPress={() => { triggerLight(); navigation.navigate('TeacherAI'); }}>
-            <Text style={styles.aiActionText}>Tanya Strategi Detail</Text>
-            <Ionicons name="arrow-forward" size={16} color={GREEN} />
-          </Pressable>
-        </View>
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   SafeAreaView, Image, ActivityIndicator, RefreshControl,
-  StatusBar,
+  StatusBar, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
-import { authAPI } from '../../services/api';
+import { authAPI, aiAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,6 +25,8 @@ const DashboardScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingPath, setLoadingPath] = useState(false);
+  const [learningPath, setLearningPath] = useState({ visible: false, content: '' });
 
   const loadUnreadCount = async () => {
     try {
@@ -32,7 +35,7 @@ const DashboardScreen = () => {
         const notifs = JSON.parse(stored);
         setUnreadCount(notifs.filter((n: any) => !n.read).length);
       } else {
-        setUnreadCount(2);
+        setUnreadCount(0);
       }
     } catch {
       setUnreadCount(0);
@@ -80,6 +83,21 @@ const DashboardScreen = () => {
     setRefreshing(true);
     await loadProfile();
     setRefreshing(false);
+  };
+
+  const handleGeneratePath = async () => {
+    setLoadingPath(true);
+    triggerLight();
+    try {
+      const res = await aiAPI.getLearningPath();
+      if (res.success) {
+        setLearningPath({ visible: true, content: res.data.recommendation });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Gagal membuat jalur belajar AI.');
+    } finally {
+      setLoadingPath(false);
+    }
   };
 
   const hasClass = !!(user?.className || user?.['class']);
@@ -137,14 +155,32 @@ const DashboardScreen = () => {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Rekomendasi Belajar</Text>
         </View>
         <View style={[styles.emptyRecom, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="book-outline" size={36} color={colors.textSecondary} />
-          <Text style={[styles.emptyRecomTitle, { color: colors.text }]}>Belum Ada Rekomendasi</Text>
+          <View style={styles.aiHeader}>
+            <Ionicons name="sparkles" size={24} color={PURPLE} />
+            <Text style={[styles.aiHeaderTitle, { color: PURPLE }]}>AI LEARNING PATH</Text>
+          </View>
+          <Text style={[styles.emptyRecomTitle, { color: colors.text }]}>Jalur Belajar Personal</Text>
           <Text style={[styles.emptyRecomDesc, { color: colors.textSecondary }]}>
             {hasClass
-              ? 'Rekomendasi akan muncul setelah kamu mulai mengerjakan materi dan kuis.'
+              ? 'Dapatkan rencana belajar 7 hari kedepan yang disusun khusus oleh AI berdasarkan performamu.'
               : 'Bergabung ke kelas terlebih dahulu untuk mendapatkan rekomendasi belajarmu.'}
           </Text>
-          {!hasClass && (
+          {hasClass ? (
+            <Pressable 
+              style={[styles.joinClassBtn, { backgroundColor: PURPLE }]} 
+              onPress={handleGeneratePath}
+              disabled={loadingPath}
+            >
+              {loadingPath ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="map-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.joinClassText}>Buat Jalur Belajar AI</Text>
+                </>
+              )}
+            </Pressable>
+          ) : (
             <Pressable style={[styles.joinClassBtn, { backgroundColor: colors.primary }]} onPress={() => { triggerLight(); navigation.navigate('JoinClass' as any); }}>
               <Text style={styles.joinClassText}>Gabung Kelas</Text>
             </Pressable>
@@ -180,6 +216,16 @@ const DashboardScreen = () => {
           ))}
         </View>
       </ScrollView>
+
+      <PremiumModal
+        visible={learningPath.visible}
+        type="info"
+        icon="map"
+        title="Jalur Belajar AI"
+        message={learningPath.content}
+        confirmText="Mulai Belajar!"
+        onConfirm={() => setLearningPath({ ...learningPath, visible: false })}
+      />
     </SafeAreaView>
   );
 };
@@ -224,8 +270,10 @@ const styles = StyleSheet.create({
   },
   emptyRecomTitle: { fontSize: 15, fontWeight: '700', marginTop: 4 },
   emptyRecomDesc:  { fontSize: 13, textAlign: 'center', lineHeight: 19 },
-  joinClassBtn:    { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 },
+  joinClassBtn:    { marginTop: 8, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, flexDirection: 'row', alignItems: 'center' },
   joinClassText:   { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  aiHeaderTitle: { fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
   spacer: { minHeight: 5 },
   recomCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F1F5F9', flexDirection: 'row', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 1 },
   recomIconBox: { width: 50, height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 15 },

@@ -1,13 +1,13 @@
-﻿# EduBridge AI Mobile App - Complete Setup Guide
+# EduBridge AI Mobile App - Complete Setup Guide
 
-## ✅ Project Created Successfully
+## ? Project Created Successfully
 
 The complete React Native mobile app has been built with Expo and TypeScript.
 
-### 📁 Project Location
+### ?? Project Location
 `D:\EduBridge\edubridge-mobile`
 
-### 📦 Dependencies Installed
+### ?? Dependencies Installed
 - React Native 0.81.5
 - Expo SDK 54
 - TypeScript 5.9
@@ -16,7 +16,7 @@ The complete React Native mobile app has been built with Expo and TypeScript.
 - AsyncStorage for state persistence
 - expo-linear-gradient for UI effects
 
-### 🎨 8 Complete Screens Created
+### ?? 8 Complete Screens Created
 
 #### Authentication Flow
 1. **SplashScreen.tsx** - Purple gradient with logo, "Mulai Belajar" button
@@ -34,29 +34,29 @@ The complete React Native mobile app has been built with Expo and TypeScript.
 9. **TeacherDashboardScreen.tsx** - Stats (3 classes, 90 students, 78% avg, 12 at-risk), at-risk student list
 10. **TeacherProfileScreen.tsx** - Teacher profile, settings, logout
 
-### 🗂️ File Structure
+### ??? File Structure
 ```
 src/
-├── navigation/AppNavigator.tsx - Stack + Bottom Tab navigation
-├── screens/
-│   ├── SplashScreen.tsx
-│   ├── auth/
-│   │   ├── LoginScreen.tsx
-│   │   └── RegisterScreen.tsx
-│   ├── student/
-│   │   ├── DashboardScreen.tsx
-│   │   ├── QuizScreen.tsx
-│   │   ├── AITutorScreen.tsx
-│   │   ├── ProgressScreen.tsx
-│   │   └── ProfileScreen.tsx
-│   └── teacher/
-│       ├── TeacherDashboardScreen.tsx
-│       └── TeacherProfileScreen.tsx
-├── services/api.ts - Axios instance + API calls
-└── store/authStore.ts - AsyncStorage auth state
++-- navigation/AppNavigator.tsx - Stack + Bottom Tab navigation
++-- screens/
+�   +-- SplashScreen.tsx
+�   +-- auth/
+�   �   +-- LoginScreen.tsx
+�   �   +-- RegisterScreen.tsx
+�   +-- student/
+�   �   +-- DashboardScreen.tsx
+�   �   +-- QuizScreen.tsx
+�   �   +-- AITutorScreen.tsx
+�   �   +-- ProgressScreen.tsx
+�   �   +-- ProfileScreen.tsx
+�   +-- teacher/
+�       +-- TeacherDashboardScreen.tsx
+�       +-- TeacherProfileScreen.tsx
++-- services/api.ts - Axios instance + API calls
++-- store/authStore.ts - AsyncStorage auth state
 ```
 
-### 🚀 How to Run
+### ?? How to Run
 
 ```bash
 cd D:\EduBridge\edubridge-mobile
@@ -70,20 +70,20 @@ npm start
 # Or scan QR code with Expo Go app
 ```
 
-### 🎯 Features Implemented
+### ?? Features Implemented
 
-✓ Purple theme (#7C3AED) throughout
-✓ Stack + Bottom Tab navigation (no expo-router)
-✓ JWT authentication with AsyncStorage persistence
-✓ Dummy data for all screens
-✓ Responsive design
-✓ Real-time timer on quiz screen
-✓ Message list with smooth scrolling
-✓ Progress bars with gradient fills
-✓ Stat cards in 2x2 grids
-✓ Student/Teacher role support
+? Purple theme (#7C3AED) throughout
+? Stack + Bottom Tab navigation (no expo-router)
+? JWT authentication with AsyncStorage persistence
+? Dummy data for all screens
+? Responsive design
+? Real-time timer on quiz screen
+? Message list with smooth scrolling
+? Progress bars with gradient fills
+? Stat cards in 2x2 grids
+? Student/Teacher role support
 
-### 🔌 Backend Integration
+### ?? Backend Integration
 
 The app is configured to connect to the backend at:
 `http://localhost:3000/api`
@@ -98,7 +98,7 @@ API Service includes:
 - aiAPI.tutorChat()
 - aiAPI.generateQuiz()
 
-### 💾 State Management
+### ?? State Management
 
 Auth store with AsyncStorage:
 - Automatic token persistence
@@ -106,7 +106,7 @@ Auth store with AsyncStorage:
 - Logout clears all data
 - User profile caching
 
-### 📱 Screens Overview
+### ?? Screens Overview
 
 All screens follow the purple theme (#7C3AED) with:
 - Gradient headers
@@ -115,7 +115,7 @@ All screens follow the purple theme (#7C3AED) with:
 - Touch feedback on buttons
 - Smooth animations
 
-### ✨ Ready for Development
+### ? Ready for Development
 
 The app is production-ready and can be:
 - Extended with more screens

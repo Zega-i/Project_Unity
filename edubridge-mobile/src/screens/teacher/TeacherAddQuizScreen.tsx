@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TextInput, Pressable, StatusBar, Switch,
-  Alert, ActivityIndicator, Modal, FlatList,
+  Alert, ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { aiAPI, teacherAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
@@ -19,14 +20,9 @@ interface Question {
   correctAnswer: number;
 }
 
-const MOCK_MATERIALS = [
-  { id: '1', title: 'Modul Matematika - Aljabar.pdf' },
-  { id: '2', title: 'Persamaan Linear Dasar.pdf' },
-  { id: '3', title: 'Kumpulan Rumus Geometri.docx' },
-];
 
 const TeacherAddQuizScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerMedium, triggerSuccess } = useHapticFeedback();
@@ -48,6 +44,8 @@ const TeacherAddQuizScreen = () => {
   });
 
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [aiDraft, setAiDraft] = useState<Question[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newQuestion, setNewQuestion] = useState({
@@ -55,6 +53,28 @@ const TeacherAddQuizScreen = () => {
     options: ['', '', '', ''],
     correctAnswer: 0,
   });
+
+  useEffect(() => {
+    const fetchMaterials = async () => {
+      if (!classId) return;
+      try {
+        const res = await teacherAPI.getClassMaterials(classId);
+        if (res.success) setMaterials(res.data);
+      } catch (error) {
+        console.log('Error fetching materials:', error);
+      }
+    };
+
+    fetchMaterials();
+  }, [classId]);
+
+  const handleAddAllDrafts = () => {
+    if (aiDraft.length === 0) return;
+    setQuestions([...questions, ...aiDraft]);
+    setAiDraft([]);
+    triggerSuccess();
+    Alert.alert('Berhasil', `${aiDraft.length} soal telah ditambahkan ke kuis.`);
+  };
 
   const handleOpenEdit = (q: Question) => {
     setEditingId(q.id);
@@ -76,30 +96,28 @@ const TeacherAddQuizScreen = () => {
     triggerMedium();
 
     try {
-      // Simulating AI Quiz Generation
-      await new Promise(r => setTimeout(r, 3500));
+      // Extract count from command
+      const countMatch = quizData.aiCommand.match(/\d+/);
+      const count = countMatch ? parseInt(countMatch[0]) : 5;
       
-      const mockQuestions: Question[] = [
-        {
-          id: 'ai-1',
-          text: 'Berdasarkan materi, apa yang dimaksud dengan variabel dalam aljabar?',
-          options: ['Angka tetap', 'Lambang pengganti bilangan', 'Hasil perkalian', 'Satuan ukur'],
-          correctAnswer: 1
-        },
-        {
-          id: 'ai-2',
-          text: 'Selesaikan persamaan: 2x + 5 = 15',
-          options: ['x = 3', 'x = 4', 'x = 5', 'x = 6'],
-          correctAnswer: 2
-        }
-      ];
+      const response = await aiAPI.generateQuiz(quizData.aiCommand, count, quizData.selectedMaterialId);
       
-      setQuestions(mockQuestions);
-      setQuizData({ ...quizData, title: 'Kuis AI: ' + quizData.selectedMaterialTitle.split('.')[0] });
-      triggerSuccess();
-      Alert.alert('Berhasil', 'AI telah membuat ' + mockQuestions.length + ' soal kuis untuk Anda!');
+      if (response && response.success && response.data.quiz) {
+        const aiQuestions: Question[] = response.data.quiz.map((q: any) => ({
+          id: Math.random().toString(36).substr(2, 9),
+          text: q.question,
+          options: [q.options.a, q.options.b, q.options.c, q.options.d],
+          correctAnswer: q.correct_answer === 'a' ? 0 : q.correct_answer === 'b' ? 1 : q.correct_answer === 'c' ? 2 : 3
+        }));
+        
+        setAiDraft(aiQuestions);
+        setQuizData({ ...quizData, title: 'Kuis AI: ' + quizData.selectedMaterialTitle.split('.')[0] });
+        triggerSuccess();
+        Alert.alert('AI Berhasil', `Berhasil membuat ${aiQuestions.length} draf soal.`);
+      }
     } catch (error) {
-      Alert.alert('Error', 'AI gagal membuat soal.');
+      console.error('AI Quiz Error:', error);
+      Alert.alert('Gagal', 'Gagal membuat soal dengan AI. Coba lagi nanti.');
     } finally {
       setGenerating(false);
     }
@@ -112,11 +130,9 @@ const TeacherAddQuizScreen = () => {
     }
 
     if (editingId) {
-      // Edit existing
       setQuestions(questions.map(q => q.id === editingId ? { ...newQuestion, id: editingId } : q));
       setEditingId(null);
     } else {
-      // Add new
       const q: Question = {
         id: Date.now().toString(),
         ...newQuestion,
@@ -150,11 +166,18 @@ const TeacherAddQuizScreen = () => {
     }
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 1500));
-      triggerSuccess();
-      Alert.alert('Berhasil', 'Kuis baru telah dipublikasikan!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
+      const res = await teacherAPI.addQuiz(classId, {
+        title: quizData.title,
+        duration: quizData.duration,
+        questions: questions
+      });
+
+      if (res.success) {
+        triggerSuccess();
+        Alert.alert('Berhasil', 'Kuis baru telah dipublikasikan!', [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+      }
     } catch (error) {
       Alert.alert('Error', 'Gagal menyimpan kuis.');
     } finally {
@@ -177,9 +200,14 @@ const TeacherAddQuizScreen = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Step 1: Source Material */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>1. Sumber Materi & AI</Text>
+        {/* Step 1: Source Material - MADE MORE PROMINENT */}
+        <View style={[styles.section, { backgroundColor: GREEN + '05', padding: 15, borderRadius: 24, borderWidth: 1, borderColor: GREEN + '20' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <View style={{ backgroundColor: GREEN, padding: 4, borderRadius: 6 }}>
+              <Ionicons name="sparkles" size={16} color="#FFF" />
+            </View>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>BUAT SOAL OTOMATIS (AI)</Text>
+          </View>
           <Pressable 
             style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 12 }]}
             onPress={() => setShowMaterialModal(true)}
@@ -297,6 +325,30 @@ const TeacherAddQuizScreen = () => {
           </View>
         </View>
 
+        {/* AI Draft Suggestions - AUTO FOCUS AREA */}
+        {aiDraft.length > 0 && (
+          <View style={[styles.section, { marginTop: 10, padding: 15, backgroundColor: GREEN + '10', borderRadius: 24, borderStyle: 'dashed', borderWidth: 2, borderColor: GREEN }]}>
+            <View style={styles.sectionHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionTitle, { color: GREEN, marginBottom: 4 }]}>HASIL GENERATE AI</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Tinjau draf soal di bawah sebelum disimpan</Text>
+              </View>
+              <Pressable style={[styles.addAllBtn, { backgroundColor: GREEN, paddingHorizontal: 16, height: 40, justifyContent: 'center' }]} onPress={handleAddAllDrafts}>
+                <Text style={[styles.addAllText, { fontSize: 14 }]}>Terima Semua</Text>
+              </Pressable>
+            </View>
+            <View style={[styles.draftContainer, { backgroundColor: colors.card, borderColor: GREEN + '40' }]}>
+              {aiDraft.map((d, i) => (
+                <View key={d.id} style={[styles.draftItem, i < aiDraft.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                  <Text style={[styles.draftText, { color: colors.text }]} numberOfLines={2}>
+                    {i + 1}. {d.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Question List */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -389,20 +441,24 @@ const TeacherAddQuizScreen = () => {
               <Pressable onPress={() => setShowMaterialModal(false)}><Ionicons name="close" size={24} color={colors.text} /></Pressable>
             </View>
             <ScrollView>
-              {MOCK_MATERIALS.map(m => (
-                <Pressable 
-                  key={m.id} 
-                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}
-                  onPress={() => {
-                    setQuizData({...quizData, selectedMaterialId: m.id, selectedMaterialTitle: m.title});
-                    setShowMaterialModal(false);
-                    triggerMedium();
-                  }}
-                >
-                  <Ionicons name="document-text" size={24} color={GREEN} />
-                  <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{m.title}</Text>
-                </Pressable>
-              ))}
+              {materials.length === 0 ? (
+                <Text style={{ textAlign: 'center', marginTop: 20, color: colors.textSecondary }}>Belum ada materi di kelas ini.</Text>
+              ) : (
+                materials.map(m => (
+                  <Pressable 
+                    key={m.id} 
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}
+                    onPress={() => {
+                      setQuizData({...quizData, selectedMaterialId: m.id, selectedMaterialTitle: m.title});
+                      setShowMaterialModal(false);
+                      triggerMedium();
+                    }}
+                  >
+                    <Ionicons name="document-text" size={24} color={GREEN} />
+                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{m.title}</Text>
+                  </Pressable>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>
@@ -451,6 +507,11 @@ const styles = StyleSheet.create({
   radioIn: { width: 10, height: 10, borderRadius: 5, backgroundColor: GREEN },
   addConfirmBtn: { backgroundColor: GREEN, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 24 },
   addConfirmText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  addAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  addAllText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  draftContainer: { borderRadius: 20, borderWidth: 1, padding: 16, marginTop: 4, marginBottom: 20 },
+  draftItem: { paddingVertical: 12 },
+  draftText: { fontSize: 13, fontWeight: '500', opacity: 0.8 },
 });
 
 export default TeacherAddQuizScreen;

@@ -57,7 +57,7 @@ const TeacherAIScreen = () => {
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
   const user = authStore.getUserSync();
-  const firstName = user?.name?.split(' ')[0] || 'Budi';
+  const firstName = user?.name?.split(' ')[0] || 'Guru';
 
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
@@ -105,15 +105,15 @@ const TeacherAIScreen = () => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {messages.length === 0 ? (
-          <>
-            <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.heroTitle, { color: colors.text }]}>Hai Pak {firstName}! 👋</Text>
-              <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
-                Saya siap membantu Anda mengajar lebih cerdas. Pilih bantuan yang Anda butuhkan atau langsung tanya di bawah.
-              </Text>
-            </View>
+        <View style={[styles.hero, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Hai {user?.role === 'TEACHER' ? 'Pak/Bu' : ''} {firstName}! 👋</Text>
+          <Text style={[styles.heroSub, { color: colors.textSecondary }]}>
+            Saya siap membantu Anda mengajar lebih cerdas. Pilih bantuan yang Anda butuhkan atau langsung tanya di bawah.
+          </Text>
+        </View>
 
+        {messages.length === 0 && (
+          <>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Alat Bantu AI</Text>
             
             {AI_TOOLS.map((tool) => (
@@ -125,7 +125,7 @@ const TeacherAIScreen = () => {
                   if (tool.id === '1' || tool.id === '5') {
                     navigation.navigate('TeacherKelas');
                   } else if (tool.id === '2' || tool.id === '3') {
-                    navigation.navigate('TeacherAnalytics');
+                    navigation.navigate('TeacherInsight');
                   } else if (tool.id === '4') {
                     navigation.navigate('TeacherKelas');
                   }
@@ -142,7 +142,9 @@ const TeacherAIScreen = () => {
               </Pressable>
             ))}
           </>
-        ) : (
+        )}
+
+        {messages.length > 0 && (
           <View style={styles.chatWrap}>
             {messages.map((msg) => (
               <View 

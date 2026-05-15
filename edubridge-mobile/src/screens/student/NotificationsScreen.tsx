@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { notificationsAPI } from '../../services/api';
 
 const PURPLE = '#7C3AED';
 
@@ -27,59 +28,17 @@ const NotificationsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'Materi Baru Tersedia',
-      message: 'Guru telah mengunggah materi baru "Persamaan Linear" di kelas Matematika',
-      type: 'NEW_MATERIAL',
-      read: false,
-      createdAt: new Date(Date.now() - 60000).toISOString(),
-    },
-    {
-      id: '2',
-      title: 'Quiz Menunggu',
-      message: 'Masih ada 1 quiz yang belum kamu kerjakan: "Quiz Fungsi Kuadrat"',
-      type: 'QUIZ_RESULT',
-      read: false,
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: '3',
-      title: 'Pencapaian Baru!',
-      message: 'Selamat! Kamu telah menyelesaikan 5 materi dalam seminggu. Lanjutkan!',
-      type: 'ACHIEVEMENT',
-      read: true,
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: '4',
-      title: 'Peringatan Performa',
-      message: 'Performa kamu di Fisika menurun. Kami merekomendasikan lebih banyak latihan.',
-      type: 'RISK_ALERT',
-      read: true,
-      createdAt: new Date(Date.now() - 172800000).toISOString(),
-    },
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadNotifications = async () => {
     setLoading(true);
     try {
-      const stored = await AsyncStorage.getItem('notifications');
-      if (stored) {
-        setNotifications(JSON.parse(stored));
+      const res = await notificationsAPI.getAll();
+      if (res.success) {
+        setNotifications(res.data);
       }
-      // TODO: Fetch from API when backend is ready
-      // const token = await authStore.getToken();
-      // const response = await fetch('http://your-backend-url/api/notifications', {
-      //   headers: { 'Authorization': `Bearer ${token}` }
-      // });
-      // const data = await response.json();
-      // setNotifications(data.data.notifications);
-
-      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error) {
       console.log('Error loading notifications:', error);
     } finally {
@@ -100,19 +59,10 @@ const NotificationsScreen = () => {
   const markAsRead = async (notificationId: string) => {
     try {
       triggerLight();
-      const updated = notifications.map(n => n.id === notificationId ? { ...n, read: true } : n);
-      setNotifications(updated);
-      await AsyncStorage.setItem('notifications', JSON.stringify(updated));
-      // TODO: Call backend when ready
-      // const token = await authStore.getToken();
-      // await fetch('http://your-backend-url/api/notifications/mark-read', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`
-      //   },
-      //   body: JSON.stringify({ notificationId })
-      // });
+      const res = await notificationsAPI.markAsRead(notificationId);
+      if (res.success) {
+        setNotifications(notifications.map(n => n.id === notificationId ? { ...n, read: true } : n));
+      }
     } catch (error) {
       console.log('Error marking as read:', error);
     }
@@ -121,19 +71,10 @@ const NotificationsScreen = () => {
   const deleteNotification = async (notificationId: string) => {
     try {
       triggerLight();
-      const updated = notifications.filter(n => n.id !== notificationId);
-      setNotifications(updated);
-      await AsyncStorage.setItem('notifications', JSON.stringify(updated));
-      // TODO: Call backend when ready
-      // const token = await authStore.getToken();
-      // await fetch('http://your-backend-url/api/notifications/delete', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'Authorization': `Bearer ${token}`
-      //   },
-      //   body: JSON.stringify({ notificationId })
-      // });
+      const res = await notificationsAPI.delete(notificationId);
+      if (res.success) {
+        setNotifications(notifications.filter(n => n.id !== notificationId));
+      }
     } catch (error) {
       console.log('Error deleting notification:', error);
     }
@@ -142,17 +83,10 @@ const NotificationsScreen = () => {
   const markAllAsRead = async () => {
     try {
       triggerLight();
-      const updated = notifications.map(n => ({ ...n, read: true }));
-      setNotifications(updated);
-      await AsyncStorage.setItem('notifications', JSON.stringify(updated));
-      // TODO: Call backend when ready
-      // const token = await authStore.getToken();
-      // await fetch('http://your-backend-url/api/notifications/mark-all-read', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`
-      //   }
-      // });
+      const res = await notificationsAPI.markAllAsRead();
+      if (res.success) {
+        setNotifications(notifications.map(n => ({ ...n, read: true })));
+      }
     } catch (error) {
       console.log('Error marking all as read:', error);
     }

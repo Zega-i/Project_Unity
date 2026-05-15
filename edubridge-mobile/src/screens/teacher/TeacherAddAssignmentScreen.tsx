@@ -9,17 +9,15 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { aiAPI, teacherAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
 
-const MOCK_MATERIALS = [
-  { id: '1', title: 'Modul Matematika - Aljabar.pdf' },
-  { id: '2', title: 'Persamaan Linear Dasar.pdf' },
-  { id: '3', title: 'Kumpulan Rumus Geometri.docx' },
-];
+// MOCK_MATERIALS removed, will fetch from API
 
 const TeacherAddAssignmentScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerMedium, triggerSuccess } = useHapticFeedback();
@@ -28,6 +26,7 @@ const TeacherAddAssignmentScreen = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [materials, setMaterials] = useState<any[]>([]);
   
   const [assignment, setAssignment] = useState({
     title: '',
@@ -36,7 +35,22 @@ const TeacherAddAssignmentScreen = () => {
     selectedMaterialTitle: '',
     aiCommand: '',
     generatedContent: '',
+    points: '100',
+    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 7 days from now
   });
+
+  const fetchMaterials = async () => {
+    try {
+      const res = await teacherAPI.getClassMaterials(classId);
+      if (res.success) setMaterials(res.data);
+    } catch (error) {
+      console.log('Error fetching materials:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchMaterials();
+  }, [classId]);
 
   const handleGenerateAI = async () => {
     if (!assignment.selectedMaterialId || !assignment.aiCommand) {
@@ -48,35 +62,48 @@ const TeacherAddAssignmentScreen = () => {
     triggerMedium();
 
     try {
-      // Simulating AI Processing
-      await new Promise(r => setTimeout(r, 3000));
-      
-      const mockResult = `TUGAS ANALISIS:\n1. Jelaskan konsep utama dari bab yang dipilih.\n2. Berikan contoh implementasi dalam kehidupan sehari-hari.\n3. Buatlah ringkasan singkat mengenai kesimpulan materi tersebut.`;
-      
-      setAssignment({
-        ...assignment,
-        generatedContent: mockResult,
-      });
-      triggerSuccess();
+      const res = await aiAPI.generateAssignment(assignment.aiCommand, assignment.selectedMaterialId);
+      if (res.success) {
+        setAssignment({
+          ...assignment,
+          generatedContent: res.data.assignment,
+        });
+        triggerSuccess();
+      }
     } catch (error) {
-      Alert.alert('Error', 'AI gagal memproses materi.');
+      Alert.alert('Error', 'AI gagal memproses materi. Coba lagi nanti.');
     } finally {
       setGenerating(false);
     }
   };
 
   const handleSave = async () => {
-    if (!assignment.title || (!assignment.instructions && !assignment.generatedContent)) {
+    const finalDescription = assignment.instructions || assignment.generatedContent;
+    if (!assignment.title || !finalDescription) {
       Alert.alert('Gagal', 'Mohon lengkapi judul dan isi tugas.');
       return;
     }
+    
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setLoading(false);
-    triggerSuccess();
-    Alert.alert('Berhasil', 'Tugas berhasil dipublikasikan ke kelas!', [
-      { text: 'Selesai', onPress: () => navigation.goBack() }
-    ]);
+    try {
+      const res = await teacherAPI.addAssignment(classId, {
+        title: assignment.title,
+        description: finalDescription,
+        points: parseInt(assignment.points) || 100,
+        deadline: assignment.deadline,
+      });
+
+      if (res.success) {
+        triggerSuccess();
+        Alert.alert('Berhasil', 'Tugas berhasil dipublikasikan ke kelas!', [
+          { text: 'Selesai', onPress: () => navigation.goBack() }
+        ]);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Gagal menyimpan tugas. Periksa koneksi internet Anda.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -183,6 +210,26 @@ const TeacherAddAssignmentScreen = () => {
                 onChangeText={(v) => setAssignment({...assignment, instructions: v})}
               />
 
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Poin Maksimum</Text>
+                  <TextInput
+                    style={[styles.input, { color: colors.text }]}
+                    keyboardType="numeric"
+                    value={assignment.points}
+                    onChangeText={(v) => setAssignment({...assignment, points: v})}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.label, { color: colors.textSecondary }]}>Tenggat Waktu (YYYY-MM-DD)</Text>
+                  <TextInput
+                    style={[styles.input, { color: colors.text }]}
+                    value={assignment.deadline}
+                    onChangeText={(v) => setAssignment({...assignment, deadline: v})}
+                  />
+                </View>
+              </View>
+
               {assignment.generatedContent ? (
                 <View style={[styles.resultBox, { backgroundColor: colors.background }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -219,20 +266,24 @@ const TeacherAddAssignmentScreen = () => {
               <Pressable onPress={() => setShowMaterialModal(false)}><Ionicons name="close" size={24} color={colors.text} /></Pressable>
             </View>
             <ScrollView>
-              {MOCK_MATERIALS.map(m => (
-                <Pressable 
-                  key={m.id} 
-                  style={[styles.materialItem, { borderColor: colors.border }]}
-                  onPress={() => {
-                    setAssignment({...assignment, selectedMaterialId: m.id, selectedMaterialTitle: m.title});
-                    setShowMaterialModal(false);
-                    triggerMedium();
-                  }}
-                >
-                  <Ionicons name="document-text" size={24} color={GREEN} />
-                  <Text style={[styles.materialItemText, { color: colors.text }]}>{m.title}</Text>
-                </Pressable>
-              ))}
+              {materials.length === 0 ? (
+                <Text style={{ textAlign: 'center', marginTop: 20, color: colors.textSecondary }}>Belum ada materi di kelas ini.</Text>
+              ) : (
+                materials.map(m => (
+                  <Pressable 
+                    key={m.id} 
+                    style={[styles.materialItem, { borderColor: colors.border }]}
+                    onPress={() => {
+                      setAssignment({...assignment, selectedMaterialId: m.id, selectedMaterialTitle: m.title});
+                      setShowMaterialModal(false);
+                      triggerMedium();
+                    }}
+                  >
+                    <Ionicons name="document-text" size={24} color={GREEN} />
+                    <Text style={[styles.materialItemText, { color: colors.text }]}>{m.title}</Text>
+                  </Pressable>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>

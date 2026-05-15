@@ -47,12 +47,13 @@ const TeacherAddClassScreen = () => {
 
     setLoading(true);
     try {
-      // In real scenario: await teacherAPI.createClass({...formData, token});
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate
-      triggerSuccess();
-      Alert.alert('Berhasil', 'Kelas baru telah dibuat!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
+      const res = await teacherAPI.createClass({ ...formData, token });
+      if (res.success) {
+        triggerSuccess();
+        Alert.alert('Berhasil', 'Kelas baru telah dibuat!', [
+          { text: 'OK', onPress: () => navigation.goBack() }
+        ]);
+      }
     } catch (error) {
       Alert.alert('Error', 'Gagal membuat kelas. Silakan coba lagi.');
     } finally {

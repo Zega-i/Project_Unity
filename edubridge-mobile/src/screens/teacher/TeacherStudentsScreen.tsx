@@ -9,13 +9,9 @@ import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
-const GREEN = '#16A34A';
+import { teacherAPI } from '../../services/api';
 
-const MOCK_STUDENTS = [
-  { id: '1', name: 'Ahmad Fauzi',   kelas: '10A - MTK', avg: 88, status: 'Active', color: '#10B981' },
-  { id: '2', name: 'Budi Santoso',  kelas: '10A - MTK', avg: 72, status: 'At Risk', color: '#EF4444' },
-  { id: '3', name: 'Citra Lestari', kelas: '11B - FIS', avg: 95, status: 'Active', color: '#8B5CF6' },
-];
+const GREEN = '#16A34A';
 
 const TeacherStudentsScreen = () => {
   const navigation = useNavigation<any>();
@@ -23,16 +19,32 @@ const TeacherStudentsScreen = () => {
   const { triggerLight } = useHapticFeedback();
   const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchStudents = async () => {
+    try {
+      const res = await teacherAPI.getAllStudents();
+      if (res.success) setStudents(res.data);
+    } catch (error) {
+      console.log('Error fetching students:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchStudents();
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // In real app: await teacherAPI.getClassStudents();
-    await new Promise(r => setTimeout(r, 1000));
+    await fetchStudents();
     setRefreshing(false);
   };
 
-  const filteredStudents = MOCK_STUDENTS.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || s.kelas.toLowerCase().includes(search.toLowerCase())
+  const filteredStudents = students.filter(s => 
+    s.name.toLowerCase().includes(search.toLowerCase()) || (s.kelas && s.kelas.toLowerCase().includes(search.toLowerCase()))
   );
 
   const renderStudentItem = ({ item }: { item: any }) => (

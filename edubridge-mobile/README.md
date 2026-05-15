@@ -1,8 +1,8 @@
-﻿# EduBridge AI Mobile App
+# EduBridge AI Mobile App
 
 React Native mobile app for EduBridge AI adaptive learning platform built with Expo and TypeScript.
 
-## 🚀 Quick Start
+## ?? Quick Start
 
 ### Prerequisites
 - Node.js 16+
@@ -29,44 +29,44 @@ npm start
 # Scan QR code with Expo Go app
 ```
 
-## 📁 Project Structure
+## ?? Project Structure
 
 ```
-├── src/
-│   ├── navigation/
-│   │   └── AppNavigator.tsx         # Stack + Tab navigation
-│   ├── screens/
-│   │   ├── SplashScreen.tsx
-│   │   ├── auth/
-│   │   │   ├── LoginScreen.tsx
-│   │   │   └── RegisterScreen.tsx
-│   │   ├── student/
-│   │   │   ├── DashboardScreen.tsx
-│   │   │   ├── QuizScreen.tsx
-│   │   │   ├── AITutorScreen.tsx
-│   │   │   ├── ProgressScreen.tsx
-│   │   │   └── ProfileScreen.tsx
-│   │   └── teacher/
-│   │       ├── TeacherDashboardScreen.tsx
-│   │       └── TeacherProfileScreen.tsx
-│   ├── services/
-│   │   └── api.ts                  # Axios + API calls
-│   └── store/
-│       └── authStore.ts            # AsyncStorage auth state
-├── App.tsx                         # Navigation setup
-├── package.json
-├── tsconfig.json
-└── .env
++-- src/
+�   +-- navigation/
+�   �   +-- AppNavigator.tsx         # Stack + Tab navigation
+�   +-- screens/
+�   �   +-- SplashScreen.tsx
+�   �   +-- auth/
+�   �   �   +-- LoginScreen.tsx
+�   �   �   +-- RegisterScreen.tsx
+�   �   +-- student/
+�   �   �   +-- DashboardScreen.tsx
+�   �   �   +-- QuizScreen.tsx
+�   �   �   +-- AITutorScreen.tsx
+�   �   �   +-- ProgressScreen.tsx
+�   �   �   +-- ProfileScreen.tsx
+�   �   +-- teacher/
+�   �       +-- TeacherDashboardScreen.tsx
+�   �       +-- TeacherProfileScreen.tsx
+�   +-- services/
+�   �   +-- api.ts                  # Axios + API calls
+�   +-- store/
+�       +-- authStore.ts            # AsyncStorage auth state
++-- App.tsx                         # Navigation setup
++-- package.json
++-- tsconfig.json
++-- .env
 ```
 
-## 🎨 UI/UX
+## ?? UI/UX
 
 - **Purple Theme**: #7C3AED
 - **Navigation**: Stack + Bottom Tabs (no expo-router)
 - **Components**: React Native built-ins + expo-linear-gradient
 - **Icons**: Ionicons from @expo/vector-icons
 
-## 🔌 API Integration
+## ?? API Integration
 
 The app connects to the backend API at `http://localhost:3000/api`:
 
@@ -76,7 +76,7 @@ The app connects to the backend API at `http://localhost:3000/api`:
 
 Tokens are stored in AsyncStorage and automatically added to requests.
 
-## 📱 Screens
+## ?? Screens
 
 ### Authentication
 - **Splash**: Purple gradient with logo and "Mulai Belajar" button
@@ -94,7 +94,7 @@ Tokens are stored in AsyncStorage and automatically added to requests.
 - **Dashboard**: Stats, at-risk student list
 - **Profile**: User info and settings
 
-## 🛠️ Development
+## ??? Development
 
 ```bash
 # Install dependencies
@@ -110,7 +110,7 @@ eas build --platform ios
 eas build --platform android
 ```
 
-## 📚 Stack
+## ?? Stack
 
 - **React Native**: 0.73+
 - **Expo**: SDK 49+
@@ -121,13 +121,13 @@ eas build --platform android
 - **Icons**: @expo/vector-icons
 - **Gradients**: expo-linear-gradient
 
-## 🔐 Authentication
+## ?? Authentication
 
 JWT-based authentication with AsyncStorage persistence. Tokens are:
 - Stored locally on login
 - Sent with every API request
 - Cleared on logout
 
-## 📄 License
+## ?? License
 
 Part of EduBridge AI - UNITY Competition #14

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Pressable, StatusBar, Modal,
+  Pressable, StatusBar, Modal, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
 
@@ -19,6 +20,12 @@ const TeacherProfileScreen = () => {
   const user = authStore.getUserSync();
 
   const [logoutVisible, setLogoutVisible] = useState(false);
+  const [modal, setModal] = useState<{ visible: boolean; type: any; title: string; message: string }>({
+    visible: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
 
   const handleLogout = () => {
     triggerMedium();
@@ -32,7 +39,7 @@ const TeacherProfileScreen = () => {
 
   const menuItems = [
     { id: 'Settings',     label: 'Pengaturan',      icon: 'settings-outline' },
-    { id: 'HelpCenter',   label: 'Pusat Bantuan',    icon: 'help-circle-outline' },
+    { id: 'Help',         label: 'Pusat Bantuan',    icon: 'help-circle-outline' },
     { id: 'About',        label: 'Tentang Aplikasi', icon: 'information-circle-outline' },
   ];
 
@@ -74,7 +81,13 @@ const TeacherProfileScreen = () => {
         <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {menuItems.map((item, i) => (
             <React.Fragment key={item.id}>
-              <Pressable style={styles.menuItem} onPress={() => { triggerLight(); navigation.navigate(item.id as any); }}>
+              <Pressable 
+                style={styles.menuItem} 
+                onPress={() => { 
+                  triggerLight(); 
+                  navigation.navigate(item.id);
+                }}
+              >
                 <View style={styles.menuLeft}><Ionicons name={item.icon as any} size={22} color={colors.text} /><Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text></View>
                 <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </Pressable>
@@ -91,39 +104,26 @@ const TeacherProfileScreen = () => {
           </Pressable>
         </ScrollView>
 
-        {/* Custom Logout Modal */}
-        <Modal
+        {/* Premium Logout Modal */}
+        <PremiumModal
           visible={logoutVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setLogoutVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-              <View style={[styles.modalIconCircle, { backgroundColor: '#FEF2F2' }]}>
-                <Ionicons name="log-out-outline" size={32} color="#EF4444" />
-              </View>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Keluar Akun?</Text>
-              <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
-                Apakah Anda yakin ingin keluar dari akun EduBridge Anda?
-              </Text>
-              <View style={styles.modalActions}>
-                <Pressable 
-                  style={[styles.modalBtn, { backgroundColor: colors.surface }]} 
-                  onPress={() => setLogoutVisible(false)}
-                >
-                  <Text style={[styles.modalBtnText, { color: colors.text }]}>Batal</Text>
-                </Pressable>
-                <Pressable 
-                  style={[styles.modalBtn, { backgroundColor: GREEN }]} 
-                  onPress={confirmLogout}
-                >
-                  <Text style={[styles.modalBtnText, { color: '#FFF' }]}>Keluar</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          type="error"
+          icon="log-out"
+          title="Keluar Akun?"
+          message="Apakah Anda yakin ingin keluar dari akun EduBridge Anda? Sesi Anda akan dihentikan."
+          confirmText="Ya, Keluar"
+          cancelText="Batal"
+          onConfirm={confirmLogout}
+          onCancel={() => setLogoutVisible(false)}
+        />
+
+        <PremiumModal
+          visible={modal.visible}
+          type={modal.type}
+          title={modal.title}
+          message={modal.message}
+          onConfirm={() => setModal({ ...modal, visible: false })}
+        />
       </SafeAreaView>
   );
 };
@@ -148,16 +148,6 @@ const styles = StyleSheet.create({
   menuLabel: { fontSize: 15, fontWeight: '600' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, borderWidth: 1, gap: 10, marginTop: 10 },
   logoutText: { fontSize: 15, fontWeight: 'bold', color: '#EF4444' },
-
-  // Modal Styles
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalCard: { width: '85%', borderRadius: 28, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  modalIconCircle: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  modalMessage: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  modalActions: { flexDirection: 'row', gap: 12, width: '100%' },
-  modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
-  modalBtnText: { fontSize: 15, fontWeight: '700' },
 });
 
 export default TeacherProfileScreen;

@@ -9,34 +9,23 @@ import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
-import { teacherAPI } from '../../services/api';
+import { teacherAPI, aiAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
+import { ActivityIndicator, Alert } from 'react-native';
 
 const GREEN      = '#16A34A';
 const PURPLE     = '#A78BFA';
 
-const CHART_BARS = [
-  { label: 'Sen', value: 78 },
-  { label: 'Sel', value: 85 },
-  { label: 'Rab', value: 90 },
-  { label: 'Kam', value: 70 },
-  { label: 'Jum', value: 83 },
-  { label: 'Sab', value: 55 },
-  { label: 'Min', value: 72 },
-];
-const MAX_BAR = Math.max(...CHART_BARS.map(b => b.value));
-
-const AT_RISK = [
-  { id: '1', name: 'Dika Pratama',   kelas: 'Matematika 10A', avg: 60, color: '#6366F1' },
-  { id: '2', name: 'Siti Nurhaliza', kelas: 'Fisika 10A',      avg: 65, color: '#EC4899' },
-  { id: '3', name: 'Budi Santoso',   kelas: 'Biologi 10A',     avg: 55, color: '#F59E0B' },
-];
+const CHART_BARS: any[] = [];
+const AT_RISK: any[] = [];
+const MAX_BAR = 100;
 
 const TeacherDashboardScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight }       = useHapticFeedback();
   const user      = authStore.getUserSync();
-  const firstName = user?.name?.split(' ')[0] || 'Budi';
+  const firstName = user?.name?.split(' ')[0] || 'Guru';
 
   const [stats, setStats] = useState({
     activeClasses: 0,
@@ -48,6 +37,8 @@ const TeacherDashboardScreen = () => {
   const [chartData, setChartData] = useState(CHART_BARS);
   const [atRiskData, setAtRiskData] = useState(AT_RISK);
   const [refreshing, setRefreshing] = useState(false);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [aiModal, setAiModal] = useState({ visible: false, title: '', message: '' });
 
   const loadDashboardData = async () => {
     try {
@@ -72,12 +63,31 @@ const TeacherDashboardScreen = () => {
     setRefreshing(false);
   };
 
+  const handleAIInsight = async (student: any) => {
+    setAnalyzingId(student.id);
+    triggerLight();
+    try {
+      const res = await aiAPI.analyzeRisk(student.id, student.name, student.avg);
+      if (res.success) {
+        setAiModal({
+          visible: true,
+          title: `AI Insight: ${student.name}`,
+          message: res.data.analysis
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Gagal mendapatkan analisis AI.');
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GREEN]} />}>
         <View style={styles.greeting}>
-          <Text style={[styles.greetTitle, { color: colors.text }]}>Halo, Pak {firstName}! 👋</Text>
+          <Text style={[styles.greetTitle, { color: colors.text }]}>Halo, {user?.role === 'TEACHER' ? 'Pak/Bu' : ''} {firstName}! 👋</Text>
           <Text style={[styles.greetSub, { color: colors.textSecondary }]}>Semangat mengajar hari ini!</Text>
         </View>
 
@@ -85,15 +95,15 @@ const TeacherDashboardScreen = () => {
         <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statsRow3}>
             <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: GREEN }]}>{stats.activeClasses || 5}</Text>
+              <Text style={[styles.statNum, { color: GREEN }]}>{stats.activeClasses}</Text>
               <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Kelas Aktif</Text>
             </View>
             <View style={[styles.statBox, styles.statBoxMid, { borderColor: colors.border }]}>
-              <Text style={[styles.statNum, { color: colors.text }]}>{stats.totalStudents || 120}</Text>
+              <Text style={[styles.statNum, { color: colors.text }]}>{stats.totalStudents}</Text>
               <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Siswa</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: colors.text }]}>{stats.avgScore || 82}%</Text>
+              <Text style={[styles.statNum, { color: colors.text }]}>{stats.avgScore}%</Text>
               <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Rata-rata Nilai</Text>
             </View>
           </View>
@@ -103,13 +113,13 @@ const TeacherDashboardScreen = () => {
               <View style={styles.badgeRow}>
                 <View style={styles.greenBadge}><Ionicons name="checkmark-circle" size={18} color="#FFF" /></View>
                 <View>
-                  <Text style={[styles.statNumSm, { color: colors.text }]}>{stats.completedTasks || 1} Tugas</Text>
+                  <Text style={[styles.statNumSm, { color: colors.text }]}>{stats.completedTasks} Tugas</Text>
                   <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Ter-selesai</Text>
                 </View>
               </View>
             </View>
             <View style={styles.statBox2}>
-              <Text style={[styles.statNum, { color: colors.text }]}>{stats.activeRate || 95}%</Text>
+              <Text style={[styles.statNum, { color: colors.text }]}>{stats.activeRate}%</Text>
               <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Siswa Aktif</Text>
             </View>
           </View>
@@ -122,41 +132,84 @@ const TeacherDashboardScreen = () => {
           </Pressable>
         </View>
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.chartBody}>
-            <View style={styles.yLabels}>{[90, 70, 50, 30, 0].map(v => <Text key={v} style={[styles.yLabel, { color: colors.textSecondary }]}>{v}</Text>)}</View>
-            <View style={styles.barsArea}>
-              {chartData.map((bar, i) => (
-                <View key={i} style={styles.barCol}>
-                  <View style={[styles.barTrack, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
-                    <View style={[styles.barFill, { height: `${(bar.value / 100) * 100}%`, backgroundColor: GREEN, opacity: i === 2 ? 1 : 0.65 }]} />
-                  </View>
-                  <Text style={[styles.xLabel, { color: colors.textSecondary }]}>{bar.label}</Text>
-                </View>
-              ))}
+          {chartData.length === 0 ? (
+            <View style={{ height: 160, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Belum ada data performa.</Text>
             </View>
-          </View>
+          ) : (
+            <View style={styles.chartBody}>
+              <View style={styles.yLabels}>{[90, 70, 50, 30, 0].map(v => <Text key={v} style={[styles.yLabel, { color: colors.textSecondary }]}>{v}</Text>)}</View>
+              <View style={styles.barsArea}>
+                {chartData.map((bar, i) => (
+                  <View key={i} style={styles.barCol}>
+                    <View style={[styles.barTrack, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
+                      <View style={[styles.barFill, { height: `${(bar.value / 100) * 100}%`, backgroundColor: GREEN, opacity: i === 2 ? 1 : 0.65 }]} />
+                    </View>
+                    <Text style={[styles.xLabel, { color: colors.textSecondary }]}>{bar.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Perlu Perhatian</Text>
         <View style={[styles.atRiskCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {atRiskData.map((s, idx) => (
+          {atRiskData.length === 0 ? (
+            <View style={{ padding: 30, alignItems: 'center' }}>
+              <Ionicons name="checkmark-done-circle-outline" size={48} color={GREEN} />
+              <Text style={{ color: colors.textSecondary, marginTop: 10, fontSize: 13 }}>Semua siswa aman.</Text>
+            </View>
+          ) : atRiskData.map((s, idx) => (
             <React.Fragment key={s.id}>
-              <Pressable style={styles.atRow} onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: s }); }}>
-                <View style={[styles.avatar, { backgroundColor: s.color + '25', borderColor: s.color + '50' }]}><Text style={[styles.avatarText, { color: s.color }]}>{s.name.charAt(0)}</Text></View>
-                <View style={styles.atInfo}>
-                  <Text style={[styles.atName, { color: colors.text }]}>{s.name}</Text>
-                  <Text style={[styles.atClass, { color: colors.textSecondary }]}>{s.kelas}</Text>
-                </View>
+              <View style={styles.atRow}>
+                <Pressable 
+                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} 
+                  onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: s }); }}
+                >
+                  <View style={[styles.avatar, { backgroundColor: s.color + '25', borderColor: s.color + '50' }]}><Text style={[styles.avatarText, { color: s.color }]}>{s.name.charAt(0)}</Text></View>
+                  <View style={styles.atInfo}>
+                    <Text style={[styles.atName, { color: colors.text }]}>{s.name}</Text>
+                    <Text style={[styles.atClass, { color: colors.textSecondary }]}>{s.kelas}</Text>
+                  </View>
+                </Pressable>
+                
                 <View style={styles.atRight}>
-                  <Text style={[styles.atScore, { color: colors.textSecondary }]}>Rata-rata <Text style={{ fontWeight: 'bold', color: '#EF4444' }}>{s.avg}</Text></Text>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                  <Pressable 
+                    style={[styles.aiBadge, { backgroundColor: GREEN + '10' }]}
+                    onPress={() => handleAIInsight(s)}
+                    disabled={analyzingId !== null}
+                  >
+                    {analyzingId === s.id ? (
+                      <ActivityIndicator size="small" color={GREEN} />
+                    ) : (
+                      <>
+                        <Ionicons name="sparkles" size={14} color={GREEN} />
+                        <Text style={[styles.aiBadgeText, { color: GREEN }]}>Tanya AI</Text>
+                      </>
+                    )}
+                  </Pressable>
+                  <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
+                    <Text style={{ fontWeight: 'bold', color: '#EF4444', fontSize: 14 }}>{s.avg}</Text>
+                    <Text style={{ fontSize: 9, color: colors.textSecondary }}>Rata-rata</Text>
+                  </View>
                 </View>
-              </Pressable>
+              </View>
               {idx < atRiskData.length - 1 && <View style={[styles.rowSep, { backgroundColor: colors.border }]} />}
             </React.Fragment>
           ))}
         </View>
       </ScrollView>
+
+      <PremiumModal
+        visible={aiModal.visible}
+        type="info"
+        icon="sparkles"
+        title={aiModal.title}
+        message={aiModal.message}
+        confirmText="Mengerti"
+        onConfirm={() => setAiModal({ ...aiModal, visible: false })}
+      />
     </SafeAreaView>
   );
 };
@@ -198,8 +251,9 @@ const styles = StyleSheet.create({
   atInfo: { flex: 1 },
   atName: { fontSize: 15, fontWeight: '600' },
   atClass: { fontSize: 12, color: '#666' },
-  atRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  atScore: { fontSize: 13, color: '#666' },
+  atRight: { flexDirection: 'row', alignItems: 'center' },
+  aiBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  aiBadgeText: { fontSize: 11, fontWeight: 'bold' },
   rowSep: { height: 1, marginHorizontal: 16 },
 });
 

@@ -13,10 +13,6 @@ import { classAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
-const MOCK_CLASSES = [
-  { id: '1', name: 'Kelas 10A - Matematika', students: 32, schedule: 'Senin, 08:00', token: 'MTK10A' },
-  { id: '2', name: 'Kelas 11B - Fisika', students: 28, schedule: 'Selasa, 10:00', token: 'FIS11B' },
-];
 
 const TeacherClassScreen = () => {
   const navigation = useNavigation<any>();

@@ -11,6 +11,7 @@ import { classAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import PremiumModal from '../../components/PremiumModal';
 
 const PURPLE = '#7C3AED';
 
@@ -20,23 +21,46 @@ const JoinClassScreen = () => {
   const { triggerLight, triggerMedium } = useHapticFeedback();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<{ visible: boolean; type: any; title: string; message: string; onConfirm?: () => void }>({
+    visible: false,
+    type: 'info',
+    title: '',
+    message: ''
+  });
   const user = authStore.getUserSync();
 
   const handleJoin = async () => {
     if (!code.trim()) {
-      Alert.alert('Error', 'Silakan masukkan kode kelas (token)');
+      setModal({
+        visible: true,
+        type: 'warning',
+        title: 'Kode Kosong',
+        message: 'Silakan masukkan kode kelas (token) terlebih dahulu.',
+      });
       return;
     }
     triggerMedium();
     setLoading(true);
     try {
       const res = await classAPI.joinClass(code.trim());
-      Alert.alert('Selamat! 🎉', res.message || 'Anda berhasil bergabung ke kelas baru.', [
-        { text: 'Buka Kelas', onPress: () => navigation.navigate('Kelas') }
-      ]);
+      setModal({
+        visible: true,
+        type: 'success',
+        title: 'Selamat! 🎉',
+        message: res.message || 'Anda berhasil bergabung ke kelas baru.',
+        onConfirm: () => {
+          setModal({ ...modal, visible: false });
+          navigation.navigate('Kelas');
+        }
+      });
     } catch (error: any) {
       const msg = error.response?.data?.error || 'Kode kelas salah atau Anda sudah terdaftar.';
-      Alert.alert('Gagal Bergabung', msg);
+      setModal({
+        visible: true,
+        type: 'error',
+        title: 'Gagal Bergabung',
+        message: msg,
+      });
     } finally {
       setLoading(false);
     }
@@ -117,6 +141,14 @@ const JoinClassScreen = () => {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <PremiumModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onConfirm={modal.onConfirm || (() => setModal({ ...modal, visible: false }))}
+      />
     </SafeAreaView>
   );
 };

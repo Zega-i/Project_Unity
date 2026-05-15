@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, Pressable,
-  ScrollView, Dimensions, Alert,
+  ScrollView, Dimensions, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+
+import { teacherAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
@@ -18,20 +20,62 @@ const TeacherClassDetailScreen = () => {
   const { triggerLight, triggerMedium } = useHapticFeedback();
   const { class: classData } = route.params || {};
   const [activeTab, setActiveTab] = useState('Materials');
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const MOCK_MATERIALS = [
-    { id: '1', title: '1. Persamaan Linear', type: 'PDF', size: '2.3 MB' },
-    { id: '2', title: '2. Sistem Persamaan', type: 'PDF', size: '1.8 MB' },
-  ];
+  const fetchClassContent = async () => {
+    if (!classData?.id) return;
+    setLoading(true);
+    try {
+      if (activeTab === 'Materials') {
+        const res = await teacherAPI.getClassMaterials(classData.id);
+        if (res.success) setMaterials(res.data);
+      } else if (activeTab === 'Assignments') {
+        const res = await teacherAPI.getClassAssignments(classData.id);
+        if (res.success) setAssignments(res.data);
+      } else if (activeTab === 'Quizzes') {
+        const res = await teacherAPI.getClassQuizzes(classData.id);
+        if (res.success) setQuizzes(res.data);
+      }
+    } catch (error) {
+      console.log('Error fetching class content:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const MOCK_TASKS = [
-    { id: 't1', title: 'Latihan Persamaan Linear', deadline: '18 Mei 2025', count: '32/32' },
-    { id: 't2', title: 'Tugas 2 - Aljabar', deadline: '25 Mei 2025', count: '28/32' },
-  ];
+  useEffect(() => {
+    fetchClassContent();
+  }, [classData?.id, activeTab]);
 
-  const MOCK_QUIZZES = [
-    { id: 'q1', title: 'Kuis Logika Dasar', questions: 10, duration: '15 Menit' },
-  ];
+  const handleDelete = (id: string, type: 'material' | 'quiz' | 'assignment') => {
+    triggerMedium();
+    Alert.alert(
+      'Hapus Konten',
+      `Apakah Anda yakin ingin menghapus ${type} ini?`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        { 
+          text: 'Hapus', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (type === 'material') await teacherAPI.deleteMaterial(id);
+              else if (type === 'quiz') await teacherAPI.deleteQuiz(id);
+              else if (type === 'assignment') await teacherAPI.deleteAssignment(id);
+              
+              Alert.alert('Sukses', 'Konten berhasil dihapus');
+              fetchClassContent();
+            } catch (error) {
+              Alert.alert('Error', 'Gagal menghapus konten');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const tabs = [
     { id: 'Materials', icon: 'book', label: 'Materi' },
@@ -78,16 +122,22 @@ const TeacherClassDetailScreen = () => {
         {activeTab === 'Materials' && (
           <View style={styles.listSection}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Modul Pembelajaran</Text>
-            {MOCK_MATERIALS.map(m => (
+            {loading ? (
+              <ActivityIndicator color={GREEN} style={{ marginTop: 20 }} />
+            ) : materials.length === 0 ? (
+              <Text style={{ textAlign: 'center', marginTop: 20, color: colors.textSecondary }}>Belum ada materi.</Text>
+            ) : materials.map(m => (
               <View key={m.id} style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.itemIconBox, { backgroundColor: '#FEE2E2' }]}>
                   <Ionicons name="document-text" size={24} color="#EF4444" />
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemTitle, { color: colors.text }]}>{m.title}</Text>
-                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{m.type} • {m.size}</Text>
+                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{m.type || 'PDF'} • {m.size || 'Materi'}</Text>
                 </View>
-                <Pressable><Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} /></Pressable>
+                <Pressable onPress={() => handleDelete(m.id, 'material')}>
+                  <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+                </Pressable>
               </View>
             ))}
           </View>
@@ -96,17 +146,26 @@ const TeacherClassDetailScreen = () => {
         {activeTab === 'Assignments' && (
           <View style={styles.listSection}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Tugas Kelas</Text>
-            {MOCK_TASKS.map(t => (
+            {loading ? (
+              <ActivityIndicator color={GREEN} style={{ marginTop: 20 }} />
+            ) : assignments.length === 0 ? (
+              <Text style={{ textAlign: 'center', marginTop: 20, color: colors.textSecondary }}>Belum ada tugas.</Text>
+            ) : assignments.map(t => (
               <View key={t.id} style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.itemIconBox, { backgroundColor: '#DCFCE7' }]}>
                   <Ionicons name="clipboard" size={24} color={GREEN} />
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemTitle, { color: colors.text }]}>{t.title}</Text>
-                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>Tenggat: {t.deadline}</Text>
+                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>Tenggat: {t.deadline ? new Date(t.deadline).toLocaleDateString('id-ID') : 'N/A'}</Text>
                 </View>
-                <View style={styles.countBadge}>
-                  <Text style={styles.countText}>{t.count}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countText}>{t.points || 100} Pts</Text>
+                  </View>
+                  <Pressable onPress={() => handleDelete(t.id, 'assignment')} style={styles.deleteBtn}>
+                    <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+                  </Pressable>
                 </View>
               </View>
             ))}
@@ -116,16 +175,22 @@ const TeacherClassDetailScreen = () => {
         {activeTab === 'Quizzes' && (
           <View style={styles.listSection}>
             <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Kuis Baru</Text>
-            {MOCK_QUIZZES.map(q => (
+            {loading ? (
+              <ActivityIndicator color={GREEN} style={{ marginTop: 20 }} />
+            ) : quizzes.length === 0 ? (
+              <Text style={{ textAlign: 'center', marginTop: 20, color: colors.textSecondary }}>Belum ada kuis.</Text>
+            ) : quizzes.map(q => (
               <View key={q.id} style={[styles.itemCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.itemIconBox, { backgroundColor: '#E0E7FF' }]}>
                   <Ionicons name="extension-puzzle" size={24} color="#4F46E5" />
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemTitle, { color: colors.text }]}>{q.title}</Text>
-                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{q.questions} Soal • {q.duration}</Text>
+                  <Text style={[styles.itemSub, { color: colors.textSecondary }]}>{q.questionsCount || 0} Soal • {q.timeLimit || 0} Min</Text>
                 </View>
-                <Pressable><Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} /></Pressable>
+                <Pressable onPress={() => handleDelete(q.id, 'quiz')}>
+                  <Ionicons name="ellipsis-vertical" size={20} color={colors.textSecondary} />
+                </Pressable>
               </View>
             ))}
           </View>
@@ -175,6 +240,7 @@ const styles = StyleSheet.create({
   itemSub: { fontSize: 12 },
   countBadge: { backgroundColor: '#F0FDF4', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   countText: { fontSize: 12, fontWeight: '800', color: GREEN },
+  deleteBtn: { padding: 4 },
   fab: { position: 'absolute', bottom: 30, right: 30, width: 60, height: 60, borderRadius: 30, backgroundColor: GREEN, alignItems: 'center', justifyContent: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84 },
 });
 

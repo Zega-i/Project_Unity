@@ -10,6 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { aiAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
+import PremiumModal from '../../components/PremiumModal';
 
 const PURPLE = '#7C3AED';
 
@@ -67,6 +68,9 @@ const QuizScreen = () => {
   const [timeLeft, setTimeLeft] = useState(QUIZ_TIME);
   const [quizFinished, setQuizFinished] = useState(false);
   const [score, setScore] = useState(0);
+  const [wrongAnswers, setWrongAnswers] = useState<any[]>([]);
+  const [analyzingErrors, setAnalyzingErrors] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<{ visible: boolean; text: string }>({ visible: false, text: '' });
 
   useEffect(() => {
     if (!selectedSubject || quizFinished || questionsLoading || questions.length === 0) return;
@@ -127,11 +131,45 @@ const QuizScreen = () => {
   const handleFinish = (finalAnswers?: Record<string, string>) => {
     const ans = finalAnswers || answers;
     let correct = 0;
+    const wrongs: any[] = [];
+    
     questions.forEach(q => {
-      if (ans[q.id] === q.correct) correct++;
+      if (ans[q.id] === q.correct) {
+        correct++;
+      } else {
+        wrongs.push({
+          question: q.question,
+          userAnswer: ans[q.id],
+          correctAnswer: q.correct,
+          options: q.options
+        });
+      }
     });
+    
     setScore(correct);
+    setWrongAnswers(wrongs);
     setQuizFinished(true);
+  };
+
+  const handleAnalyzeErrors = async () => {
+    if (wrongAnswers.length === 0) {
+      Alert.alert('EduBridge AI', 'Luar biasa! Kamu menjawab semua dengan benar. Tidak ada kesalahan untuk dianalisis.');
+      return;
+    }
+
+    setAnalyzingErrors(true);
+    triggerMedium();
+
+    try {
+      const res = await aiAPI.analyzeErrors(wrongAnswers);
+      if (res.success) {
+        setAiAnalysis({ visible: true, text: res.data.analysis });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Gagal mendapatkan analisis AI.');
+    } finally {
+      setAnalyzingErrors(false);
+    }
   };
 
   const handleBack = () => {
@@ -192,11 +230,39 @@ const QuizScreen = () => {
               <Ionicons name="refresh" size={18} color="#fff" />
               <Text style={styles.retryBtnText}>Coba Lagi</Text>
             </Pressable>
+            
+            {wrongAnswers.length > 0 && (
+              <Pressable 
+                style={[styles.aiBtn, { backgroundColor: PURPLE + '10', borderColor: PURPLE }]} 
+                onPress={handleAnalyzeErrors}
+                disabled={analyzingErrors}
+              >
+                {analyzingErrors ? (
+                  <ActivityIndicator size="small" color={PURPLE} />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles" size={18} color={PURPLE} />
+                    <Text style={[styles.aiBtnText, { color: PURPLE }]}>Analisis Kesalahan (AI)</Text>
+                  </>
+                )}
+              </Pressable>
+            )}
+
             <Pressable style={[styles.homeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => { setSelectedSubject(null); setQuizFinished(false); }}>
               <Text style={[styles.homeBtnText, { color: colors.text }]}>Pilih Materi Lain</Text>
             </Pressable>
           </View>
         </ScrollView>
+
+        <PremiumModal
+          visible={aiAnalysis.visible}
+          type="info"
+          icon="bulb"
+          title="Analisis Kelemahanmu"
+          message={aiAnalysis.text}
+          confirmText="Siap Belajar Lagi!"
+          onConfirm={() => setAiAnalysis({ ...aiAnalysis, visible: false })}
+        />
       </SafeAreaView>
     );
   }
@@ -505,6 +571,8 @@ const styles = StyleSheet.create({
   retryBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
   homeBtn: { borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, borderWidth: 1, width: '100%', alignItems: 'center' },
   homeBtnText: { fontSize: 15, fontWeight: '600' },
+  aiBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, marginBottom: 12, width: '100%', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed' },
+  aiBtnText: { fontSize: 15, fontWeight: 'bold' },
 });
 
 export default QuizScreen;

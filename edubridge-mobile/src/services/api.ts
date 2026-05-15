@@ -37,6 +37,35 @@ export const authAPI = {
     const response = await api.get('/auth/me');
     return response.data.data.user;
   },
+  updateProfile: async (data: any) => {
+    const response = await api.put('/profile/update', data);
+    return response.data;
+  },
+  uploadAvatar: async (formData: any) => {
+    const response = await api.post('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};
+
+export const notificationsAPI = {
+  getAll: async () => {
+    const response = await api.get('/notifications');
+    return response.data;
+  },
+  markAsRead: async (id: string) => {
+    const response = await api.post(`/notifications/${id}/read`);
+    return response.data;
+  },
+  markAllAsRead: async () => {
+    const response = await api.post('/notifications/read-all');
+    return response.data;
+  },
+  delete: async (id: string) => {
+    const response = await api.delete(`/notifications/${id}`);
+    return response.data;
+  },
 };
 
 export const quizAPI = {
@@ -120,8 +149,20 @@ export const teacherAPI = {
     const response = await api.post(`/teacher/class/${classId}/material`, data);
     return response.data;
   },
+  updateMaterial: async (materialId: string, data: { title: string; description: string }) => {
+    const response = await api.put(`/teacher/material/${materialId}`, data);
+    return response.data;
+  },
+  deleteMaterial: async (materialId: string) => {
+    const response = await api.delete(`/teacher/material/${materialId}`);
+    return response.data;
+  },
   addAssignment: async (classId: string, data: { title: string; description: string; deadline: string; points: number }) => {
     const response = await api.post(`/teacher/class/${classId}/assignment`, data);
+    return response.data;
+  },
+  deleteAssignment: async (assignmentId: string) => {
+    const response = await api.delete(`/teacher/assignment/${assignmentId}`);
     return response.data;
   },
   getClassStudents: async (classId: string) => {
@@ -146,6 +187,10 @@ export const teacherAPI = {
   },
   addQuiz: async (classId: string, data: { title: string; duration: string; questions: any[] }) => {
     const response = await api.post(`/teacher/class/${classId}/quiz`, data);
+    return response.data;
+  },
+  deleteQuiz: async (quizId: string) => {
+    const response = await api.delete(`/teacher/quiz/${quizId}`);
     return response.data;
   },
   getAllStudents: async () => {

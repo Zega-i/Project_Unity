@@ -22,6 +22,7 @@ const RegisterScreen = () => {
   const [dob, setDob]             = useState('');
   const [nip, setNip]             = useState('');
   const [subject, setSubject]     = useState('');
+  const [grade, setGrade]           = useState('');
   const [role, setRole]           = useState<Role>('STUDENT');
   const [loading, setLoading]     = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +87,8 @@ const RegisterScreen = () => {
     try {
       const extra = role === 'STUDENT' ? {
         school,
-        grade: 10,
+        grade: parseInt(grade.match(/\d+/)?.[0] || '10'),
+        className: grade,
         dateOfBirth: dob ? parseDob(dob) : undefined,
       } : {
         school,
@@ -177,6 +179,18 @@ const RegisterScreen = () => {
 
             {role === 'STUDENT' ? (
               <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Kelas</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Contoh: 10 A atau 9 B"
+                    placeholderTextColor="#94A3B8"
+                    value={grade}
+                    onChangeText={setGrade}
+                    autoCapitalize="characters"
+                    editable={!loading}
+                  />
+                </View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Sekolah</Text>
                   <TextInput
