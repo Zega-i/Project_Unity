@@ -15,10 +15,7 @@ const MaterialsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const [materials] = useState([
-    { id: '1', title: 'Struktur Atom & Tabel Periodik', subject: 'Kimia', lessons: 4, duration: '45m' },
-    { id: '2', title: 'Persamaan Kuadrat Lanjut', subject: 'Matematika', lessons: 6, duration: '60m' },
-  ]);
+  const [materials] = useState([]); // Data dummy telah dihapus
 
   const renderItem = ({ item }: { item: any }) => (
     <Pressable 

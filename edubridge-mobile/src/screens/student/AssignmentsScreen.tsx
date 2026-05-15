@@ -15,10 +15,7 @@ const AssignmentsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const [assignments] = useState([
-    { id: '1', title: 'Latihan Aljabar Linear', subject: 'Matematika', deadline: 'Besok, 23:59', status: 'Pending' },
-    { id: '2', title: 'Analisis Sel Hewan', subject: 'Biologi', deadline: '18 Mei 2026', status: 'Pending' },
-  ]);
+  const [assignments] = useState([]); // Data dummy telah dihapus
 
   const renderItem = ({ item }: { item: any }) => (
     <Pressable style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
