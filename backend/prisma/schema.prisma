@@ -83,7 +83,7 @@ model Class {
   description   String?
   teacherId     String
   grade         Int
-  subject       String
+  subject       String?
   archived      Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -91,6 +91,8 @@ model Class {
   students      ClassStudent[]
   questions     Question[]
   materials     Material[]
+  assignments   Assignment[]
+  quizzes       Quiz[]
   learningPaths LearningPath[]
 
   @@index([teacherId])
@@ -376,4 +378,47 @@ model QuizErrorAnalysis {
 
   @@unique([questionId, studentId, errorType])
   @@index([questionId])
+}
+model Quiz {
+  id             String         @id @default(cuid())
+  classId        String
+  title          String
+  timeLimit      Int            @default(15)
+  questionsCount Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  class          Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  questions      QuizQuestion[]
+
+  @@index([classId])
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid())
+  quizId        String
+  text          String   @db.Text
+  type          String   @default("MULTIPLE_CHOICE")
+  options       String   @db.Text // JSON stringified
+  correctAnswer String
+  explanation   String?  @db.Text
+  
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  classId     String
+  title       String
+  description String   @db.Text
+  deadline    DateTime
+  points      Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([classId])
 }

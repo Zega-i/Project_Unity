@@ -16,4 +16,10 @@ router.get("/class/:classId/assignments", authMiddleware, asyncHandler(TeacherCo
 router.get("/class/:classId/quizzes", authMiddleware, asyncHandler(TeacherController.getClassQuizzes));
 router.get("/students", authMiddleware, asyncHandler(TeacherController.getAllStudents));
 
+// New Update/Delete Routes
+router.put("/material/:materialId", authMiddleware, asyncHandler(TeacherController.updateMaterial));
+router.delete("/material/:materialId", authMiddleware, asyncHandler(TeacherController.deleteMaterial));
+router.delete("/assignment/:assignmentId", authMiddleware, asyncHandler(TeacherController.deleteAssignment));
+router.delete("/quiz/:quizId", authMiddleware, asyncHandler(TeacherController.deleteQuiz));
+
 export default router;

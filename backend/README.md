@@ -1,6 +1,6 @@
 # EduBridge AI Backend
 
-Adaptive AI learning platform backend for Indonesian students. Built with Express.js, TypeScript, Prisma, and Gemini API.
+Adaptive AI learning platform backend for Indonesian students. Built with Express.js, TypeScript, Prisma, and Groq/Llama API.
 
 ## 🚀 Quick Start
 
@@ -30,7 +30,7 @@ The server will run on `http://localhost:3000`
 ├── src/
 │   ├── config/          # Configuration files
 │   │   ├── database.ts  # Prisma client setup
-│   │   ├── gemini.ts    # Gemini API configuration
+│   │   ├── Groq/Llama.ts    # Groq/Llama API configuration
 │   │   └── uploadthing.ts
 │   ├── controllers/     # Business logic controllers
 │   │   ├── AuthController.ts
@@ -45,7 +45,7 @@ The server will run on `http://localhost:3000`
 │   │   └── upload.ts
 │   ├── services/        # Business service layer
 │   │   ├── AdaptiveQuizService.ts
-│   │   └── GeminiService.ts
+│   │   └── Groq/LlamaService.ts
 │   └── index.ts         # Express app entry point
 ├── prisma/
 │   └── schema.prisma    # Database schema (13 models)
@@ -104,7 +104,7 @@ The server will run on `http://localhost:3000`
 - Tracks student performance and learning patterns
 
 ### AI Tutor Integration
-- Chat-based tutoring with Gemini API
+- Chat-based tutoring with Groq/Llama API
 - Quiz generation from learning materials
 - Automated error analysis and suggestions
 
@@ -122,7 +122,7 @@ The server will run on `http://localhost:3000`
 
 ```env
 DATABASE_URL=postgresql://...  # Neon PostgreSQL
-GEMINI_API_KEY=...             # Google Gemini API key
+Groq/Llama_API_KEY=...             # Google Groq/Llama API key
 JWT_SECRET=...                 # JWT signing secret
 PORT=3000                      # Server port
 UPLOADTHING_TOKEN=...          # File upload service
@@ -159,7 +159,7 @@ Authorization: Bearer <token>
 - **Language**: TypeScript 5.1
 - **Database**: PostgreSQL (Neon)
 - **ORM**: Prisma 5.8
-- **AI**: Google Gemini API
+- **AI**: Google Groq/Llama API
 - **File Upload**: Uploadthing
 - **Dev Tools**: Nodemon, ts-node
 

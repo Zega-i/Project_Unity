@@ -52,9 +52,9 @@ export class NotificationsController {
         throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED');
       }
 
-      const { notificationId } = req.body;
+      const { id } = req.params;
 
-      if (!notificationId) {
+      if (!id) {
         throw new ApiError(400, 'Notification ID is required', 'MISSING_ID');
       }
 
@@ -62,7 +62,7 @@ export class NotificationsController {
 
       if (role === 'STUDENT') {
         const notification = await prisma.studentNotification.findUnique({
-          where: { id: notificationId }
+          where: { id }
         });
 
         if (!notification) {
@@ -74,7 +74,7 @@ export class NotificationsController {
         }
 
         const updated = await prisma.studentNotification.update({
-          where: { id: notificationId },
+          where: { id },
           data: { read: true }
         });
 
@@ -134,9 +134,9 @@ export class NotificationsController {
         throw new ApiError(401, 'Unauthorized', 'UNAUTHORIZED');
       }
 
-      const { notificationId } = req.body;
+      const { id } = req.params;
 
-      if (!notificationId) {
+      if (!id) {
         throw new ApiError(400, 'Notification ID is required', 'MISSING_ID');
       }
 
@@ -144,7 +144,7 @@ export class NotificationsController {
 
       if (role === 'STUDENT') {
         const notification = await prisma.studentNotification.findUnique({
-          where: { id: notificationId }
+          where: { id }
         });
 
         if (!notification) {
@@ -156,7 +156,7 @@ export class NotificationsController {
         }
 
         await prisma.studentNotification.delete({
-          where: { id: notificationId }
+          where: { id }
         });
 
         const response: ApiResponse = {

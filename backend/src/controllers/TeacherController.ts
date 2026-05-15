@@ -24,23 +24,12 @@ export class TeacherController {
           summary: {
             activeClasses,
             totalStudents,
-            avgScore: 82,
-            completedTasks: 5,
-            activeRate: 95
+            avgScore: 0,
+            completedTasks: 0,
+            activeRate: 0
           },
-          chart: [
-            { label: 'Sen', value: 78 },
-            { label: 'Sel', value: 85 },
-            { label: 'Rab', value: 90 },
-            { label: 'Kam', value: 70 },
-            { label: 'Jum', value: 83 },
-            { label: 'Sab', value: 55 },
-            { label: 'Min', value: 72 },
-          ],
-          atRisk: [
-            { id: '1', name: 'Dika Pratama', kelas: 'Matematika 10A', avg: 60, color: '#6366F1' },
-            { id: '2', name: 'Siti Nurhaliza', kelas: 'Fisika 10A', avg: 65, color: '#EC4899' },
-          ]
+          chart: [],
+          atRisk: []
         }
       });
     } catch (error) {
@@ -188,7 +177,8 @@ export class TeacherController {
 
       res.status(201).json({ success: true, data: quiz, message: "Kuis berhasil dibuat" });
     } catch (error) {
-      res.status(500).json({ success: false, error: "Gagal mengambil kuis" });
+      logger.error('Error adding quiz', error);
+      res.status(500).json({ success: false, error: "Gagal membuat kuis" });
     }
   }
 
@@ -210,7 +200,7 @@ export class TeacherController {
           allStudentsMap.set(cs.student.id, {
             ...cs.student,
             kelas: c.name,
-            avg: 80, // Dummy average
+            avg: 0, // No real data yet
             status: 'Active'
           });
         });
@@ -219,6 +209,52 @@ export class TeacherController {
       res.json({ success: true, data: Array.from(allStudentsMap.values()) });
     } catch (error) {
       res.status(500).json({ success: false, error: "Gagal mengambil daftar semua siswa" });
+    }
+  }
+
+  static async updateMaterial(req: AuthRequest, res: Response) {
+    try {
+      const { materialId } = req.params;
+      const { title, description } = req.body;
+      const material = await prisma.material.update({
+        where: { id: materialId },
+        data: { title, description, content: description }
+      });
+      res.json({ success: true, data: material });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Gagal memperbarui materi" });
+    }
+  }
+
+  static async deleteMaterial(req: AuthRequest, res: Response) {
+    try {
+      const { materialId } = req.params;
+      await prisma.material.delete({ where: { id: materialId } });
+      res.json({ success: true, message: "Materi berhasil dihapus" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Gagal menghapus materi" });
+    }
+  }
+
+  static async deleteAssignment(req: AuthRequest, res: Response) {
+    try {
+      const { assignmentId } = req.params;
+      await prisma.assignment.delete({ where: { id: assignmentId } });
+      res.json({ success: true, message: "Tugas berhasil dihapus" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Gagal menghapus tugas" });
+    }
+  }
+
+  static async deleteQuiz(req: AuthRequest, res: Response) {
+    try {
+      const { quizId } = req.params;
+      // Delete questions first if needed (Prisma might handle it if cascade is set, but let's be safe)
+      await prisma.quizQuestion.deleteMany({ where: { quizId } });
+      await prisma.quiz.delete({ where: { id: quizId } });
+      res.json({ success: true, message: "Kuis berhasil dihapus" });
+    } catch (error) {
+      res.status(500).json({ success: false, error: "Gagal menghapus kuis" });
     }
   }
 }
