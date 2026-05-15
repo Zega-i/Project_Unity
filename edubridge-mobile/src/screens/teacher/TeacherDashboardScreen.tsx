@@ -9,6 +9,7 @@ import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { teacherAPI } from '../../services/api';
 
 const GREEN      = '#16A34A';
 const PURPLE     = '#A78BFA';
@@ -37,10 +38,37 @@ const TeacherDashboardScreen = () => {
   const user      = authStore.getUserSync();
   const firstName = user?.name?.split(' ')[0] || 'Budi';
 
+  const [stats, setStats] = useState({
+    activeClasses: 0,
+    totalStudents: 0,
+    avgScore: 0,
+    completedTasks: 0,
+    activeRate: 0
+  });
+  const [chartData, setChartData] = useState(CHART_BARS);
+  const [atRiskData, setAtRiskData] = useState(AT_RISK);
   const [refreshing, setRefreshing] = useState(false);
+
+  const loadDashboardData = async () => {
+    try {
+      const data = await teacherAPI.getDashboardStats();
+      if (data) {
+        setStats(data.summary || stats);
+        if (data.chart) setChartData(data.chart);
+        if (data.atRisk) setAtRiskData(data.atRisk);
+      }
+    } catch (error) {
+      console.log('Error loading dashboard stats:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    loadDashboardData();
+  }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
-    await new Promise(r => setTimeout(r, 800));
+    await loadDashboardData();
     setRefreshing(false);
   };
 
@@ -56,42 +84,75 @@ const TeacherDashboardScreen = () => {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Ringkasan Kelas</Text>
         <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.statsRow3}>
-            <View style={styles.statBox}><Text style={[styles.statNum, { color: '#EF4444' }]}>5</Text><Text style={styles.statLbl}>Kelas Aktif</Text></View>
-            <View style={[styles.statBox, styles.statBoxMid, { borderColor: colors.border }]}><Text style={styles.statNum}>120</Text><Text style={styles.statLbl}>Siswa</Text></View>
-            <View style={styles.statBox}><Text style={styles.statNum}>82%</Text><Text style={styles.statLbl}>Rata-rata Nilai</Text></View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: GREEN }]}>{stats.activeClasses || 5}</Text>
+              <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Kelas Aktif</Text>
+            </View>
+            <View style={[styles.statBox, styles.statBoxMid, { borderColor: colors.border }]}>
+              <Text style={[styles.statNum, { color: colors.text }]}>{stats.totalStudents || 120}</Text>
+              <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Siswa</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNum, { color: colors.text }]}>{stats.avgScore || 82}%</Text>
+              <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Rata-rata Nilai</Text>
+            </View>
           </View>
           <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statsRow2}>
-            <View style={styles.statBox2}><View style={styles.badgeRow}><View style={styles.greenBadge}><Ionicons name="checkmark-circle" size={18} color="#FFF" /></View><View><Text style={styles.statNumSm}>1 Tugas</Text><Text style={styles.statLbl}>Ter-selesai</Text></View></View></View>
-            <View style={styles.statBox2}><Text style={styles.statNum}>95%</Text><Text style={styles.statLbl}>Siswa Aktif</Text></View>
+            <View style={styles.statBox2}>
+              <View style={styles.badgeRow}>
+                <View style={styles.greenBadge}><Ionicons name="checkmark-circle" size={18} color="#FFF" /></View>
+                <View>
+                  <Text style={[styles.statNumSm, { color: colors.text }]}>{stats.completedTasks || 1} Tugas</Text>
+                  <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Ter-selesai</Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.statBox2}>
+              <Text style={[styles.statNum, { color: colors.text }]}>{stats.activeRate || 95}%</Text>
+              <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Siswa Aktif</Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Performa Kelas</Text><Pressable onPress={() => triggerLight()}><Text style={[styles.seeAll, { color: GREEN }]}>Lihat Semua</Text></Pressable></View>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Performa Kelas</Text>
+          <Pressable onPress={() => { triggerLight(); navigation.navigate('TeacherKelas'); }}>
+            <Text style={[styles.seeAll, { color: GREEN }]}>Lihat Semua</Text>
+          </Pressable>
+        </View>
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.chartBody}>
-            <View style={styles.yLabels}>{[90, 70, 50, 30, 0].map(v => <Text key={v} style={styles.yLabel}>{v}</Text>)}</View>
+            <View style={styles.yLabels}>{[90, 70, 50, 30, 0].map(v => <Text key={v} style={[styles.yLabel, { color: colors.textSecondary }]}>{v}</Text>)}</View>
             <View style={styles.barsArea}>
-              {CHART_BARS.map((bar, i) => (
+              {chartData.map((bar, i) => (
                 <View key={i} style={styles.barCol}>
-                  <View style={styles.barTrack}><View style={[styles.barFill, { height: `${(bar.value / MAX_BAR) * 100}%`, backgroundColor: PURPLE, opacity: i === 2 ? 1 : 0.65 }]} /></View>
-                  <Text style={styles.xLabel}>{bar.label}</Text>
+                  <View style={[styles.barTrack, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
+                    <View style={[styles.barFill, { height: `${(bar.value / 100) * 100}%`, backgroundColor: GREEN, opacity: i === 2 ? 1 : 0.65 }]} />
+                  </View>
+                  <Text style={[styles.xLabel, { color: colors.textSecondary }]}>{bar.label}</Text>
                 </View>
               ))}
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Perlu Perhatian</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Perlu Perhatian</Text>
         <View style={[styles.atRiskCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {AT_RISK.map((s, idx) => (
+          {atRiskData.map((s, idx) => (
             <React.Fragment key={s.id}>
-              <Pressable style={styles.atRow} onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { name: s.name, className: s.kelas, avgScore: s.avg, avatarColor: s.color }); }}>
+              <Pressable style={styles.atRow} onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: s }); }}>
                 <View style={[styles.avatar, { backgroundColor: s.color + '25', borderColor: s.color + '50' }]}><Text style={[styles.avatarText, { color: s.color }]}>{s.name.charAt(0)}</Text></View>
-                <View style={styles.atInfo}><Text style={styles.atName}>{s.name}</Text><Text style={styles.atClass}>{s.kelas}</Text></View>
-                <View style={styles.atRight}><Text style={styles.atScore}>Rata-rata <Text style={{ fontWeight: 'bold', color: '#EF4444' }}>{s.avg}</Text></Text><Ionicons name="chevron-forward" size={16} color="#999" /></View>
+                <View style={styles.atInfo}>
+                  <Text style={[styles.atName, { color: colors.text }]}>{s.name}</Text>
+                  <Text style={[styles.atClass, { color: colors.textSecondary }]}>{s.kelas}</Text>
+                </View>
+                <View style={styles.atRight}>
+                  <Text style={[styles.atScore, { color: colors.textSecondary }]}>Rata-rata <Text style={{ fontWeight: 'bold', color: '#EF4444' }}>{s.avg}</Text></Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                </View>
               </Pressable>
-              {idx < AT_RISK.length - 1 && <View style={[styles.rowSep, { backgroundColor: colors.border }]} />}
+              {idx < atRiskData.length - 1 && <View style={[styles.rowSep, { backgroundColor: colors.border }]} />}
             </React.Fragment>
           ))}
         </View>

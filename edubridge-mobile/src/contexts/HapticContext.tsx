@@ -6,7 +6,7 @@ interface HapticContextType {
   isHapticEnabled: boolean;
   toggleHaptic: () => void;
   setHaptic: (enabled: boolean) => void;
-  triggerHaptic: (type?: 'light' | 'medium' | 'heavy') => void;
+  triggerHaptic: (type?: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') => void;
 }
 
 const HapticContext = createContext<HapticContextType | undefined>(undefined);
@@ -32,7 +32,7 @@ export const HapticProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     loadHapticPreference();
   }, []);
 
-  const triggerHaptic = async (type: 'light' | 'medium' | 'heavy' = 'medium') => {
+  const triggerHaptic = async (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'medium') => {
     if (!isHapticEnabled) return;
 
     try {
@@ -41,10 +41,19 @@ export const HapticProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           break;
         case 'medium':
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           break;
         case 'heavy':
           await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          break;
+        case 'success':
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          break;
+        case 'warning':
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          break;
+        case 'error':
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           break;
       }
     } catch (error) {

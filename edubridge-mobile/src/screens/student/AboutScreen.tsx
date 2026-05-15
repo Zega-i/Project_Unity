@@ -8,8 +8,10 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
+const GREEN  = '#16A34A';
 const APP_VERSION = '1.0.0';
 
 const TEAM_MEMBERS = [
@@ -28,6 +30,9 @@ const AboutScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
+  const user = authStore.getUserSync();
+  const isTeacher = user?.role?.toLowerCase() === 'teacher' || user?.role?.toLowerCase() === 'guru';
+  const themeColor = isTeacher ? GREEN : PURPLE;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
@@ -52,13 +57,13 @@ const AboutScreen = () => {
           <Text style={[styles.appTagline, { color: colors.textSecondary }]}>
             Jembatan Menuju Prestasi Akademik
           </Text>
-          <View style={[styles.versionBadge, { backgroundColor: PURPLE + '15' }]}>
-            <Text style={styles.versionText}>Versi {APP_VERSION}</Text>
+          <View style={[styles.versionBadge, { backgroundColor: themeColor + '15' }]}>
+            <Text style={[styles.versionText, { color: themeColor }]}>Versi {APP_VERSION}</Text>
           </View>
         </View>
 
         {/* Mission */}
-        <View style={[styles.missionCard, { backgroundColor: PURPLE, }]}>
+        <View style={[styles.missionCard, { backgroundColor: themeColor }]}>
           <Ionicons name="flag" size={20} color="rgba(255,255,255,0.8)" />
           <View style={styles.missionText}>
             <Text style={styles.missionTitle}>Misi Kami</Text>
@@ -115,8 +120,8 @@ const AboutScreen = () => {
           <Text style={[styles.techTitle, { color: colors.text }]}>Dibangun dengan</Text>
           <View style={styles.techRow}>
             {['React Native', 'Expo', 'Node.js', 'AI API'].map((tech) => (
-              <View key={tech} style={[styles.techBadge, { backgroundColor: PURPLE + '15' }]}>
-                <Text style={styles.techBadgeText}>{tech}</Text>
+              <View key={tech} style={[styles.techBadge, { backgroundColor: themeColor + '15' }]}>
+                <Text style={[styles.techBadgeText, { color: themeColor }]}>{tech}</Text>
               </View>
             ))}
           </View>
@@ -125,11 +130,11 @@ const AboutScreen = () => {
         {/* Legal */}
         <View style={styles.legalRow}>
           <Pressable onPress={() => { triggerLight(); }}>
-            <Text style={[styles.legalLink, { color: PURPLE }]}>Kebijakan Privasi</Text>
+            <Text style={[styles.legalLink, { color: themeColor }]}>Kebijakan Privasi</Text>
           </Pressable>
           <Text style={[styles.legalDot, { color: colors.textSecondary }]}>•</Text>
           <Pressable onPress={() => { triggerLight(); }}>
-            <Text style={[styles.legalLink, { color: PURPLE }]}>Syarat & Ketentuan</Text>
+            <Text style={[styles.legalLink, { color: themeColor }]}>Syarat & Ketentuan</Text>
           </Pressable>
         </View>
 

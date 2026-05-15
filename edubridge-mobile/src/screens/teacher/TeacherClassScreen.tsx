@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, FlatList, TextInput,
+  SafeAreaView, FlatList, TextInput, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,8 +19,24 @@ const MOCK_CLASSES = [
 const TeacherClassScreen = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const { triggerLight } = useHapticFeedback();
+  const { triggerLight, triggerMedium } = useHapticFeedback();
   const [activeTab, setActiveTab] = useState('active');
+  const [classes, setClasses] = useState(MOCK_CLASSES.map(c => ({ ...c, archived: false })));
+
+  const handleArchive = (id: string) => {
+    triggerMedium();
+    Alert.alert('Arsipkan Kelas', 'Apakah Anda yakin ingin mengarsipkan kelas ini? Kelas tidak akan muncul di daftar utama.', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Arsipkan', onPress: () => {
+        setClasses(prev => prev.map(c => c.id === id ? { ...c, archived: true } : c));
+      }}
+    ]);
+  };
+
+  const handleUnarchive = (id: string) => {
+    triggerMedium();
+    setClasses(prev => prev.map(c => c.id === id ? { ...c, archived: false } : c));
+  };
 
   const renderClassItem = ({ item }: { item: any }) => (
     <Pressable 
@@ -39,6 +55,16 @@ const TeacherClassScreen = () => {
           <Text style={styles.tokenText}>Token: {item.token}</Text>
         </View>
       </View>
+      <Pressable 
+        style={styles.archiveAction} 
+        onPress={() => item.archived ? handleUnarchive(item.id) : handleArchive(item.id)}
+      >
+        <Ionicons 
+          name={item.archived ? "arrow-undo-circle" : "archive-outline"} 
+          size={24} 
+          color={item.archived ? GREEN : colors.textSecondary} 
+        />
+      </Pressable>
       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
     </Pressable>
   );
@@ -47,7 +73,7 @@ const TeacherClassScreen = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Manajemen Kelas</Text>
-        <Pressable style={styles.addBtn} onPress={() => triggerLight()}>
+        <Pressable style={styles.addBtn} onPress={() => { triggerLight(); navigation.navigate('TeacherAddClass'); }}>
           <Ionicons name="add-circle" size={32} color={GREEN} />
         </Pressable>
       </View>
@@ -68,7 +94,7 @@ const TeacherClassScreen = () => {
       </View>
 
       <FlatList
-        data={activeTab === 'active' ? MOCK_CLASSES : []}
+        data={classes.filter(c => activeTab === 'active' ? !c.archived : c.archived)}
         renderItem={renderClassItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
@@ -101,6 +127,7 @@ const styles = StyleSheet.create({
   classSub: { fontSize: 13, marginBottom: 8 },
   tokenBadge: { alignSelf: 'flex-start', backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   tokenText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
+  archiveAction: { padding: 8, marginRight: 4 },
   emptyState: { alignItems: 'center', marginTop: 100 },
   emptyText: { marginTop: 15, fontSize: 16 },
 });

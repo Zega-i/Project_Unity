@@ -8,8 +8,10 @@ import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
+const GREEN  = '#16A34A';
 
 const FAQ_DATA = [
   {
@@ -115,6 +117,9 @@ const HelpScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
+  const user = authStore.getUserSync();
+  const isTeacher = user?.role?.toLowerCase() === 'teacher' || user?.role?.toLowerCase() === 'guru';
+  const themeColor = isTeacher ? GREEN : PURPLE;
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
@@ -131,9 +136,9 @@ const HelpScreen = () => {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Hero Banner */}
-        <View style={[styles.heroBanner, { backgroundColor: PURPLE + '15' }]}>
-          <View style={styles.heroIconBox}>
-            <Ionicons name="help-circle" size={36} color={PURPLE} />
+        <View style={[styles.heroBanner, { backgroundColor: themeColor + '15' }]}>
+          <View style={[styles.heroIconBox, { backgroundColor: themeColor + '20' }]}>
+            <Ionicons name="help-circle" size={36} color={themeColor} />
           </View>
           <View style={styles.heroText}>
             <Text style={[styles.heroTitle, { color: colors.text }]}>Pusat Bantuan</Text>
@@ -169,7 +174,7 @@ const HelpScreen = () => {
 
         {/* Contact Support */}
         <View style={[styles.contactCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="mail-outline" size={24} color={PURPLE} />
+          <Ionicons name="mail-outline" size={24} color={themeColor} />
           <View style={styles.contactInfo}>
             <Text style={[styles.contactTitle, { color: colors.text }]}>Masih butuh bantuan?</Text>
             <Text style={[styles.contactSub, { color: colors.textSecondary }]}>
@@ -177,7 +182,7 @@ const HelpScreen = () => {
             </Text>
           </View>
           <Pressable
-            style={styles.contactBtn}
+            style={[styles.contactBtn, { backgroundColor: themeColor }]}
             onPress={() => { triggerLight(); Linking.openURL('mailto:support@edubridge.id'); }}
           >
             <Text style={styles.contactBtnText}>Kirim Email</Text>

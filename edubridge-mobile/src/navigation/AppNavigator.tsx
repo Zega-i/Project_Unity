@@ -40,6 +40,7 @@ import TeacherClassDetailScreen from '../screens/teacher/TeacherClassDetailScree
 import TeacherStudentDetailScreen from '../screens/teacher/TeacherStudentDetailScreen';
 import TeacherAddMaterialScreen from '../screens/teacher/TeacherAddMaterialScreen';
 import TeacherAddAssignmentScreen from '../screens/teacher/TeacherAddAssignmentScreen';
+import TeacherAddClassScreen from '../screens/teacher/TeacherAddClassScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -150,7 +151,7 @@ const TeacherTabs = () => {
 
 const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
   const user = authStore.getUserSync();
-  const isTeacher = user?.role === 'teacher' || user?.role === 'guru';
+  const isTeacher = user?.role?.toLowerCase() === 'teacher' || user?.role?.toLowerCase() === 'guru';
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -178,6 +179,7 @@ const AppNavigator = ({ isLoggedIn }: { isLoggedIn: boolean }) => {
           {/* Teacher Only */}
           <Stack.Screen name="TeacherClassDetail"   component={TeacherClassDetailScreen} />
           <Stack.Screen name="TeacherStudentDetail" component={TeacherStudentDetailScreen} />
+          <Stack.Screen name="TeacherAddClass"      component={TeacherAddClassScreen}    />
           <Stack.Screen name="TeacherAddMaterial"   component={TeacherAddMaterialScreen} />
           <Stack.Screen name="TeacherAddAssignment" component={TeacherAddAssignmentScreen} />
 

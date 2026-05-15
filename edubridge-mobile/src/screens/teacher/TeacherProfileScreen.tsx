@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Pressable, StatusBar, Alert,
+  Pressable, StatusBar, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -12,22 +13,27 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 const GREEN = '#16A34A';
 
 const TeacherProfileScreen = () => {
+  const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight, triggerMedium } = useHapticFeedback();
   const user = authStore.getUserSync();
 
+  const [logoutVisible, setLogoutVisible] = useState(false);
+
   const handleLogout = () => {
     triggerMedium();
-    Alert.alert('Keluar', 'Apakah Anda yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: () => authStore.clearAuth() },
-    ]);
+    setLogoutVisible(true);
+  };
+
+  const confirmLogout = () => {
+    setLogoutVisible(false);
+    authStore.clearAuth();
   };
 
   const menuItems = [
-    { id: 'settings', label: 'Pengaturan', icon: 'settings-outline' },
-    { id: 'help',     label: 'Pusat Bantuan', icon: 'help-circle-outline' },
-    { id: 'about',    label: 'Tentang Aplikasi', icon: 'information-circle-outline' },
+    { id: 'Settings',     label: 'Pengaturan',      icon: 'settings-outline' },
+    { id: 'HelpCenter',   label: 'Pusat Bantuan',    icon: 'help-circle-outline' },
+    { id: 'About',        label: 'Tentang Aplikasi', icon: 'information-circle-outline' },
   ];
 
   return (
@@ -68,7 +74,7 @@ const TeacherProfileScreen = () => {
         <View style={[styles.menuCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {menuItems.map((item, i) => (
             <React.Fragment key={item.id}>
-              <Pressable style={styles.menuItem} onPress={() => triggerLight()}>
+              <Pressable style={styles.menuItem} onPress={() => { triggerLight(); navigation.navigate(item.id as any); }}>
                 <View style={styles.menuLeft}><Ionicons name={item.icon as any} size={22} color={colors.text} /><Text style={[styles.menuLabel, { color: colors.text }]}>{item.label}</Text></View>
                 <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </Pressable>
@@ -76,12 +82,49 @@ const TeacherProfileScreen = () => {
             </React.Fragment>
           ))}
         </View>
-        <Pressable style={[styles.logoutBtn, { borderColor: '#EF4444' }]} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-          <Text style={styles.logoutText}>Keluar Akun</Text>
-        </Pressable>
-      </ScrollView>
-    </SafeAreaView>
+          <Pressable 
+            style={[styles.logoutBtn, { borderColor: '#EF4444' }]} 
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={22} color="#EF4444" />
+            <Text style={styles.logoutText}>Keluar Akun</Text>
+          </Pressable>
+        </ScrollView>
+
+        {/* Custom Logout Modal */}
+        <Modal
+          visible={logoutVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setLogoutVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+              <View style={[styles.modalIconCircle, { backgroundColor: '#FEF2F2' }]}>
+                <Ionicons name="log-out-outline" size={32} color="#EF4444" />
+              </View>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Keluar Akun?</Text>
+              <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
+                Apakah Anda yakin ingin keluar dari akun EduBridge Anda?
+              </Text>
+              <View style={styles.modalActions}>
+                <Pressable 
+                  style={[styles.modalBtn, { backgroundColor: colors.surface }]} 
+                  onPress={() => setLogoutVisible(false)}
+                >
+                  <Text style={[styles.modalBtnText, { color: colors.text }]}>Batal</Text>
+                </Pressable>
+                <Pressable 
+                  style={[styles.modalBtn, { backgroundColor: GREEN }]} 
+                  onPress={confirmLogout}
+                >
+                  <Text style={[styles.modalBtnText, { color: '#FFF' }]}>Keluar</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
   );
 };
 
@@ -103,8 +146,18 @@ const styles = StyleSheet.create({
   menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 },
   menuLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   menuLabel: { fontSize: 15, fontWeight: '600' },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, borderWidth: 1, gap: 10 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, borderWidth: 1, gap: 10, marginTop: 10 },
   logoutText: { fontSize: 15, fontWeight: 'bold', color: '#EF4444' },
+
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalCard: { width: '85%', borderRadius: 28, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
+  modalIconCircle: { width: 64, height: 64, borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  modalMessage: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  modalActions: { flexDirection: 'row', gap: 12, width: '100%' },
+  modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
+  modalBtnText: { fontSize: 15, fontWeight: '700' },
 });
 
 export default TeacherProfileScreen;

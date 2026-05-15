@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
-  Pressable, TextInput,
+  Pressable, TextInput, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -12,9 +12,9 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 const GREEN = '#16A34A';
 
 const MOCK_STUDENTS = [
-  { id: '1', name: 'Ahmad Fauzi', class: '10A', score: 88, status: 'Active' },
-  { id: '2', name: 'Budi Santoso', class: '10A', score: 72, status: 'At Risk' },
-  { id: '3', name: 'Citra Lestari', class: '11B', score: 95, status: 'Active' },
+  { id: '1', name: 'Ahmad Fauzi',   kelas: '10A - MTK', avg: 88, status: 'Active', color: '#10B981' },
+  { id: '2', name: 'Budi Santoso',  kelas: '10A - MTK', avg: 72, status: 'At Risk', color: '#EF4444' },
+  { id: '3', name: 'Citra Lestari', kelas: '11B - FIS', avg: 95, status: 'Active', color: '#8B5CF6' },
 ];
 
 const TeacherStudentsScreen = () => {
@@ -22,9 +22,17 @@ const TeacherStudentsScreen = () => {
   const { colors } = useTheme();
   const { triggerLight } = useHapticFeedback();
   const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    // In real app: await teacherAPI.getClassStudents();
+    await new Promise(r => setTimeout(r, 1000));
+    setRefreshing(false);
+  };
 
   const filteredStudents = MOCK_STUDENTS.filter(s => 
-    s.name.toLowerCase().includes(search.toLowerCase()) || s.class.includes(search)
+    s.name.toLowerCase().includes(search.toLowerCase()) || s.kelas.toLowerCase().includes(search.toLowerCase())
   );
 
   const renderStudentItem = ({ item }: { item: any }) => (
@@ -32,17 +40,17 @@ const TeacherStudentsScreen = () => {
       style={[styles.studentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => { triggerLight(); navigation.navigate('TeacherStudentDetail', { student: item }); }}
     >
-      <View style={[styles.avatar, { backgroundColor: item.status === 'At Risk' ? '#FEE2E2' : '#DCFCE7' }]}>
-        <Text style={[styles.avatarText, { color: item.status === 'At Risk' ? '#EF4444' : '#16A34A' }]}>
+      <View style={[styles.avatar, { backgroundColor: (item.color || GREEN) + '20' }]}>
+        <Text style={[styles.avatarText, { color: item.color || GREEN }]}>
           {item.name.charAt(0)}
         </Text>
       </View>
       <View style={styles.info}>
         <Text style={[styles.name, { color: colors.text }]}>{item.name}</Text>
-        <Text style={[styles.sub, { color: colors.textSecondary }]}>Kelas {item.class} • Rerata Skor: {item.score}</Text>
+        <Text style={[styles.sub, { color: colors.textSecondary }]}>Kelas {item.kelas} • Rata-rata: {item.avg}</Text>
       </View>
-      <View style={[styles.statusBadge, { backgroundColor: item.status === 'At Risk' ? '#FEE2E2' : '#DCFCE7' }]}>
-        <Text style={[styles.statusText, { color: item.status === 'At Risk' ? '#EF4444' : '#16A34A' }]}>
+      <View style={[styles.statusBadge, { backgroundColor: item.status === 'At Risk' ? '#FEE2E220' : '#DCFCE720' }]}>
+        <Text style={[styles.statusText, { color: item.status === 'At Risk' ? '#EF4444' : '#10B981' }]}>
           {item.status}
         </Text>
       </View>
@@ -70,6 +78,9 @@ const TeacherStudentsScreen = () => {
         renderItem={renderStudentItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GREEN]} />
+        }
       />
     </SafeAreaView>
   );

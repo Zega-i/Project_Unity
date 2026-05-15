@@ -21,10 +21,17 @@ export const useHapticFeedback = () => {
     }
   };
 
+  const triggerSuccess = () => {
+    if (isHapticEnabled) {
+      triggerHaptic('success');
+    }
+  };
+
   return {
     isHapticEnabled,
     triggerLight,
     triggerMedium,
     triggerHeavy,
+    triggerSuccess,
   };
 };

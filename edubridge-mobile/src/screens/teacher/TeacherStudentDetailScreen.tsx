@@ -12,11 +12,12 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 const GREEN = '#16A34A';
 
 const TeacherStudentDetailScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { colors } = useTheme();
+  const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const { student } = route.params;
+  const { student } = route.params || {};
+  const isTeacher = true; // Context for this screen
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
@@ -30,17 +31,17 @@ const TeacherStudentDetailScreen = () => {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.avatar, { backgroundColor: GREEN + '15' }]}>
-            <Text style={[styles.avatarText, { color: GREEN }]}>{student.name.charAt(0)}</Text>
+          <View style={[styles.avatar, { backgroundColor: (student?.color || GREEN) + '15' }]}>
+            <Text style={[styles.avatarText, { color: student?.color || GREEN }]}>{student?.name?.charAt(0) || 'S'}</Text>
           </View>
-          <Text style={[styles.name, { color: colors.text }]}>{student.name}</Text>
-          <Text style={[styles.class, { color: colors.textSecondary }]}>Kelas {student.class}</Text>
+          <Text style={[styles.name, { color: colors.text }]}>{student?.name || 'Nama Siswa'}</Text>
+          <Text style={[styles.class, { color: colors.textSecondary }]}>{student?.kelas || 'Kelas tidak diketahui'}</Text>
         </View>
 
         <View style={styles.statsGrid}>
           <View style={[styles.statBox, { backgroundColor: colors.surface }]}>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Rerata Skor</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{student.score}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{student?.avg || 0}</Text>
           </View>
           <View style={[styles.statBox, { backgroundColor: colors.surface }]}>
             <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Kehadiran</Text>
@@ -48,13 +49,13 @@ const TeacherStudentDetailScreen = () => {
           </View>
         </View>
 
-        <View style={[styles.aiSection, { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' }]}>
+        <View style={[styles.aiSection, { backgroundColor: isDarkMode ? '#064E3B' : '#F0FDF4', borderColor: isDarkMode ? '#065F46' : '#BBF7D0' }]}>
           <View style={styles.aiHeader}>
-            <Ionicons name="sparkles" size={20} color={GREEN} />
-            <Text style={[styles.aiTitle, { color: GREEN }]}>AI Recommendation</Text>
+            <Ionicons name="sparkles" size={20} color={isDarkMode ? '#34D399' : GREEN} />
+            <Text style={[styles.aiTitle, { color: isDarkMode ? '#34D399' : GREEN }]}>AI Recommendation</Text>
           </View>
-          <Text style={[styles.aiText, { color: '#166534' }]}>
-            Siswa ini memiliki performa yang sangat baik di materi Aljabar, namun memerlukan latihan tambahan pada topik Geometri. Disarankan untuk memberikan tugas pengayaan berbasis visual.
+          <Text style={[styles.aiText, { color: isDarkMode ? '#D1FAE5' : '#166534' }]}>
+            Siswa ini memiliki performa yang sangat baik di materi {student?.kelas?.split(' ')[0] || 'Aljabar'}, namun memerlukan latihan tambahan pada topik Geometri. Disarankan untuk memberikan tugas pengayaan berbasis visual.
           </Text>
         </View>
       </ScrollView>

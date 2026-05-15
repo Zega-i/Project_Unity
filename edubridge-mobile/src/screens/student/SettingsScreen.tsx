@@ -12,12 +12,17 @@ import { useHaptic } from '../../contexts/HapticContext';
 import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
+const GREEN  = '#16A34A';
 
 const SettingsScreen = () => {
   const navigation = useNavigation<any>();
   const { triggerMedium } = useHapticFeedback();
   const { isDarkMode, toggleDarkMode, colors } = useTheme();
   const { isHapticEnabled, toggleHaptic } = useHaptic();
+  const user = authStore.getUserSync();
+  const isTeacher = user?.role?.toLowerCase() === 'teacher' || user?.role?.toLowerCase() === 'guru';
+  const themeColor = isTeacher ? GREEN : PURPLE;
+
   const [notifications, setNotifications] = useState(true);
 
   const handleNotificationToggle = async (newValue: boolean) => {
@@ -53,8 +58,8 @@ const SettingsScreen = () => {
 
           <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.settingLeft}>
-              <View style={[styles.iconBox, { backgroundColor: '#F5F3FF' }]}>
-                <Ionicons name="notifications-outline" size={20} color={PURPLE} />
+              <View style={[styles.iconBox, { backgroundColor: isTeacher ? '#F0FDF4' : '#F5F3FF' }]}>
+                <Ionicons name="notifications-outline" size={20} color={themeColor} />
               </View>
               <View>
                 <Text style={[styles.settingLabel, { color: colors.text }]}>Notifikasi Pembelajaran</Text>
@@ -64,8 +69,8 @@ const SettingsScreen = () => {
             <Switch
               value={notifications}
               onValueChange={handleNotificationToggle}
-              trackColor={{ false: colors.border, true: PURPLE + '40' }}
-              thumbColor={notifications ? PURPLE : colors.disabled}
+              trackColor={{ false: colors.border, true: themeColor + '40' }}
+              thumbColor={notifications ? themeColor : colors.disabled}
             />
           </View>
 
@@ -145,7 +150,9 @@ const SettingsScreen = () => {
         {/* Version Info */}
         <View style={styles.footer}>
           <Text style={[styles.versionText, { color: colors.text }]}>EduBridge v1.0.0</Text>
-          <Text style={[styles.versionDesc, { color: colors.textSecondary }]}>Build 2026.05.14 • Proudly Made for Students</Text>
+          <Text style={[styles.versionDesc, { color: colors.textSecondary }]}>
+            Build 2026.05.15 • Proudly Made for {isTeacher ? 'Teachers' : 'Students'}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
