@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { authStore } from '../store/authStore';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.15:3000/api';
+let API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://edubridge.up.railway.app/api';
+
+if (!__DEV__ && (API_URL.includes('localhost') || API_URL.includes('192.168.') || API_URL.includes('10.'))) {
+  API_URL = 'https://edubridge.up.railway.app/api';
+}
 
 const api = axios.create({
   baseURL: API_URL,
