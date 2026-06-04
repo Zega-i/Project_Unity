@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { classAPI } from '../../services/api';
+import { authStore } from '../../store/authStore';
 
 const PURPLE = '#7C3AED';
 
@@ -42,22 +43,26 @@ const SubjectModulesScreen = () => {
     if (!classId) return;
     setLoading(true);
     try {
+      const userId = authStore.getUserSync()?.id;
+      const quizzesKey = userId ? `@completed_quizzes_${userId}` : '@completed_quizzes';
+
       const [detailRes, assignRes, quizRes, stored] = await Promise.all([
         classAPI.getClassDetail(classId),
         classAPI.getClassAssignments(classId),
         classAPI.getClassQuizzes(classId),
-        AsyncStorage.getItem('@completed_quizzes'),
+        AsyncStorage.getItem(quizzesKey),
       ]);
       setIsClassArchived(!!detailRes.data?.archived);
       setMaterials(detailRes.data?.materials || []);
       setAssignments(assignRes.data || []);
       setQuizzes(quizRes.data || []);
-      if (stored) setCompletedQuizIds(new Set(JSON.parse(stored)));
+      setCompletedQuizIds(new Set(stored ? JSON.parse(stored) : []));
     } catch {
       setMaterials([]);
       setAssignments([]);
       setQuizzes([]);
       setIsClassArchived(false);
+      setCompletedQuizIds(new Set());
     } finally {
       setLoading(false);
     }
@@ -354,14 +359,20 @@ const QuizSheet = ({
 
   useEffect(() => {
     if (isDone) {
-      AsyncStorage.getItem('@completed_quiz_details').then(stored => {
+      const userId = authStore.getUserSync()?.id;
+      const detailsKey = userId ? `@completed_quiz_details_${userId}` : '@completed_quiz_details';
+      AsyncStorage.getItem(detailsKey).then(stored => {
         if (stored) {
           const map = JSON.parse(stored);
           if (map[quiz.id]) {
             setDetails(map[quiz.id]);
+            return;
           }
         }
-      });
+        setDetails(null);
+      }).catch(() => setDetails(null));
+    } else {
+      setDetails(null);
     }
   }, [quiz.id, isDone]);
 

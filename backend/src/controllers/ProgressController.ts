@@ -7,7 +7,10 @@ export class ProgressController {
       const studentId = (req as any).user.id;
 
       const enrollments = await prisma.classStudent.findMany({
-        where: { studentId },
+        where: { 
+          studentId,
+          class: { archived: false }
+        },
         select: { classId: true }
       });
       const classIds = enrollments.map(e => e.classId);
@@ -17,7 +20,10 @@ export class ProgressController {
       });
 
       const viewedMaterials = await prisma.materialView.count({
-        where: { studentId }
+        where: { 
+          studentId,
+          material: { class: { archived: false } }
+        }
       });
 
       const progress = totalMaterials > 0 ? (viewedMaterials / totalMaterials) * 100 : 0;
@@ -39,6 +45,21 @@ export class ProgressController {
     try {
       const { materialId } = req.body;
       const studentId = (req as any).user.id;
+
+      const material = await prisma.material.findUnique({
+        where: { id: materialId },
+        include: { class: { select: { archived: true } } }
+      });
+
+      if (!material) {
+        res.status(404).json({ success: false, error: 'Materi tidak ditemukan' });
+        return;
+      }
+
+      if (material.class.archived) {
+        res.status(400).json({ success: false, error: 'Kelas sudah selesai, tidak dapat menandai materi sebagai selesai' });
+        return;
+      }
 
       const view = await prisma.materialView.upsert({
         where: {

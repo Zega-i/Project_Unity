@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TextInput, Pressable, StatusBar, KeyboardAvoidingView,
-  Platform, Alert, ActivityIndicator,
+  Platform, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -10,11 +10,12 @@ import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { teacherAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
 
 const TeacherAddClassScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerMedium, triggerSuccess } = useHapticFeedback();
 
@@ -27,6 +28,11 @@ const TeacherAddClassScreen = () => {
   });
 
   const [token, setToken] = useState('');
+  
+  // Modal visibility states
+  const [successModal, setSuccessModal] = useState(false);
+  const [warningModal, setWarningModal] = useState(false);
+  const [errorModal, setErrorModal] = useState(false);
 
   // Generate a random class code
   const generateToken = () => {
@@ -41,7 +47,7 @@ const TeacherAddClassScreen = () => {
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.level || !token) {
-      Alert.alert('Data Belum Lengkap', 'Mohon isi nama kelas, jenjang, dan buat kode kelas.');
+      setWarningModal(true);
       return;
     }
 
@@ -50,12 +56,10 @@ const TeacherAddClassScreen = () => {
       const res = await teacherAPI.createClass({ ...formData, token });
       if (res.success) {
         triggerSuccess();
-        Alert.alert('Berhasil', 'Kelas baru telah dibuat!', [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
+        setSuccessModal(true);
       }
     } catch (error) {
-      Alert.alert('Error', 'Gagal membuat kelas. Silakan coba lagi.');
+      setErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -166,6 +170,39 @@ const TeacherAddClassScreen = () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <PremiumModal
+        visible={successModal}
+        type="success"
+        title="Kelas Berhasil Dibuat"
+        message={`Kelas "${formData.name}" dengan kode kelas "${token}" berhasil dibuat.`}
+        confirmText="OK"
+        onConfirm={() => {
+          setSuccessModal(false);
+          navigation.goBack();
+        }}
+        minimal
+      />
+
+      <PremiumModal
+        visible={warningModal}
+        type="warning"
+        title="Data Belum Lengkap"
+        message="Mohon isi nama kelas, jenjang, dan buat kode kelas terlebih dahulu."
+        confirmText="Mengerti"
+        onConfirm={() => setWarningModal(false)}
+        minimal
+      />
+
+      <PremiumModal
+        visible={errorModal}
+        type="error"
+        title="Gagal Membuat Kelas"
+        message="Terjadi kesalahan saat memproses permintaan Anda. Silakan coba lagi."
+        confirmText="OK"
+        onConfirm={() => setErrorModal(false)}
+        minimal
+      />
     </SafeAreaView>
   );
 };

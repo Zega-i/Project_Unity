@@ -16,6 +16,10 @@ export class ClassController {
         return res.status(404).json({ success: false, error: "Kode kelas tidak ditemukan" });
       }
 
+      if (targetClass.archived) {
+        return res.status(400).json({ success: false, error: "Kelas ini sudah selesai/diarsipkan" });
+      }
+
       const existing = await prisma.classStudent.findUnique({
         where: {
           classId_studentId: { classId: targetClass.id, studentId },

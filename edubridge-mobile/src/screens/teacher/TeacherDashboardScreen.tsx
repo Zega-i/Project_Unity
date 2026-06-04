@@ -4,7 +4,7 @@ import {
   Pressable, StatusBar, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -97,9 +97,11 @@ const TeacherDashboardScreen = () => {
     }
   };
 
-  React.useEffect(() => {
-    loadDashboardData();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDashboardData();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -205,7 +207,7 @@ const TeacherDashboardScreen = () => {
               <Text style={{ color: colors.textSecondary, marginTop: 10, fontSize: 13 }}>Semua siswa aman.</Text>
             </View>
           ) : atRiskData.map((s, idx) => (
-            <React.Fragment key={s.id}>
+            <React.Fragment key={`${s.id}_${s.kelas}`}>
               <View style={styles.atRow}>
                 <Pressable 
                   style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} 

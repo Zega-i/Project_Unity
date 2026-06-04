@@ -12,12 +12,31 @@ export class TeacherController {
       const teacherId = req.userId;
       if (!teacherId) return res.status(401).json({ success: false, error: "Unauthorized" });
 
-      const activeClasses = await prisma.class.count({ where: { teacherId } });
+      const activeClasses = await prisma.class.count({ where: { teacherId, archived: false } });
       const classes = await prisma.class.findMany({
-        where: { teacherId },
-        include: { _count: { select: { students: true } } }
+        where: { teacherId, archived: false }
       });
-      const totalStudents = classes.reduce((acc, curr) => acc + curr._count.students, 0);
+      const classIds = classes.map(c => c.id);
+
+      const enrollments = await prisma.classStudent.findMany({
+        where: { classId: { in: classIds } },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              quizSessions: {
+                where: { status: 'COMPLETED' },
+                orderBy: { endedAt: 'desc' }
+              }
+            }
+          },
+          class: { select: { id: true, name: true } }
+        }
+      });
+
+      const uniqueStudentIds = Array.from(new Set(enrollments.map(e => e.studentId)));
+      const totalStudents = uniqueStudentIds.length;
 
       const useMock = process.env.USE_MOCK_DATA === 'true';
 
@@ -70,8 +89,6 @@ export class TeacherController {
       }
 
       // Calculate real stats from the database
-      const classIds = classes.map(c => c.id);
-
       const quizSessions = await prisma.quizSession.findMany({
         where: {
           classId: { in: classIds },
@@ -91,15 +108,13 @@ export class TeacherController {
         }
       });
 
-      const activeStudentsCount = await prisma.classStudent.count({
+      const activeStudentsCount = await prisma.student.count({
         where: {
-          classId: { in: classIds },
-          student: {
-            OR: [
-              { quizSessions: { some: { startedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
-              { materialViews: { some: { viewedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } }
-            ]
-          }
+          id: { in: uniqueStudentIds },
+          OR: [
+            { quizSessions: { some: { startedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
+            { materialViews: { some: { viewedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } }
+          ]
         }
       });
       const activeRate = totalStudents > 0
@@ -120,27 +135,9 @@ export class TeacherController {
         };
       }));
 
-      const enrollments = await prisma.classStudent.findMany({
-        where: { classId: { in: classIds } },
-        include: {
-          student: {
-            select: {
-              id: true,
-              name: true,
-              quizSessions: {
-                where: { classId: { in: classIds }, status: 'COMPLETED' },
-                orderBy: { endedAt: 'desc' },
-                take: 5
-              }
-            }
-          },
-          class: { select: { name: true } }
-        }
-      });
-
       const atRisk = enrollments.map(e => {
         const student = e.student;
-        const studentSessions = student.quizSessions;
+        const studentSessions = student.quizSessions.filter(qs => qs.classId === e.classId);
         const avg = studentSessions.length > 0
           ? Math.round(studentSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / studentSessions.length)
           : 0;

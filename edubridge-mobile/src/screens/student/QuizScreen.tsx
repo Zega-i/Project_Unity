@@ -189,25 +189,33 @@ const QuizScreen = () => {
   // Load completed quiz IDs from storage
   const loadCompletedQuizzes = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem('@completed_quizzes');
-      if (stored) setCompletedQuizIds(new Set(JSON.parse(stored)));
-    } catch { /* ignore */ }
+      const userId = authStore.getUserSync()?.id;
+      const quizzesKey = userId ? `@completed_quizzes_${userId}` : '@completed_quizzes';
+      const stored = await AsyncStorage.getItem(quizzesKey);
+      setCompletedQuizIds(new Set(stored ? JSON.parse(stored) : []));
+    } catch { 
+      setCompletedQuizIds(new Set());
+    }
   }, []);
 
   const saveCompletedQuiz = async (quizId: string, details?: { score: number; totalQuestions: number; correctAnswers: number }) => {
     try {
+      const userId = authStore.getUserSync()?.id;
+      const quizzesKey = userId ? `@completed_quizzes_${userId}` : '@completed_quizzes';
+      const detailsKey = userId ? `@completed_quiz_details_${userId}` : '@completed_quiz_details';
+
       const updated = new Set([...completedQuizIds, quizId]);
       setCompletedQuizIds(updated);
-      await AsyncStorage.setItem('@completed_quizzes', JSON.stringify([...updated]));
+      await AsyncStorage.setItem(quizzesKey, JSON.stringify([...updated]));
 
       if (details) {
-        const storedDetails = await AsyncStorage.getItem('@completed_quiz_details');
+        const storedDetails = await AsyncStorage.getItem(detailsKey);
         const detailsMap = storedDetails ? JSON.parse(storedDetails) : {};
         detailsMap[quizId] = {
           ...details,
           completedAt: new Date().toISOString()
         };
-        await AsyncStorage.setItem('@completed_quiz_details', JSON.stringify(detailsMap));
+        await AsyncStorage.setItem(detailsKey, JSON.stringify(detailsMap));
       }
     } catch { /* ignore */ }
   };
@@ -286,7 +294,9 @@ const QuizScreen = () => {
   useEffect(() => {
     const initialQuiz = route?.params?.initialQuiz;
     if (!initialQuiz) return;
-    AsyncStorage.getItem('@completed_quizzes').then(stored => {
+    const userId = authStore.getUserSync()?.id;
+    const quizzesKey = userId ? `@completed_quizzes_${userId}` : '@completed_quizzes';
+    AsyncStorage.getItem(quizzesKey).then(stored => {
       const ids: Set<string> = stored ? new Set(JSON.parse(stored)) : new Set();
       setCompletedQuizIds(ids);
       if (ids.has(initialQuiz.id)) {
@@ -305,7 +315,7 @@ const QuizScreen = () => {
       }
       startTeacherQuiz(initialQuiz);
     });
-  }, [route?.params?.initialQuiz?.id]);
+  }, [route?.params?.initialQuiz, navigation]);
 
   useEffect(() => {
     if (!selectedSubject || quizFinished || questionsLoading || questions.length === 0) return;
@@ -1159,14 +1169,20 @@ const QuizSheet = ({
 
   useEffect(() => {
     if (isDone) {
-      AsyncStorage.getItem('@completed_quiz_details').then(stored => {
+      const userId = authStore.getUserSync()?.id;
+      const detailsKey = userId ? `@completed_quiz_details_${userId}` : '@completed_quiz_details';
+      AsyncStorage.getItem(detailsKey).then(stored => {
         if (stored) {
           const map = JSON.parse(stored);
           if (map[quiz.id]) {
             setDetails(map[quiz.id]);
+            return;
           }
         }
-      });
+        setDetails(null);
+      }).catch(() => setDetails(null));
+    } else {
+      setDetails(null);
     }
   }, [quiz.id, isDone]);
 
