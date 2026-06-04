@@ -109,24 +109,50 @@ INSTRUKSI:
 
   static async analyzeErrors(wrongAnswers: any[]): Promise<string> {
     try {
-      const errorsContext = wrongAnswers.map((w, i) => 
-        `SOAL: ${w.question}\nJAWABAN SISWA: ${w.userAnswer}\nKUNCI: ${w.correctAnswer}`
-      ).join("\n\n");
+      const errorsContext = wrongAnswers.map((w, i) => {
+        const allOptions = (w.allOptions || []).map((o: any) => `  ${o.id}. ${o.label}`).join('\n');
+        return `SOAL ${i + 1}: ${w.question}
+Pilihan jawaban:
+${allOptions || '  (tidak tersedia)'}
+Jawaban siswa  : ${w.userAnswerLabel || w.userAnswer}
+Jawaban benar  : ${w.correctAnswerLabel || w.correctAnswer}`;
+      }).join("\n\n---\n\n");
 
-      const prompt = `Analisislah pola kesalahan siswa ini:
+      const prompt = `Kamu adalah konselor pendidikan ahli yang membantu siswa SMA Indonesia memahami kelemahan belajarnya.
+
+Berikut ${wrongAnswers.length} soal yang dijawab salah oleh siswa:
+
 ${errorsContext}
 
-Berikan:
-1. Diagnosis pola kesalahan.
-2. Daftar TOPIK LEMAH.
-3. Rekomendasi materi untuk dipelajari kembali.
-4. Kata-kata motivasi agar siswa tidak menyerah.
+Berikan analisis mendalam dengan FORMAT BERIKUT (gunakan Bahasa Indonesia, ramah & memotivasi):
 
-Gunakan format markdown yang rapi.`;
+## 🔍 Diagnosis Kesalahan
+
+Jelaskan pola utama kesalahan (miskonsepsi, kurang teliti, tidak memahami konsep dasar, dll). Analisis tiap soal secara spesifik.
+
+## 📌 Topik yang Perlu Dikuasai
+
+Buat daftar topik/subtopik yang perlu dipelajari ulang berdasarkan soal-soal yang salah:
+- [Topik 1] — alasan singkat
+- [Topik 2] — alasan singkat
+
+## 📚 Rencana Belajar
+
+Berikan langkah-langkah konkret (3-5 langkah) untuk memperbaiki pemahaman, termasuk jenis latihan atau metode belajar yang disarankan.
+
+## 💡 Tips Khusus
+
+1 paragraf berisi saran spesifik sesuai pola kesalahan yang ditemukan.
+
+## 🌟 Semangat!
+
+Kalimat motivasi personal yang spesifik (bukan klise), sesuaikan dengan kesalahan yang dibuat.`;
 
       const message = await groq.chat.completions.create({
         messages: [{ role: "user", content: prompt }],
         model: this.model,
+        temperature: 0.7,
+        max_tokens: 1200,
       });
 
       return message.choices[0]?.message?.content || "Gagal menganalisis kesalahan.";

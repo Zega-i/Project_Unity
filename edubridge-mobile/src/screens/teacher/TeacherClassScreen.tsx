@@ -4,12 +4,13 @@ import {
   SafeAreaView, FlatList, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
-import { classAPI } from '../../services/api';
+import { teacherAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
 
@@ -22,37 +23,73 @@ const TeacherClassScreen = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchClasses = async () => {
+  const [confirmModal, setConfirmModal] = useState<{
+    visible: boolean;
+    classId: string;
+    className: string;
+    type: 'archive' | 'unarchive';
+  }>({
+    visible: false,
+    classId: '',
+    className: '',
+    type: 'archive',
+  });
+
+  const fetchClasses = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await classAPI.getMyClasses();
+      const res = await teacherAPI.getMyClasses();
       if (res.success) {
-        setClasses(res.data.map((c: any) => ({ ...c, archived: false })));
+        setClasses(res.data.map((c: any) => ({ ...c, archived: c.archived ?? false })));
       }
     } catch (error) {
       console.log('Error fetching classes:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  React.useEffect(() => {
-    fetchClasses();
   }, []);
 
-  const handleArchive = (id: string) => {
+  useFocusEffect(React.useCallback(() => { fetchClasses(); }, [fetchClasses]));
+
+  const handleArchive = (id: string, name: string) => {
     triggerMedium();
-    Alert.alert('Arsipkan Kelas', 'Apakah Anda yakin ingin mengarsipkan kelas ini?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Arsipkan', onPress: () => {
-        setClasses(prev => prev.map(c => c.id === id ? { ...c, archived: true } : c));
-      }}
-    ]);
+    setConfirmModal({
+      visible: true,
+      classId: id,
+      className: name,
+      type: 'archive',
+    });
   };
 
-  const handleUnarchive = (id: string) => {
+  const handleUnarchive = (id: string, name: string) => {
     triggerMedium();
-    setClasses(prev => prev.map(c => c.id === id ? { ...c, archived: false } : c));
+    setConfirmModal({
+      visible: true,
+      classId: id,
+      className: name,
+      type: 'unarchive',
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    const { classId, type } = confirmModal;
+    setConfirmModal(prev => ({ ...prev, visible: false }));
+    triggerLight();
+    setLoading(true);
+    try {
+      const targetStatus = type === 'archive';
+      const res = await teacherAPI.archiveClass(classId, targetStatus);
+      if (res.success) {
+        await fetchClasses();
+      } else {
+        Alert.alert('Gagal', `Gagal ${targetStatus ? 'mengarsipkan' : 'mengaktifkan'} kelas.`);
+      }
+    } catch (error) {
+      console.log('Error archiving/unarchiving class:', error);
+      Alert.alert('Error', 'Terjadi kesalahan saat memproses permintaan.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderClassItem = ({ item }: { item: any }) => (
@@ -66,15 +103,15 @@ const TeacherClassScreen = () => {
       <View style={styles.classInfo}>
         <Text style={[styles.className, { color: colors.text }]}>{item.name}</Text>
         <Text style={[styles.classSub, { color: colors.textSecondary }]}>
-          {item.students} Siswa • {item.schedule}
+          {item._count?.students ?? 0} Siswa • Kelas {item.grade}
         </Text>
         <View style={styles.tokenBadge}>
-          <Text style={styles.tokenText}>Token: {item.token}</Text>
+          <Text style={styles.tokenText}>Token: {item.code}</Text>
         </View>
       </View>
       <Pressable 
         style={styles.archiveAction} 
-        onPress={() => item.archived ? handleUnarchive(item.id) : handleArchive(item.id)}
+        onPress={() => item.archived ? handleUnarchive(item.id, item.name) : handleArchive(item.id, item.name)}
       >
         <Ionicons 
           name={item.archived ? "arrow-undo-circle" : "archive-outline"} 
@@ -94,7 +131,7 @@ const TeacherClassScreen = () => {
           <Ionicons name="add-circle" size={32} color={GREEN} />
         </Pressable>
       </View>
-
+ 
       <View style={styles.tabBar}>
         <Pressable 
           style={[styles.tab, activeTab === 'active' && styles.activeTab]} 
@@ -129,6 +166,23 @@ const TeacherClassScreen = () => {
           }
         />
       )}
+
+      <PremiumModal
+        visible={confirmModal.visible}
+        type={confirmModal.type === 'archive' ? 'success' : 'success'}
+        icon={confirmModal.type === 'archive' ? 'archive-outline' : 'arrow-undo-circle'}
+        title={confirmModal.type === 'archive' ? 'Arsipkan Kelas' : 'Aktifkan Kelas'}
+        message={
+          confirmModal.type === 'archive'
+            ? `Apakah Anda yakin ingin mengarsipkan kelas "${confirmModal.className}"? Siswa tidak akan bisa mengunggah atau melihat aktivitas baru.`
+            : `Apakah Anda yakin ingin mengaktifkan kembali kelas "${confirmModal.className}"?`
+        }
+        confirmText={confirmModal.type === 'archive' ? 'Arsipkan' : 'Aktifkan'}
+        cancelText="Batal"
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, visible: false }))}
+        minimal
+      />
     </SafeAreaView>
   );
 };

@@ -8,12 +8,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
-import { authAPI, aiAPI } from '../../services/api';
+import { authAPI, aiAPI, progressAPI } from '../../services/api';
 import PremiumModal from '../../components/PremiumModal';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { USE_MOCK_DATA } from '../../constants';
 
 const PURPLE = '#7C3AED';
 
@@ -27,6 +28,7 @@ const DashboardScreen = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingPath, setLoadingPath] = useState(false);
   const [learningPath, setLearningPath] = useState({ visible: false, content: '' });
+  const [progress, setProgress] = useState({ overallProgress: 0, totalMaterials: 0, viewedMaterials: 0 });
 
   const loadUnreadCount = async () => {
     try {
@@ -42,9 +44,25 @@ const DashboardScreen = () => {
     }
   };
 
+  const loadProgress = async () => {
+    if (USE_MOCK_DATA) {
+      setProgress({ overallProgress: 82, totalMaterials: 15, viewedMaterials: 12 });
+      return;
+    }
+    try {
+      const res = await progressAPI.getMyProgress();
+      if (res.success && res.data) {
+        setProgress(res.data);
+      }
+    } catch {
+      // tetap tampilkan 0 jika gagal
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       loadUnreadCount();
+      loadProgress();
     }, [])
   );
 
@@ -135,17 +153,17 @@ const DashboardScreen = () => {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Sudah Dipelajari</Text>
-                <Text style={styles.statValue}>0</Text>
+                <Text style={styles.statValue}>{progress.viewedMaterials}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>Belum Dipelajari</Text>
-                <Text style={styles.statValue}>0</Text>
+                <Text style={styles.statValue}>{progress.totalMaterials - progress.viewedMaterials}</Text>
               </View>
             </View>
           </View>
           <View style={styles.progressCircle}>
-            <Text style={styles.progressText}>0%</Text>
+            <Text style={styles.progressText}>{progress.overallProgress}%</Text>
             <Text style={styles.progressSub}>Selesai</Text>
           </View>
         </View>

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, Modal, Pressable,
-  Animated, Dimensions, Platform
+  Animated, Dimensions, Platform, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -18,6 +18,8 @@ interface PremiumModalProps {
   onConfirm: () => void;
   onCancel?: () => void;
   icon?: string;
+  minimal?: boolean;
+  scrollable?: boolean;
 }
 
 const GREEN = '#16A34A';
@@ -34,7 +36,9 @@ const PremiumModal: React.FC<PremiumModalProps> = ({
   cancelText = 'Batal',
   onConfirm,
   onCancel,
-  icon
+  icon,
+  minimal = false,
+  scrollable = false
 }) => {
   const { colors } = useTheme();
 
@@ -69,31 +73,82 @@ const PremiumModal: React.FC<PremiumModalProps> = ({
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+        <View style={[
+          styles.card, 
+          { backgroundColor: colors.card },
+          minimal && styles.cardMinimal
+        ]}>
           {/* Top Graphic/Icon */}
-          <View style={[styles.iconContainer, { backgroundColor: themeColors.bg }]}>
-            <Ionicons name={getIcon() as any} size={48} color={themeColors.main} />
+          <View style={[
+            styles.iconContainer, 
+            { backgroundColor: themeColors.bg },
+            minimal && styles.iconContainerMinimal
+          ]}>
+            <Ionicons 
+              name={getIcon() as any} 
+              size={minimal ? 24 : 48} 
+              color={themeColors.main} 
+            />
           </View>
 
-          <View style={styles.content}>
-            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-            <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
+          <View style={[
+            styles.content, 
+            minimal && styles.contentMinimal,
+            scrollable && { marginBottom: 16, width: '100%' }
+          ]}>
+            <Text style={[styles.title, { color: colors.text }, minimal && styles.titleMinimal]}>{title}</Text>
+            {scrollable ? (
+              <ScrollView 
+                style={{ maxHeight: minimal ? 160 : 220, width: '100%', paddingHorizontal: 4 }}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{ paddingBottom: 10 }}
+              >
+                <Text style={[
+                  styles.message, 
+                  { color: colors.textSecondary, textAlign: 'left' }, 
+                  minimal && styles.messageMinimal
+                ]}>
+                  {message}
+                </Text>
+              </ScrollView>
+            ) : (
+              <Text style={[
+                styles.message, 
+                { color: colors.textSecondary }, 
+                minimal && styles.messageMinimal
+              ]}>
+                {message}
+              </Text>
+            )}
           </View>
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, minimal && styles.actionsMinimal]}>
             {onCancel && (
               <Pressable 
-                style={[styles.btn, styles.cancelBtn, { backgroundColor: colors.surface }]}
+                style={[
+                  styles.btn, 
+                  styles.cancelBtn, 
+                  { backgroundColor: colors.surface },
+                  minimal && styles.btnMinimal
+                ]}
                 onPress={onCancel}
               >
-                <Text style={[styles.btnText, { color: colors.text }]}>{cancelText}</Text>
+                <Text style={[styles.btnText, { color: colors.text }, minimal && styles.btnTextMinimal]}>{cancelText}</Text>
               </Pressable>
             )}
             <Pressable 
-              style={[styles.btn, { backgroundColor: themeColors.main, flex: onCancel ? 1 : 0, width: onCancel ? 'auto' : '100%' }]}
+              style={[
+                styles.btn, 
+                { 
+                  backgroundColor: themeColors.main, 
+                  flex: onCancel ? 1 : 0, 
+                  width: onCancel ? 'auto' : '100%' 
+                },
+                minimal && styles.btnMinimal
+              ]}
               onPress={onConfirm}
             >
-              <Text style={[styles.btnText, { color: '#FFF' }]}>{confirmText}</Text>
+              <Text style={[styles.btnText, { color: '#FFF' }, minimal && styles.btnTextMinimal]}>{confirmText}</Text>
             </Pressable>
           </View>
         </View>
@@ -169,6 +224,38 @@ const styles = StyleSheet.create({
   btnText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  cardMinimal: {
+    maxWidth: 320,
+    borderRadius: 20,
+    padding: 20,
+  },
+  iconContainerMinimal: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginBottom: 12,
+  },
+  contentMinimal: {
+    marginBottom: 20,
+  },
+  titleMinimal: {
+    fontSize: 18,
+    marginBottom: 6,
+  },
+  messageMinimal: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  actionsMinimal: {
+    gap: 8,
+  },
+  btnMinimal: {
+    height: 44,
+    borderRadius: 12,
+  },
+  btnTextMinimal: {
+    fontSize: 14,
   },
 });
 

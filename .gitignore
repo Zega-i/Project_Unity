@@ -12,3 +12,8 @@ edubridge-mobile/node_modules/
 *.log
 
 .claude
+*.pdf
+Kriteria Penilaian.md
+backend/check-last-quiz.js
+.gemini/
+.antigravity/

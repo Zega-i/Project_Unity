@@ -147,6 +147,7 @@ model QuizSession {
   id             String        @id @default(cuid())
   studentId      String
   classId        String
+  quizId         String?
   startedAt      DateTime      @default(now())
   endedAt        DateTime?
   score          Float?
@@ -155,11 +156,13 @@ model QuizSession {
   status         SessionStatus @default(IN_PROGRESS)
 
   student Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz    Quiz?        @relation(fields: [quizId], references: [id], onDelete: SetNull)
   answers QuizAnswer[]
 
   @@index([studentId])
   @@index([status])
   @@index([startedAt])
+  @@index([quizId])
 }
 
 enum SessionStatus {
@@ -385,11 +388,15 @@ model Quiz {
   title          String
   timeLimit      Int            @default(15)
   questionsCount Int            @default(0)
+  shuffle        Boolean        @default(true)
+  showResult     Boolean        @default(true)
+  autoGrade      Boolean        @default(true)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   class          Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
   questions      QuizQuestion[]
+  sessions       QuizSession[]
 
   @@index([classId])
 }

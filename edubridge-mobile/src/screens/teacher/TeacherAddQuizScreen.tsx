@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TextInput, Pressable, StatusBar, Switch,
-  Alert, ActivityIndicator, Modal,
+  ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { aiAPI, teacherAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
 
@@ -29,8 +30,28 @@ const TeacherAddQuizScreen = () => {
   const { classId } = route.params || {};
 
   const [loading, setLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
   const [generating, setGenerating] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+
+  // Dynamic PremiumModal State
+  const [alertModal, setAlertModal] = useState<{
+    visible: boolean;
+    type: 'success' | 'error' | 'warning' | 'info' | 'confirm';
+    title: string;
+    message: string;
+    icon?: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    type: 'info',
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   
   const [quizData, setQuizData] = useState({
     title: '',
@@ -70,10 +91,19 @@ const TeacherAddQuizScreen = () => {
 
   const handleAddAllDrafts = () => {
     if (aiDraft.length === 0) return;
+    const count = aiDraft.length;
     setQuestions([...questions, ...aiDraft]);
     setAiDraft([]);
     triggerSuccess();
-    Alert.alert('Berhasil', `${aiDraft.length} soal telah ditambahkan ke kuis.`);
+    
+    setAlertModal({
+      visible: true,
+      type: 'success',
+      title: 'Berhasil',
+      message: `${count} soal telah ditambahkan ke kuis.`,
+      confirmText: 'Selesai',
+      onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+    });
   };
 
   const handleOpenEdit = (q: Question) => {
@@ -87,8 +117,26 @@ const TeacherAddQuizScreen = () => {
   };
 
   const handleGenerateAI = async () => {
-    if (!quizData.selectedMaterialId || !quizData.aiCommand) {
-      Alert.alert('Data Belum Lengkap', 'Pilih materi dan masukkan instruksi untuk AI.');
+    if (!quizData.selectedMaterialId) {
+      setAlertModal({
+        visible: true,
+        type: 'warning',
+        title: 'Materi Belum Dipilih',
+        message: 'Pilih materi terlebih dahulu sebagai sumber kuis.',
+        confirmText: 'Mengerti',
+        onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+      });
+      return;
+    }
+    if (!quizData.aiCommand.trim()) {
+      setAlertModal({
+        visible: true,
+        type: 'warning',
+        title: 'Instruksi Kosong',
+        message: 'Tulis instruksi untuk AI, contoh: "buatkan 5 soal pilihan ganda".',
+        confirmText: 'Mengerti',
+        onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+      });
       return;
     }
 
@@ -96,10 +144,12 @@ const TeacherAddQuizScreen = () => {
     triggerMedium();
 
     try {
-      // Extract count from command
-      const countMatch = quizData.aiCommand.match(/\d+/);
-      const count = countMatch ? parseInt(countMatch[0]) : 5;
-      
+      // Cari angka soal dari instruksi, khusus pola "X soal" atau "soal X"
+      const soalMatch = quizData.aiCommand.match(/(\d+)\s*soal|soal\s*(\d+)/i);
+      const count = soalMatch
+        ? parseInt(soalMatch[1] || soalMatch[2])
+        : 5;
+
       const response = await aiAPI.generateQuiz(quizData.aiCommand, count, quizData.selectedMaterialId);
       
       if (response && response.success && response.data.quiz) {
@@ -113,11 +163,26 @@ const TeacherAddQuizScreen = () => {
         setAiDraft(aiQuestions);
         setQuizData({ ...quizData, title: 'Kuis AI: ' + quizData.selectedMaterialTitle.split('.')[0] });
         triggerSuccess();
-        Alert.alert('AI Berhasil', `Berhasil membuat ${aiQuestions.length} draf soal.`);
+        
+        setAlertModal({
+          visible: true,
+          type: 'success',
+          title: 'AI Berhasil',
+          message: `Berhasil membuat ${aiQuestions.length} draf soal.`,
+          confirmText: 'Tinjau Soal',
+          onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+        });
       }
     } catch (error) {
       console.error('AI Quiz Error:', error);
-      Alert.alert('Gagal', 'Gagal membuat soal dengan AI. Coba lagi nanti.');
+      setAlertModal({
+        visible: true,
+        type: 'error',
+        title: 'Gagal',
+        message: 'Gagal membuat soal dengan AI. Coba lagi nanti.',
+        confirmText: 'OK',
+        onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+      });
     } finally {
       setGenerating(false);
     }
@@ -125,10 +190,18 @@ const TeacherAddQuizScreen = () => {
 
   const handleAddQuestion = () => {
     if (!newQuestion.text || newQuestion.options.some(o => !o)) {
-      Alert.alert('Data Belum Lengkap', 'Mohon isi pertanyaan dan semua pilihan jawaban.');
+      setAlertModal({
+        visible: true,
+        type: 'warning',
+        title: 'Data Belum Lengkap',
+        message: 'Mohon isi pertanyaan dan semua pilihan jawaban.',
+        confirmText: 'Lengkapi',
+        onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+      });
       return;
     }
 
+    const isEdit = !!editingId;
     if (editingId) {
       setQuestions(questions.map(q => q.id === editingId ? { ...newQuestion, id: editingId } : q));
       setEditingId(null);
@@ -143,25 +216,46 @@ const TeacherAddQuizScreen = () => {
     setNewQuestion({ text: '', options: ['', '', '', ''], correctAnswer: 0 });
     setShowAddModal(false);
     triggerSuccess();
+
+    setAlertModal({
+      visible: true,
+      type: 'success',
+      title: 'Berhasil',
+      message: isEdit ? 'Perubahan soal kuis berhasil disimpan.' : 'Soal kuis baru berhasil ditambahkan.',
+      confirmText: 'OK',
+      onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+    });
   };
 
   const handleDeleteQuestion = (id: string) => {
-    Alert.alert('Hapus Soal', 'Apakah Anda yakin ingin menghapus soal ini?', [
-      { text: 'Batal', style: 'cancel' },
-      { 
-        text: 'Hapus', 
-        style: 'destructive',
-        onPress: () => {
-          setQuestions(questions.filter(q => q.id !== id));
-          triggerMedium();
-        }
-      }
-    ]);
+    triggerMedium();
+    setAlertModal({
+      visible: true,
+      type: 'error',
+      icon: 'trash-outline',
+      title: 'Hapus Soal',
+      message: 'Apakah Anda yakin ingin menghapus soal kuis ini?',
+      confirmText: 'Hapus',
+      cancelText: 'Batal',
+      onConfirm: () => {
+        setQuestions(prev => prev.filter(q => q.id !== id));
+        triggerMedium();
+        setAlertModal(prev => ({ ...prev, visible: false }));
+      },
+      onCancel: () => setAlertModal(prev => ({ ...prev, visible: false })),
+    });
   };
 
   const handleSaveQuiz = async () => {
     if (!quizData.title || questions.length === 0) {
-      Alert.alert('Data Belum Lengkap', 'Mohon isi judul kuis dan minimal satu pertanyaan.');
+      setAlertModal({
+        visible: true,
+        type: 'warning',
+        title: 'Data Belum Lengkap',
+        message: 'Mohon isi judul kuis dan tambahkan minimal satu pertanyaan.',
+        confirmText: 'Lengkapi',
+        onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+      });
       return;
     }
     setLoading(true);
@@ -169,17 +263,29 @@ const TeacherAddQuizScreen = () => {
       const res = await teacherAPI.addQuiz(classId, {
         title: quizData.title,
         duration: quizData.duration,
-        questions: questions
+        questions: questions,
+        shuffle: quizData.shuffle,
+        showResult: quizData.showResult,
+        autoGrade: quizData.autoGrade,
       });
 
       if (res.success) {
         triggerSuccess();
-        Alert.alert('Berhasil', 'Kuis baru telah dipublikasikan!', [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
+        setSuccessModal({
+          visible: true,
+          title: 'Berhasil',
+          message: 'Kuis baru telah dipublikasikan!'
+        });
       }
     } catch (error) {
-      Alert.alert('Error', 'Gagal menyimpan kuis.');
+      setAlertModal({
+        visible: true,
+        type: 'error',
+        title: 'Gagal',
+        message: 'Gagal menyimpan kuis. Silakan coba lagi.',
+        confirmText: 'OK',
+        onConfirm: () => setAlertModal(prev => ({ ...prev, visible: false })),
+      });
     } finally {
       setLoading(false);
     }
@@ -283,24 +389,15 @@ const TeacherAddQuizScreen = () => {
               onChangeText={(txt) => setQuizData({...quizData, title: txt})}
             />
             
-            <View style={styles.row}>
-              <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Durasi (Menit)</Text>
-                <TextInput
-                  style={[styles.input, { color: colors.text }]}
-                  keyboardType="numeric"
-                  value={quizData.duration}
-                  onChangeText={(txt) => setQuizData({...quizData, duration: txt})}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Kategori</Text>
-                <View style={styles.dummyPicker}>
-                  <Text style={{ color: colors.text }}>Matematika</Text>
-                  <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
-                </View>
-              </View>
-            </View>
+            <Text style={[styles.label, { color: colors.textSecondary, marginTop: 8 }]}>Durasi (Menit)</Text>
+            <TextInput
+              style={[styles.input, { color: colors.text }]}
+              keyboardType="numeric"
+              placeholder="Contoh: 15"
+              placeholderTextColor={colors.textSecondary}
+              value={quizData.duration}
+              onChangeText={(txt) => setQuizData({...quizData, duration: txt})}
+            />
           </View>
         </View>
 
@@ -445,17 +542,27 @@ const TeacherAddQuizScreen = () => {
                 <Text style={{ textAlign: 'center', marginTop: 20, color: colors.textSecondary }}>Belum ada materi di kelas ini.</Text>
               ) : (
                 materials.map(m => (
-                  <Pressable 
-                    key={m.id} 
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}
+                  <Pressable
+                    key={m.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}
                     onPress={() => {
                       setQuizData({...quizData, selectedMaterialId: m.id, selectedMaterialTitle: m.title});
                       setShowMaterialModal(false);
                       triggerMedium();
                     }}
                   >
-                    <Ionicons name="document-text" size={24} color={GREEN} />
-                    <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }}>{m.title}</Text>
+                    <View style={{ width: 42, height: 42, borderRadius: 10, backgroundColor: GREEN + '15', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={m.type === 'VIDEO' ? 'videocam' : 'document-text'} size={20} color={GREEN} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{m.title}</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+                        {m.type || 'ARTIKEL'} • {m.description ? m.description.substring(0, 50) + '...' : 'Tidak ada deskripsi'}
+                      </Text>
+                    </View>
+                    {quizData.selectedMaterialId === m.id && (
+                      <Ionicons name="checkmark-circle" size={22} color={GREEN} />
+                    )}
                   </Pressable>
                 ))
               )}
@@ -463,6 +570,32 @@ const TeacherAddQuizScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <PremiumModal
+        visible={successModal.visible}
+        type="success"
+        title={successModal.title}
+        message={successModal.message}
+        confirmText="Selesai"
+        onConfirm={() => {
+          setSuccessModal({ ...successModal, visible: false });
+          navigation.goBack();
+        }}
+        minimal
+      />
+
+      <PremiumModal
+        visible={alertModal.visible}
+        type={alertModal.type}
+        icon={alertModal.icon}
+        title={alertModal.title}
+        message={alertModal.message}
+        confirmText={alertModal.confirmText}
+        cancelText={alertModal.cancelText}
+        onConfirm={alertModal.onConfirm}
+        onCancel={alertModal.onCancel}
+        minimal
+      />
     </SafeAreaView>
   );
 };
@@ -481,8 +614,6 @@ const styles = StyleSheet.create({
   card: { padding: 20, borderRadius: 20, borderWidth: 1 },
   label: { fontSize: 12, fontWeight: '600', marginBottom: 6 },
   input: { fontSize: 16, fontWeight: '700', paddingVertical: 8, marginBottom: 12 },
-  row: { flexDirection: 'row', marginTop: 8 },
-  dummyPicker: { flex: 1, height: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 0 },
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20 },
   toggleLabel: { fontSize: 14, fontWeight: '600' },
   divider: { height: 1, marginHorizontal: 20 },

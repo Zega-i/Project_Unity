@@ -24,6 +24,7 @@ const TeacherAddAssignmentScreen = () => {
   const { classId } = route.params || {};
 
   const [loading, setLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
   const [generating, setGenerating] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [materials, setMaterials] = useState<any[]>([]);
@@ -95,9 +96,11 @@ const TeacherAddAssignmentScreen = () => {
 
       if (res.success) {
         triggerSuccess();
-        Alert.alert('Berhasil', 'Tugas berhasil dipublikasikan ke kelas!', [
-          { text: 'Selesai', onPress: () => navigation.goBack() }
-        ]);
+        setSuccessModal({
+          visible: true,
+          title: 'Berhasil',
+          message: 'Tugas berhasil dipublikasikan ke kelas!'
+        });
       }
     } catch (error) {
       Alert.alert('Error', 'Gagal menyimpan tugas. Periksa koneksi internet Anda.');
@@ -288,6 +291,18 @@ const TeacherAddAssignmentScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <PremiumModal
+        visible={successModal.visible}
+        type="success"
+        title={successModal.title}
+        message={successModal.message}
+        confirmText="Selesai"
+        onConfirm={() => {
+          setSuccessModal({ ...successModal, visible: false });
+          navigation.goBack();
+        }}
+      />
     </SafeAreaView>
   );
 };

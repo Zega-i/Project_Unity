@@ -6,9 +6,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { teacherAPI } from '../../services/api';
+import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
 
@@ -21,19 +24,78 @@ const TeacherAddMaterialScreen = () => {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedFile, setSelectedFile] = useState<{ name: string; uri: string; type: string; base64?: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [successModal, setSuccessModal] = useState({ visible: false, title: '', message: '' });
+
+  const handlePickFile = async () => {
+    triggerLight();
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'video/*', 'image/*', 'text/*'],
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        let base64: string | undefined;
+        try {
+          base64 = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: 'base64' as any,
+          });
+        } catch {
+          base64 = undefined;
+        }
+        setSelectedFile({
+          name: asset.name,
+          uri: asset.uri,
+          type: asset.mimeType || 'application/pdf',
+          base64,
+        });
+        triggerMedium();
+      }
+    } catch {
+      Alert.alert('Error', 'Gagal memilih file.');
+    }
+  };
+
+  const getMaterialType = (mimeType: string): string => {
+    if (mimeType.includes('pdf')) return 'PDF';
+    if (mimeType.includes('video')) return 'VIDEO';
+    if (mimeType.includes('image')) return 'INTERACTIVE';
+    return 'ARTICLE';
+  };
 
   const handleSave = async () => {
-    if (!title || !description) {
-      Alert.alert('Error', 'Mohon isi judul dan deskripsi materi.');
+    if (!title.trim()) {
+      Alert.alert('Error', 'Mohon isi judul materi.');
       return;
     }
+    if (!description.trim()) {
+      Alert.alert('Error', 'Mohon isi deskripsi materi.');
+      return;
+    }
+    if (!selectedFile) {
+      Alert.alert('File Belum Dipilih', 'Mohon unggah file materi terlebih dahulu.');
+      return;
+    }
+
     setLoading(true);
     try {
       triggerMedium();
-      await teacherAPI.addMaterial(classId, { title, description });
-      Alert.alert('Sukses', 'Materi berhasil ditambahkan!');
-      navigation.goBack();
+      const materialType = getMaterialType(selectedFile.type);
+      await teacherAPI.addMaterial(classId, {
+        title,
+        description,
+        fileUrl: selectedFile.uri,
+        type: materialType,
+        fileBase64: selectedFile.base64,
+        fileName: selectedFile.name,
+      });
+      setSuccessModal({
+        visible: true,
+        title: 'Sukses',
+        message: 'Materi berhasil ditambahkan!'
+      });
     } catch (error: any) {
       const msg = error?.response?.data?.error || 'Gagal menambahkan materi.';
       Alert.alert('Error', msg);
@@ -84,11 +146,42 @@ const TeacherAddMaterialScreen = () => {
           />
         </View>
 
-        <Pressable style={[styles.attachBtn, { borderColor: GREEN }]}>
-          <Ionicons name="cloud-upload-outline" size={24} color={GREEN} />
-          <Text style={[styles.attachText, { color: GREEN }]}>Unggah File (PDF, Video, Gambar)</Text>
+        <Pressable
+          style={[
+            styles.attachBtn,
+            { borderColor: selectedFile ? GREEN : colors.border },
+            selectedFile && { backgroundColor: GREEN + '10' },
+          ]}
+          onPress={handlePickFile}
+        >
+          <Ionicons
+            name={selectedFile ? 'checkmark-circle' : 'cloud-upload-outline'}
+            size={24}
+            color={selectedFile ? GREEN : colors.textSecondary}
+          />
+          <Text style={[styles.attachText, { color: selectedFile ? GREEN : colors.textSecondary }]}>
+            {selectedFile ? selectedFile.name : 'Unggah File (PDF, Video, Gambar) *'}
+          </Text>
         </Pressable>
+
+        {!selectedFile && (
+          <Text style={[styles.requiredNote, { color: '#EF4444' }]}>
+            * File wajib diunggah sebelum menyimpan materi
+          </Text>
+        )}
       </ScrollView>
+
+      <PremiumModal
+        visible={successModal.visible}
+        type="success"
+        title={successModal.title}
+        message={successModal.message}
+        confirmText="Selesai"
+        onConfirm={() => {
+          setSuccessModal({ ...successModal, visible: false });
+          navigation.goBack();
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -105,7 +198,8 @@ const styles = StyleSheet.create({
   input: { height: 50, borderRadius: 12, borderWidth: 1, paddingHorizontal: 16, fontSize: 15 },
   textArea: { height: 200, borderRadius: 12, borderWidth: 1, padding: 16, fontSize: 15 },
   attachBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 12, borderWidth: 2, borderStyle: 'dashed', marginTop: 10, gap: 10 },
-  attachText: { fontSize: 14, fontWeight: 'bold' },
+  attachText: { fontSize: 14, fontWeight: 'bold', flex: 1 },
+  requiredNote: { fontSize: 12, marginTop: 8, textAlign: 'center' },
 });
 
 export default TeacherAddMaterialScreen;

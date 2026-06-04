@@ -9,11 +9,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import { authAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
+import { USE_MOCK_DATA } from '../../constants';
 
 const PURPLE = '#7C3AED';
 const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const WEEK_DATA = [0, 0, 0, 0, 0, 0, 0];
 const BAR_MAX_H = 100;
+
+const MOCK_SUBJECT_PROGRESS = [
+  { id: '1', name: 'Matematika', progress: 85, color: '#6366F1', count: '17/20' },
+  { id: '2', name: 'Fisika', progress: 70, color: '#F59E0B', count: '7/10' },
+  { id: '3', name: 'Biologi', progress: 95, color: '#10B981', count: '19/20' },
+  { id: '4', name: 'Bahasa Inggris', progress: 80, color: '#3B82F6', count: '8/10' },
+  { id: '5', name: 'Kimia', progress: 65, color: '#8B5CF6', count: '13/20' },
+];
+
 
 const ProgressScreen = () => {
   const { colors } = useTheme();
@@ -71,9 +81,9 @@ const ProgressScreen = () => {
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           {[
-            { icon: 'book-outline',    color: '#6366F1', val: '0', label: 'Materi Dibaca' },
-            { icon: 'trophy-outline',  color: '#F59E0B', val: '0', label: 'Kuis Selesai'  },
-            { icon: 'stats-chart',     color: '#10B981', val: '0%', label: 'Skor Rata-rata' },
+            { icon: 'book-outline',    color: '#6366F1', val: USE_MOCK_DATA ? '14' : '0', label: 'Materi Dibaca' },
+            { icon: 'trophy-outline',  color: '#F59E0B', val: USE_MOCK_DATA ? '9' : '0', label: 'Kuis Selesai'  },
+            { icon: 'stats-chart',     color: '#10B981', val: USE_MOCK_DATA ? '86%' : '0%', label: 'Skor Rata-rata' },
           ].map((item, idx) => (
             <View key={idx} style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.summaryIconBox, { backgroundColor: item.color + '18' }]}>
@@ -87,9 +97,9 @@ const ProgressScreen = () => {
 
         {/* Weekly Bar Chart */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktivitas 7 Hari</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktivitas 7 Hari (Jam)</Text>
           <View style={[styles.barChart, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {WEEK_DATA.map((val, idx) => {
+            {(USE_MOCK_DATA ? [4, 8, 2, 9, 6, 1, 5] : WEEK_DATA).map((val, idx) => {
               const barH = val === 0 ? 4 : Math.max(4, (val / 10) * BAR_MAX_H);
               const barColor = val === 0 ? colors.border : PURPLE;
               return (
@@ -106,15 +116,34 @@ const ProgressScreen = () => {
         {/* Subject Progress */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Progress per Mata Pelajaran</Text>
-          <View style={[styles.emptySubject, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="bar-chart-outline" size={40} color={PURPLE + '40'} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Data</Text>
-            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              {hasClass
-                ? 'Data progressmu akan muncul setelah kamu mulai mengerjakan materi dan kuis.'
-                : 'Bergabung ke kelas terlebih dahulu untuk melihat progress belajarmu.'}
-            </Text>
-          </View>
+          {USE_MOCK_DATA ? (
+            <View style={{ gap: 12 }}>
+              {MOCK_SUBJECT_PROGRESS.map((item) => (
+                <View key={item.id} style={[styles.subjectProgressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.subjectHeader}>
+                    <Text style={[styles.subjectName, { color: colors.text }]}>{item.name}</Text>
+                    <Text style={[styles.subjectCount, { color: colors.textSecondary }]}>{item.count} materi</Text>
+                  </View>
+                  <View style={styles.progressBarWrapper}>
+                    <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>
+                      <View style={[styles.progressBarFill, { width: `${item.progress}%`, backgroundColor: item.color }]} />
+                    </View>
+                    <Text style={[styles.progressPctText, { color: item.color }]}>{item.progress}%</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={[styles.emptySubject, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="bar-chart-outline" size={40} color={PURPLE + '40'} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Belum Ada Data</Text>
+              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+                {hasClass
+                  ? 'Data progressmu akan muncul setelah kamu mulai mengerjakan materi dan kuis.'
+                  : 'Bergabung ke kelas terlebih dahulu untuk melihat progress belajarmu.'}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -146,6 +175,45 @@ const styles = StyleSheet.create({
   emptySubject: { borderRadius: 16, borderWidth: 1, padding: 28, alignItems: 'center', gap: 10 },
   emptyTitle: { fontSize: 15, fontWeight: '700', marginTop: 4 },
   emptyDesc: { fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  subjectProgressCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  subjectHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  subjectName: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  subjectCount: {
+    fontSize: 12,
+  },
+  progressBarWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  progressBarBg: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressPctText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    minWidth: 35,
+    textAlign: 'right',
+  },
 });
 
 export default ProgressScreen;

@@ -12,11 +12,11 @@ import { aiAPI } from '../../services/api';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
 import { authStore } from '../../store/authStore';
+import { USE_MOCK_DATA } from '../../constants';
 
 const PURPLE = '#7C3AED';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PANEL_WIDTH = SCREEN_WIDTH * 0.78;
-// Chat history is now stored per user ID
 
 interface Message {
   id: string;
@@ -37,6 +37,30 @@ const INITIAL_MESSAGE: Message = {
   isUser: false,
 };
 
+const MOCK_MESSAGES: Message[] = [
+  INITIAL_MESSAGE,
+  {
+    id: 'mock_1',
+    text: 'Halo! Saya sedang kesulitan memahami materi Aljabar khususnya cara menyelesaikan sistem persamaan linear dua variabel (SPLDV). Bisa tolong berikan contoh dan penjelasannya?',
+    isUser: true
+  },
+  {
+    id: 'mock_2',
+    text: 'Tentu, dengan senang hati! 😊\n\nMisalkan kita memiliki sistem persamaan berikut:\n1) 2x + y = 8\n2) x - y = 1\n\nKita bisa menyelesaikannya dengan metode **Eliminasi** atau **Substitusi**.\n\nMari gunakan metode **Eliminasi** dengan menjumlahkan kedua persamaan:\n(2x + y) + (x - y) = 8 + 1\n3x = 9\n**x = 3**\n\nSekarang substitusikan x = 3 ke persamaan (2):\n3 - y = 1\n-y = 1 - 3\n-y = -2\n**y = 2**\n\nJadi, solusinya adalah **x = 3** dan **y = 2**.\nApakah kamu ingin mencoba latihan soal serupa?',
+    isUser: false
+  },
+  {
+    id: 'mock_3',
+    text: 'Wah, penjelasan langkah-langkahnya sangat jelas dan mudah diikuti! Terima kasih banyak, AI Tutor!',
+    isUser: true
+  },
+  {
+    id: 'mock_4',
+    text: 'Sama-sama! Senang sekali bisa membantu. Ingat, kamu bisa meminta soal latihan kapan saja untuk menguji pemahamanmu. Semangat belajarnya! 💪📚',
+    isUser: false
+  }
+];
+
 const AITutorScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -44,7 +68,9 @@ const AITutorScreen = () => {
   const { triggerMedium, triggerLight } = useHapticFeedback();
   const { colors } = useTheme();
 
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>(
+    USE_MOCK_DATA ? MOCK_MESSAGES : [INITIAL_MESSAGE]
+  );
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -57,7 +83,7 @@ const AITutorScreen = () => {
 
   useEffect(() => {
     loadHistory();
-    if (subject) {
+    if (subject && !USE_MOCK_DATA) {
       const introMsg: Message = {
         id: 'intro-ctx',
         text: `Aku melihat kamu sedang belajar **${subject}**${topic ? ` (Topik: ${topic})` : ''}. Ada bagian yang ingin kamu tanyakan spesifik tentang materi ini?`,

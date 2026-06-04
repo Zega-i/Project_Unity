@@ -1,13 +1,14 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
-  Pressable, Dimensions,
+  Pressable, Dimensions, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { teacherAPI } from '../../services/api';
 
 const GREEN = '#16A34A';
 
@@ -18,6 +19,39 @@ const TeacherStudentDetailScreen = () => {
   const { triggerLight } = useHapticFeedback();
   const { student } = route.params || {};
   const [activeTab, setActiveTab] = React.useState('Overview');
+  const [performance, setPerformance] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const fetchPerformance = async () => {
+    if (!student?.id) {
+      console.log('[TeacherStudentDetailScreen] Cannot fetch performance: student.id is missing', student);
+      return;
+    }
+    console.log('[TeacherStudentDetailScreen] Fetching performance for student ID:', student.id, 'class name:', student.kelas);
+    setLoading(true);
+    try {
+      const res = await teacherAPI.getStudentPerformance(student.id, student.kelas);
+      console.log('[TeacherStudentDetailScreen] API response:', JSON.stringify(res, null, 2));
+      if (res.success) {
+        setPerformance(res.data);
+      } else {
+        console.log('[TeacherStudentDetailScreen] API returned success=false:', res);
+      }
+    } catch (error) {
+      console.log('[TeacherStudentDetailScreen] Error fetching student performance:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchPerformance();
+  }, [student?.id]);
+
+  const rawAvg = performance ? performance.avg : student?.avg;
+  const displayAvg = rawAvg !== undefined
+    ? (typeof rawAvg === 'string' && rawAvg.includes('%') ? rawAvg : `${rawAvg}%`)
+    : '0%';
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
@@ -53,31 +87,32 @@ const TeacherStudentDetailScreen = () => {
         </View>
 
         <View style={styles.tabContent}>
-          {activeTab === 'Overview' && (
+          {loading ? (
+            <ActivityIndicator color={GREEN} style={{ marginTop: 40 }} />
+          ) : activeTab === 'Overview' ? (
             <>
               <View style={styles.statsGrid}>
                 <View style={[styles.statBox, { backgroundColor: colors.surface }]}>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Rerata Skor</Text>
-                  <Text style={[styles.statValue, { color: colors.text }]}>{student?.avg || 0}%</Text>
+                  <Text style={[styles.statValue, { color: colors.text }]}>{displayAvg}</Text>
                 </View>
                 <View style={[styles.statBox, { backgroundColor: colors.surface }]}>
                   <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Peringkat</Text>
-                  <Text style={[styles.statValue, { color: colors.text }]}>8 / 32</Text>
+                  <Text style={[styles.statValue, { color: colors.text, fontSize: 18 }]}>
+                    {performance?.rank || 'N/A'}
+                  </Text>
                 </View>
               </View>
 
               {/* Performance Merged into Overview */}
               <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.cardTitle, { color: colors.text }]}>Analisis Topik</Text>
-                {[
-                  { label: 'Persamaan Linear', val: 90, col: GREEN },
-                  { label: 'Fungsi Linear', val: 80, col: GREEN },
-                  { label: 'SPLDV', val: 60, col: '#F59E0B' },
-                  { label: 'Pertidaksamaan', val: 45, col: '#EF4444' },
-                ].map((t, i) => (
+                <Text style={[styles.cardTitle, { color: colors.text }]}>Analisis Performa Kuis</Text>
+                {(performance?.topicAnalysis || [
+                  { label: 'Belum Ada Kuis', val: 0, col: '#EF4444' }
+                ]).map((t: any, i: number) => (
                   <View key={i} style={styles.topicRow}>
                     <View style={styles.topicLabelRow}>
-                      <Text style={[styles.topicLabel, { color: colors.text }]}>{t.label}</Text>
+                      <Text style={[styles.topicLabel, { color: colors.text }]} numberOfLines={1}>{t.label}</Text>
                       <Text style={[styles.topicVal, { color: t.col }]}>{t.val}%</Text>
                     </View>
                     <View style={[styles.barTrack, { backgroundColor: isDarkMode ? '#1E293B' : '#F1F5F9' }]}>
@@ -93,31 +128,29 @@ const TeacherStudentDetailScreen = () => {
                   <Text style={[styles.aiTitle, { color: isDarkMode ? '#34D399' : GREEN }]}>AI Rekomendasi</Text>
                 </View>
                 <Text style={[styles.aiText, { color: isDarkMode ? '#D1FAE5' : '#166534' }]}>
-                  Berdasarkan analisis topik, siswa memerlukan latihan intensif pada **Pertidaksamaan**. Disarankan memberikan kuis adaptif.
+                  {performance?.aiRecommendation || 'Siswa belum memiliki rekomendasi.'}
                 </Text>
-                <Pressable style={styles.aiAction} onPress={() => triggerLight()}>
+                <Pressable style={styles.aiAction} onPress={() => { triggerLight(); navigation.navigate('TeacherAI'); }}>
                   <Text style={styles.aiActionText}>Tanya AI Assistant</Text>
                 </Pressable>
               </View>
             </>
-          )}
-
-          {activeTab === 'Aktivitas' && (
+          ) : (
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>Riwayat Nilai</Text>
-              {[
-                { t: 'Kuis Persamaan Linear', d: '12 Mei 2025', s: 95 },
-                { t: 'Tugas Aljabar 1', d: '10 Mei 2025', s: 80 },
-                { t: 'Kuis Sistem Koordinat', d: '05 Mei 2025', s: 45 },
-              ].map((h, i) => (
-                <View key={i} style={[styles.historyRow, i < 2 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.historyTitle, { color: colors.text }]}>{h.t}</Text>
-                    <Text style={[styles.historyDate, { color: colors.textSecondary }]}>{h.d}</Text>
+              {performance?.activityHistory && performance.activityHistory.length > 0 ? (
+                performance.activityHistory.map((h: any, i: number) => (
+                  <View key={i} style={[styles.historyRow, i < performance.activityHistory.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.historyTitle, { color: colors.text }]}>{h.t}</Text>
+                      <Text style={[styles.historyDate, { color: colors.textSecondary }]}>{h.d}</Text>
+                    </View>
+                    <Text style={[styles.historyScore, { color: h.s >= 75 ? GREEN : '#EF4444' }]}>{h.s}</Text>
                   </View>
-                  <Text style={[styles.historyScore, { color: h.s > 75 ? GREEN : '#EF4444' }]}>{h.s}</Text>
-                </View>
-              ))}
+                ))
+              ) : (
+                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginVertical: 20 }}>Belum ada riwayat aktivitas kuis.</Text>
+              )}
             </View>
           )}
         </View>

@@ -6,6 +6,7 @@ import { asyncHandler } from "../middleware/errorHandler";
 const router = Router();
 
 router.get("/dashboard", authMiddleware, asyncHandler(TeacherController.getDashboardStats));
+router.get("/my-classes", authMiddleware, asyncHandler(TeacherController.getMyClasses));
 router.post("/class", authMiddleware, asyncHandler(TeacherController.createClass));
 router.post("/class/:classId/material", authMiddleware, asyncHandler(TeacherController.addMaterial));
 router.post("/class/:classId/assignment", authMiddleware, asyncHandler(TeacherController.addAssignment));
@@ -15,8 +16,10 @@ router.get("/class/:classId/students", authMiddleware, asyncHandler(TeacherContr
 router.get("/class/:classId/assignments", authMiddleware, asyncHandler(TeacherController.getClassAssignments));
 router.get("/class/:classId/quizzes", authMiddleware, asyncHandler(TeacherController.getClassQuizzes));
 router.get("/students", authMiddleware, asyncHandler(TeacherController.getAllStudents));
+router.get("/student/:studentId/performance", authMiddleware, asyncHandler(TeacherController.getStudentPerformance));
 
 // New Update/Delete Routes
+router.put("/class/:classId/archive", authMiddleware, asyncHandler(TeacherController.toggleArchiveClass));
 router.put("/material/:materialId", authMiddleware, asyncHandler(TeacherController.updateMaterial));
 router.delete("/material/:materialId", authMiddleware, asyncHandler(TeacherController.deleteMaterial));
 router.delete("/assignment/:assignmentId", authMiddleware, asyncHandler(TeacherController.deleteAssignment));

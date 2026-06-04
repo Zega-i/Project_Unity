@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
   SafeAreaView, Alert, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { classAPI } from '../../services/api';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -22,22 +22,29 @@ const ClassScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
 
-  const filteredClasses = classes.filter(cls =>
-    cls.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClasses = classes
+    .filter(cls => {
+      const isArchived = cls.archived === true;
+      if (activeTab === 'aktif') {
+        return !isArchived;
+      } else {
+        return isArchived;
+      }
+    })
+    .filter(cls =>
+      cls.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
       const res = await classAPI.getMyClasses();
       setClasses(res.data || res);
     } catch (err) {
       console.log(err);
     }
-  };
-
-  useEffect(() => {
-    fetchClasses();
   }, []);
+
+  useFocusEffect(useCallback(() => { fetchClasses(); }, [fetchClasses]));
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>

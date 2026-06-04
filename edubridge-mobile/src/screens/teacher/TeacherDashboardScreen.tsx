@@ -12,6 +12,7 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { teacherAPI, aiAPI } from '../../services/api';
 import PremiumModal from '../../components/PremiumModal';
 import { ActivityIndicator, Alert } from 'react-native';
+import { USE_MOCK_DATA } from '../../constants';
 
 const GREEN      = '#16A34A';
 const PURPLE     = '#A78BFA';
@@ -41,6 +42,49 @@ const TeacherDashboardScreen = () => {
   const [aiModal, setAiModal] = useState({ visible: false, title: '', message: '' });
 
   const loadDashboardData = async () => {
+    if (USE_MOCK_DATA) {
+      setStats({
+        activeClasses: 3,
+        totalStudents: 78,
+        avgScore: 82,
+        completedTasks: 12,
+        activeRate: 94
+      });
+      setChartData([
+        { label: 'Tugas 1', value: 85 },
+        { label: 'Kuis 1', value: 78 },
+        { label: 'Tugas 2', value: 92 },
+        { label: 'Kuis 2', value: 68 },
+        { label: 'UTS', value: 88 }
+      ]);
+      setAtRiskData([
+        {
+          id: 'mock_risk_1',
+          name: 'Budi Santoso',
+          kelas: 'Kelas 10-A',
+          avg: '62.4%',
+          color: '#EF4444',
+          issue: 'Nilai kuis matematika menurun dalam 3 kuis terakhir'
+        },
+        {
+          id: 'mock_risk_2',
+          name: 'Siti Aminah',
+          kelas: 'Kelas 10-B',
+          avg: '64.8%',
+          color: '#EF4444',
+          issue: 'Keaktifan membaca materi kurang dari 20% minggu ini'
+        },
+        {
+          id: 'mock_risk_3',
+          name: 'Aditya Pratama',
+          kelas: 'Kelas 10-A',
+          avg: '58.0%',
+          color: '#EF4444',
+          issue: 'Belum mengumpulkan 2 tugas terakhir'
+        }
+      ]);
+      return;
+    }
     try {
       const data = await teacherAPI.getDashboardStats();
       if (data) {
@@ -113,7 +157,7 @@ const TeacherDashboardScreen = () => {
               <View style={styles.badgeRow}>
                 <View style={styles.greenBadge}><Ionicons name="checkmark-circle" size={18} color="#FFF" /></View>
                 <View>
-                  <Text style={[styles.statNumSm, { color: colors.text }]}>{stats.completedTasks} Tugas</Text>
+                  <Text style={[styles.statNumSm, { color: colors.text }]}>{stats.completedTasks} Kuis</Text>
                   <Text style={[styles.statLbl, { color: colors.textSecondary }]}>Ter-selesai</Text>
                 </View>
               </View>
@@ -209,6 +253,8 @@ const TeacherDashboardScreen = () => {
         message={aiModal.message}
         confirmText="Mengerti"
         onConfirm={() => setAiModal({ ...aiModal, visible: false })}
+        minimal
+        scrollable
       />
     </SafeAreaView>
   );

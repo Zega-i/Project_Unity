@@ -47,7 +47,8 @@ export class AIController {
         });
         
         if (material) {
-          finalContent = material.extractedText || material.content || material.title;
+          const parts = [material.content, material.extractedText].filter(Boolean);
+          finalContent = parts.length > 0 ? parts.join('\n\n') : (material.title || '');
           if (text) finalContent = `${finalContent}\n\nInstruksi Tambahan: ${text}`;
         }
       }
@@ -87,7 +88,8 @@ export class AIController {
           select: { extractedText: true, content: true, title: true }
         });
         if (material) {
-          finalContent = material.extractedText || material.content || material.title;
+          const parts = [material.content, material.extractedText].filter(Boolean);
+          finalContent = parts.length > 0 ? parts.join('\n\n') : (material.title || '');
           if (text) finalContent = `${finalContent}\n\nInstruksi Tambahan: ${text}`;
         }
       }

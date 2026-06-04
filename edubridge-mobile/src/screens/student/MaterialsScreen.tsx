@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, FlatList,
-  Pressable, StatusBar,
+  Pressable, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
+import { classAPI } from '../../services/api';
 
 const PURPLE = '#7C3AED';
 
@@ -15,10 +16,33 @@ const MaterialsScreen = () => {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const { triggerLight } = useHapticFeedback();
-  const [materials] = useState([]); // Data dummy telah dihapus
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadMaterials = useCallback(async () => {
+    setLoading(true);
+    try {
+      const classRes = await classAPI.getMyClasses();
+      const myClasses: any[] = classRes.data || [];
+      const results = await Promise.all(
+        myClasses.map((cls: any) =>
+          classAPI.getClassDetail(cls.id)
+            .then((r: any) => (r.data?.materials || []).map((m: any) => ({ ...m, className: cls.name })))
+            .catch(() => [])
+        )
+      );
+      setMaterials(results.flat());
+    } catch {
+      setMaterials([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadMaterials(); }, [loadMaterials]));
 
   const renderItem = ({ item }: { item: any }) => (
-    <Pressable 
+    <Pressable
       style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={() => { triggerLight(); navigation.navigate('MaterialDetail', { material: item }); }}
     >
@@ -26,10 +50,10 @@ const MaterialsScreen = () => {
         <Ionicons name="book" size={24} color={PURPLE} />
       </View>
       <View style={styles.info}>
-        <Text style={[styles.subject, { color: PURPLE }]}>{item.subject}</Text>
+        <Text style={[styles.subject, { color: PURPLE }]}>{item.className || 'Kelas'}</Text>
         <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
         <View style={styles.footer}>
-          <Text style={[styles.meta, { color: colors.textSecondary }]}>{item.lessons} Materi • {item.duration}</Text>
+          <Text style={[styles.meta, { color: colors.textSecondary }]}>{item.type || 'MATERI'}</Text>
         </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
@@ -46,23 +70,29 @@ const MaterialsScreen = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      <FlatList
-        data={materials}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <View style={[styles.emptyIconCircle, { backgroundColor: PURPLE + '10' }]}>
-              <Ionicons name="book-outline" size={60} color={PURPLE} />
+      {loading ? (
+        <View style={styles.empty}>
+          <ActivityIndicator size="large" color={PURPLE} />
+        </View>
+      ) : (
+        <FlatList
+          data={materials}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: PURPLE + '10' }]}>
+                <Ionicons name="book-outline" size={60} color={PURPLE} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Materi Belum Tersedia</Text>
+              <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                Bergabunglah dengan kelas menggunakan token untuk melihat materi belajar dari guru kamu.
+              </Text>
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>Materi Belum Tersedia</Text>
-            <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
-              Bergabunglah dengan kelas menggunakan token untuk melihat materi belajar dari guru kamu.
-            </Text>
-          </View>
-        }
-      />
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };

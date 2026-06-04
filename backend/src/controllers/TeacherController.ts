@@ -4,6 +4,7 @@ import { AuthRequest } from "../middleware/auth";
 import { ApiResponse } from "../types";
 import { logger } from "../utils/logger";
 import { PDFExtractor } from "../utils/pdfExtractor";
+import { UTApi } from "uploadthing/server";
 
 export class TeacherController {
   static async getDashboardStats(req: AuthRequest, res: Response) {
@@ -18,23 +19,184 @@ export class TeacherController {
       });
       const totalStudents = classes.reduce((acc, curr) => acc + curr._count.students, 0);
 
+      const useMock = process.env.USE_MOCK_DATA === 'true';
+
+      if (useMock) {
+        return res.json({
+          success: true,
+          data: {
+            summary: {
+              activeClasses: activeClasses || 3,
+              totalStudents: totalStudents || 78,
+              avgScore: 82,
+              completedTasks: 12,
+              activeRate: 94
+            },
+            chart: [
+              { label: 'Tugas 1', value: 85 },
+              { label: 'Kuis 1', value: 78 },
+              { label: 'Tugas 2', value: 92 },
+              { label: 'Kuis 2', value: 68 },
+              { label: 'UTS', value: 88 }
+            ],
+            atRisk: [
+              {
+                id: 'mock_risk_1',
+                name: 'Budi Santoso',
+                kelas: 'Kelas 10-A',
+                avg: '62.4%',
+                color: '#EF4444',
+                issue: 'Nilai kuis matematika menurun dalam 3 kuis terakhir'
+              },
+              {
+                id: 'mock_risk_2',
+                name: 'Siti Aminah',
+                kelas: 'Kelas 10-B',
+                avg: '64.8%',
+                color: '#EF4444',
+                issue: 'Keaktifan membaca materi kurang dari 20% minggu ini'
+              },
+              {
+                id: 'mock_risk_3',
+                name: 'Aditya Pratama',
+                kelas: 'Kelas 10-A',
+                avg: '58.0%',
+                color: '#EF4444',
+                issue: 'Belum mengumpulkan 2 tugas terakhir'
+              }
+            ]
+          }
+        });
+      }
+
+      // Calculate real stats from the database
+      const classIds = classes.map(c => c.id);
+
+      const quizSessions = await prisma.quizSession.findMany({
+        where: {
+          classId: { in: classIds },
+          status: 'COMPLETED',
+          score: { not: null }
+        },
+        select: { score: true }
+      });
+      const avgScore = quizSessions.length > 0
+        ? Math.round(quizSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / quizSessions.length)
+        : 0;
+
+      const completedTasks = await prisma.quizSession.count({
+        where: {
+          classId: { in: classIds },
+          status: 'COMPLETED'
+        }
+      });
+
+      const activeStudentsCount = await prisma.classStudent.count({
+        where: {
+          classId: { in: classIds },
+          student: {
+            OR: [
+              { quizSessions: { some: { startedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
+              { materialViews: { some: { viewedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } }
+            ]
+          }
+        }
+      });
+      const activeRate = totalStudents > 0
+        ? Math.round((activeStudentsCount / totalStudents) * 100)
+        : 0;
+
+      const chart = await Promise.all(classes.map(async (c) => {
+        const classSessions = await prisma.quizSession.findMany({
+          where: { classId: c.id, status: 'COMPLETED' },
+          select: { score: true }
+        });
+        const average = classSessions.length > 0
+          ? Math.round(classSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / classSessions.length)
+          : 0;
+        return {
+          label: c.name.length > 10 ? c.name.substring(0, 10) + '..' : c.name,
+          value: average
+        };
+      }));
+
+      const enrollments = await prisma.classStudent.findMany({
+        where: { classId: { in: classIds } },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              quizSessions: {
+                where: { classId: { in: classIds }, status: 'COMPLETED' },
+                orderBy: { endedAt: 'desc' },
+                take: 5
+              }
+            }
+          },
+          class: { select: { name: true } }
+        }
+      });
+
+      const atRisk = enrollments.map(e => {
+        const student = e.student;
+        const studentSessions = student.quizSessions;
+        const avg = studentSessions.length > 0
+          ? Math.round(studentSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / studentSessions.length)
+          : 0;
+        
+        const isLow = avg < 75 && studentSessions.length > 0;
+        if (!isLow) return null;
+
+        return {
+          id: student.id,
+          name: student.name,
+          kelas: e.class.name,
+          avg: `${avg}%`,
+          color: avg < 60 ? '#EF4444' : '#F59E0B',
+          issue: avg < 60 
+            ? 'Nilai rata-rata kuis sangat rendah' 
+            : 'Perlu bimbingan tambahan untuk meningkatkan nilai'
+        };
+      }).filter((item): item is NonNullable<typeof item> => item !== null);
+
       res.json({
         success: true,
         data: {
           summary: {
             activeClasses,
             totalStudents,
-            avgScore: 0,
-            completedTasks: 0,
-            activeRate: 0
+            avgScore,
+            completedTasks,
+            activeRate
           },
-          chart: [],
-          atRisk: []
+          chart,
+          atRisk
         }
       });
     } catch (error) {
       logger.error('Error getting teacher stats', error);
       res.status(500).json({ success: false, error: "Internal Server Error" });
+    }
+  }
+
+  static async getMyClasses(req: AuthRequest, res: Response) {
+    try {
+      const teacherId = req.userId;
+      if (!teacherId) return res.status(401).json({ success: false, error: "Unauthorized" });
+
+      const classes = await prisma.class.findMany({
+        where: { teacherId },
+        include: {
+          _count: { select: { students: true } }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      res.json({ success: true, data: classes });
+    } catch (error) {
+      logger.error('Error fetching teacher classes', error);
+      res.status(500).json({ success: false, error: "Gagal mengambil daftar kelas" });
     }
   }
 
@@ -61,12 +223,80 @@ export class TeacherController {
     }
   }
 
+  static async toggleArchiveClass(req: AuthRequest, res: Response) {
+    try {
+      const { classId } = req.params;
+      const { archived } = req.body;
+      const teacherId = req.userId;
+      if (!teacherId) return res.status(401).json({ success: false, error: "Unauthorized" });
+
+      const targetClass = await prisma.class.findFirst({
+        where: { id: classId, teacherId }
+      });
+
+      if (!targetClass) {
+        return res.status(404).json({ success: false, error: "Kelas tidak ditemukan" });
+      }
+
+      const updatedClass = await prisma.class.update({
+        where: { id: classId },
+        data: { archived: !!archived }
+      });
+
+      res.json({
+        success: true,
+        data: updatedClass,
+        message: `Kelas berhasil ${archived ? 'diarsipkan' : 'diaktifkan kembali'}`
+      });
+    } catch (error) {
+      logger.error('Error toggling archive class', error);
+      res.status(500).json({ success: false, error: "Gagal memproses arsip kelas" });
+    }
+  }
+
   static async addMaterial(req: AuthRequest, res: Response) {
     try {
       const { classId } = req.params;
-      const { title, description, fileUrl, type } = req.body;
+      const { title, description, fileUrl, type, fileBase64, fileName } = req.body;
       const teacherId = req.userId;
       if (!teacherId) return res.status(401).json({ success: false, error: "Unauthorized" });
+
+      const fs = require('fs');
+      fs.appendFileSync('upload-debug.log', `[${new Date().toISOString()}] Upload attempt:\n- title: ${title}\n- fileName: ${fileName}\n- fileUrl: ${fileUrl}\n- hasBase64: ${!!fileBase64}\n- base64Length: ${fileBase64 ? fileBase64.length : 0}\n- token: ${process.env.UPLOADTHING_TOKEN ? 'Present' : 'Missing'}\n`);
+
+      let extractedText: string | null = null;
+      let uploadedUrl: string | null = fileUrl || null;
+
+      if (fileBase64) {
+        try {
+          const buffer = Buffer.from(fileBase64, 'base64');
+          const mimeType = type === 'PDF' ? 'application/pdf'
+            : type === 'VIDEO' ? 'video/mp4'
+            : 'application/octet-stream';
+          const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
+          const file = new File([buffer], fileName || `material.${type?.toLowerCase() || 'pdf'}`, { type: mimeType });
+          const uploadRes = await utapi.uploadFiles(file);
+          
+          fs.appendFileSync('upload-debug.log', `Upload response: ${JSON.stringify(uploadRes)}\n`);
+
+          if (uploadRes.data?.ufsUrl) {
+            uploadedUrl = uploadRes.data.ufsUrl;
+          } else if (uploadRes.data?.url) {
+            uploadedUrl = uploadRes.data.url;
+          }
+        } catch (err: any) {
+          logger.error('Upload to Uploadthing failed', err);
+          fs.appendFileSync('upload-debug.log', `Upload error: ${err.message || err}\nStack: ${err.stack}\n`);
+        }
+
+        if (type === 'PDF') {
+          try {
+            extractedText = await PDFExtractor.extractTextFromBase64(fileBase64);
+          } catch {
+            extractedText = null;
+          }
+        }
+      }
 
       const material = await prisma.material.create({
         data: {
@@ -74,9 +304,10 @@ export class TeacherController {
           title,
           description: description || "",
           content: description || "",
-          url: fileUrl,
+          url: uploadedUrl,
           type: type || 'PDF',
-          aiGenerated: false
+          aiGenerated: false,
+          ...(extractedText ? { extractedText } : {}),
         }
       });
 
@@ -145,7 +376,14 @@ export class TeacherController {
   static async getClassQuizzes(req: AuthRequest, res: Response) {
     try {
       const { classId } = req.params;
-      const quizzes = await prisma.quiz.findMany({ where: { classId } });
+      const quizzes = await prisma.quiz.findMany({
+        where: { classId },
+        include: {
+          questions: true,
+          _count: { select: { questions: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+      });
       res.json({ success: true, data: quizzes });
     } catch (error) {
       res.status(500).json({ success: false, error: "Gagal mengambil kuis" });
@@ -155,7 +393,7 @@ export class TeacherController {
   static async addQuiz(req: AuthRequest, res: Response) {
     try {
       const { classId } = req.params;
-      const { title, duration, questions } = req.body;
+      const { title, duration, questions, shuffle, showResult, autoGrade } = req.body;
 
       const quiz = await prisma.quiz.create({
         data: {
@@ -163,6 +401,9 @@ export class TeacherController {
           title,
           timeLimit: parseInt(duration) || 15,
           questionsCount: questions.length,
+          shuffle: shuffle !== undefined ? shuffle : true,
+          showResult: showResult !== undefined ? showResult : true,
+          autoGrade: autoGrade !== undefined ? autoGrade : true,
           questions: {
             create: questions.map((q: any) => ({
               text: q.text,
@@ -185,23 +426,46 @@ export class TeacherController {
   static async getAllStudents(req: AuthRequest, res: Response) {
     try {
       const teacherId = req.userId;
+      if (!teacherId) return res.status(401).json({ success: false, error: "Unauthorized" });
+
       const classes = await prisma.class.findMany({
         where: { teacherId },
         include: { 
           students: { 
-            include: { student: { select: { id: true, name: true, email: true } } } 
+            include: { 
+              student: { 
+                select: { 
+                  id: true, 
+                  name: true, 
+                  email: true,
+                  quizSessions: {
+                    where: { status: 'COMPLETED' },
+                    select: { score: true, classId: true }
+                  }
+                } 
+              } 
+            } 
           } 
         }
       });
 
+      const classIds = classes.map(c => c.id);
       const allStudentsMap = new Map();
+
       classes.forEach(c => {
         c.students.forEach(cs => {
+          const sessions = cs.student.quizSessions.filter((qs: any) => qs.score !== null && classIds.includes(qs.classId));
+          const avg = sessions.length > 0
+            ? Math.round(sessions.reduce((acc: number, curr: any) => acc + (curr.score || 0), 0) / sessions.length)
+            : 0;
+
           allStudentsMap.set(cs.student.id, {
-            ...cs.student,
+            id: cs.student.id,
+            name: cs.student.name,
+            email: cs.student.email,
             kelas: c.name,
-            avg: 0, // No real data yet
-            status: 'Active'
+            avg: `${avg}%`,
+            status: avg < 75 && sessions.length > 0 ? 'At Risk' : 'Active'
           });
         });
       });
@@ -209,6 +473,151 @@ export class TeacherController {
       res.json({ success: true, data: Array.from(allStudentsMap.values()) });
     } catch (error) {
       res.status(500).json({ success: false, error: "Gagal mengambil daftar semua siswa" });
+    }
+  }
+
+  static async getStudentPerformance(req: AuthRequest, res: Response) {
+    try {
+      const teacherId = req.userId;
+      const { studentId } = req.params;
+      const { kelas } = req.query;
+
+      console.log(`\n--- [getStudentPerformance] ---`);
+      console.log(`Teacher ID: ${teacherId}`);
+      console.log(`Student ID: ${studentId}`);
+      console.log(`Class filter: ${kelas}`);
+
+      if (!teacherId) {
+        console.log(`Unauthorized request: teacherId is missing`);
+        return res.status(401).json({ success: false, error: "Unauthorized" });
+      }
+
+      const studentClasses = await prisma.class.findMany({
+        where: {
+          teacherId,
+          students: { some: { studentId } }
+        }
+      });
+
+      console.log(`Found classes for teacher + student: ${studentClasses.length}`);
+
+      if (studentClasses.length === 0) {
+        console.log(`Access Denied: Student ${studentId} is not enrolled in any class taught by teacher ${teacherId}`);
+        return res.status(403).json({ success: false, error: "Access Denied" });
+      }
+
+      const classIds = studentClasses.map(c => c.id);
+
+      const completedSessions = await prisma.quizSession.findMany({
+        where: {
+          studentId,
+          classId: { in: classIds },
+          status: 'COMPLETED',
+          score: { not: null }
+        },
+        include: {
+          quiz: {
+            select: { title: true }
+          }
+        },
+        orderBy: { endedAt: 'desc' }
+      });
+
+      console.log(`Found completed sessions: ${completedSessions.length}`);
+
+      const avgScore = completedSessions.length > 0
+        ? Math.round(completedSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / completedSessions.length)
+        : 0;
+
+      let rankText = "N/A";
+      const targetClass = studentClasses.find(c => c.name === kelas) || studentClasses[0];
+      if (targetClass) {
+        const classEnrollments = await prisma.classStudent.findMany({
+          where: { classId: targetClass.id },
+          select: { studentId: true }
+        });
+        const totalClassStudents = classEnrollments.length;
+
+        const studentAverages = await Promise.all(classEnrollments.map(async (enrollment) => {
+          const sessions = await prisma.quizSession.findMany({
+            where: {
+              studentId: enrollment.studentId,
+              classId: targetClass.id,
+              status: 'COMPLETED',
+              score: { not: null }
+            },
+            select: { score: true }
+          });
+          const avg = sessions.length > 0
+            ? sessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / sessions.length
+            : 0;
+          return { studentId: enrollment.studentId, avg };
+        }));
+
+        studentAverages.sort((a, b) => b.avg - a.avg);
+
+        const studentIndex = studentAverages.findIndex(sa => sa.studentId === studentId);
+        const rank = studentIndex !== -1 ? studentIndex + 1 : totalClassStudents;
+        rankText = `${rank} / ${totalClassStudents}`;
+      }
+
+      const topicAnalysis = completedSessions.map((qs: any, index) => {
+        const score = qs.score || 0;
+        let color = '#EF4444';
+        if (score >= 75) color = '#16A34A';
+        else if (score >= 60) color = '#F59E0B';
+
+        const label = qs.quiz?.title || `Kuis Pengerjaan ${completedSessions.length - index}`;
+
+        return {
+          label,
+          val: score,
+          col: color
+        };
+      });
+
+      if (topicAnalysis.length === 0) {
+        topicAnalysis.push(
+          { label: 'Belum Ada Kuis', val: 0, col: '#EF4444' }
+        );
+      }
+
+      let aiRecommendation = "Siswa ini belum mengerjakan kuis apa pun. Harap berikan kuis awal untuk memetakan kemampuan.";
+      if (completedSessions.length > 0) {
+        if (avgScore >= 85) {
+          aiRecommendation = `Siswa menunjukkan pemahaman yang **sangat kuat** dengan rata-rata nilai ${avgScore}%. Pertahankan kinerjanya dan berikan materi pengayaan.`;
+        } else if (avgScore >= 75) {
+          aiRecommendation = `Siswa memiliki pemahaman yang **cukup baik** (${avgScore}%). Fokuskan pada konsistensi latihan soal untuk memantapkan konsep.`;
+        } else {
+          aiRecommendation = `Siswa memerlukan perhatian khusus karena rata-rata nilai (${avgScore}%) berada di bawah standar minimum kelas. Disarankan untuk memberikan remedial dan bimbingan adaptif.`;
+        }
+      }
+
+      const activityHistory = completedSessions.map((qs: any, index) => {
+        const date = qs.endedAt ? new Date(qs.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+        const label = qs.quiz?.title || `Kuis Pengerjaan ${completedSessions.length - index}`;
+        return {
+          t: label,
+          d: date,
+          s: qs.score || 0
+        };
+      });
+
+      console.log(`Responding with calculated stats. Average Score: ${avgScore}, Rank: ${rankText}, Activities: ${activityHistory.length}`);
+
+      res.json({
+        success: true,
+        data: {
+          avg: avgScore,
+          rank: rankText,
+          topicAnalysis,
+          aiRecommendation,
+          activityHistory
+        }
+      });
+    } catch (error) {
+      console.error('[getStudentPerformance] Error:', error);
+      res.status(500).json({ success: false, error: "Gagal mengambil performa siswa" });
     }
   }
 

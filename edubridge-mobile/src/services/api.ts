@@ -127,6 +127,14 @@ export const classAPI = {
     const response = await api.get(`/class/${classId}`);
     return response.data;
   },
+  getClassAssignments: async (classId: string) => {
+    const response = await api.get(`/class/${classId}/assignments`);
+    return response.data;
+  },
+  getClassQuizzes: async (classId: string) => {
+    const response = await api.get(`/class/${classId}/quizzes`);
+    return response.data;
+  },
 };
 
 export const progressAPI = {
@@ -134,18 +142,38 @@ export const progressAPI = {
     const response = await api.get('/progress/me');
     return response.data;
   },
+  getCompletedMaterials: async () => {
+    const response = await api.get('/progress/completed-materials');
+    return response.data;
+  },
   getQuizHistory: async () => {
     const response = await api.get('/progress/quiz-history');
+    return response.data;
+  },
+  markAsCompleted: async (materialId: string) => {
+    const response = await api.post('/progress/complete', { materialId });
+    return response.data;
+  },
+  submitQuizResult: async (data: { classId: string; quizId?: string; score: number; totalQuestions: number; correctAnswers: number }) => {
+    const response = await api.post('/progress/quiz-result', data);
+    return response.data;
+  },
+  getQuizResults: async (classId: string) => {
+    const response = await api.get(`/progress/quiz-results/${classId}`);
     return response.data;
   },
 };
 
 export const teacherAPI = {
+  getMyClasses: async () => {
+    const response = await api.get('/teacher/my-classes');
+    return response.data;
+  },
   getDashboardStats: async () => {
     const response = await api.get('/teacher/dashboard');
     return response.data.data;
   },
-  addMaterial: async (classId: string, data: { title: string; description: string }) => {
+  addMaterial: async (classId: string, data: { title: string; description: string; fileUrl?: string; type?: string; fileBase64?: string; fileName?: string }) => {
     const response = await api.post(`/teacher/class/${classId}/material`, data);
     return response.data;
   },
@@ -177,6 +205,10 @@ export const teacherAPI = {
     const response = await api.post('/teacher/class', data);
     return response.data;
   },
+  archiveClass: async (classId: string, archived: boolean) => {
+    const response = await api.put(`/teacher/class/${classId}/archive`, { archived });
+    return response.data;
+  },
   getClassAssignments: async (classId: string) => {
     const response = await api.get(`/teacher/class/${classId}/assignments`);
     return response.data;
@@ -185,7 +217,7 @@ export const teacherAPI = {
     const response = await api.get(`/teacher/class/${classId}/quizzes`);
     return response.data;
   },
-  addQuiz: async (classId: string, data: { title: string; duration: string; questions: any[] }) => {
+  addQuiz: async (classId: string, data: { title: string; duration: string; questions: any[]; shuffle?: boolean; showResult?: boolean; autoGrade?: boolean }) => {
     const response = await api.post(`/teacher/class/${classId}/quiz`, data);
     return response.data;
   },
@@ -195,6 +227,12 @@ export const teacherAPI = {
   },
   getAllStudents: async () => {
     const response = await api.get('/teacher/students');
+    return response.data;
+  },
+  getStudentPerformance: async (studentId: string, kelas?: string) => {
+    const response = await api.get(`/teacher/student/${studentId}/performance`, {
+      params: { kelas }
+    });
     return response.data;
   },
 };

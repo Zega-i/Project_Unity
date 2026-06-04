@@ -120,3 +120,7 @@ export const MATERIAL_TYPES = {
   INTERACTIVE: 'INTERACTIVE',
   EXERCISE: 'EXERCISE',
 };
+
+// Mock Data Toggle for screenshots/reporting
+export const USE_MOCK_DATA = false;
+

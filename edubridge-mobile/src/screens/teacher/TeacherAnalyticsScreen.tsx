@@ -10,6 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { teacherAPI } from '../../services/api';
 import { ActivityIndicator } from 'react-native';
+import { USE_MOCK_DATA } from '../../constants';
 
 const { width } = Dimensions.get('window');
 const GREEN = '#16A34A';
@@ -24,10 +25,56 @@ const TeacherAnalyticsScreen = () => {
 
   const loadData = async () => {
     setLoading(true);
+    if (USE_MOCK_DATA) {
+      setData({
+        summary: {
+          activeClasses: 3,
+          totalStudents: 78,
+          avgScore: 82,
+          completedTasks: 12,
+          activeRate: 94
+        },
+        chart: [
+          { label: 'Tugas 1', value: 85 },
+          { label: 'Kuis 1', value: 78 },
+          { label: 'Tugas 2', value: 92 },
+          { label: 'Kuis 2', value: 68 },
+          { label: 'UTS', value: 88 }
+        ],
+        atRisk: [
+          {
+            id: 'mock_risk_1',
+            name: 'Budi Santoso',
+            kelas: 'Kelas 10-A',
+            avg: '62.4%',
+            color: '#EF4444',
+            issue: 'Nilai kuis matematika menurun dalam 3 kuis terakhir'
+          },
+          {
+            id: 'mock_risk_2',
+            name: 'Siti Aminah',
+            kelas: 'Kelas 10-B',
+            avg: '64.8%',
+            color: '#EF4444',
+            issue: 'Keaktifan membaca materi kurang dari 20% minggu ini'
+          },
+          {
+            id: 'mock_risk_3',
+            name: 'Aditya Pratama',
+            kelas: 'Kelas 10-A',
+            avg: '58.0%',
+            color: '#EF4444',
+            issue: 'Belum mengumpulkan 2 tugas terakhir'
+          }
+        ]
+      });
+      setLoading(false);
+      return;
+    }
     try {
       // Assuming we can use the same dashboard stats for now or a specific one if available
       const res = await teacherAPI.getDashboardStats();
-      if (res && res.atRisk?.length > 0) {
+      if (res) {
         setData(res);
       } else {
         setData(null);

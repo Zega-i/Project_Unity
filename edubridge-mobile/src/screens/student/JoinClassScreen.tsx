@@ -50,7 +50,7 @@ const JoinClassScreen = () => {
         message: res.message || 'Anda berhasil bergabung ke kelas baru.',
         onConfirm: () => {
           setModal({ ...modal, visible: false });
-          navigation.navigate('Kelas');
+          navigation.goBack();
         }
       });
     } catch (error: any) {
