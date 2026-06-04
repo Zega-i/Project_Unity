@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "EduBridge AI adaptive learning platform backend",
   "main": "dist/index.js",
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "dev": "nodemon --exec \"ts-node -r dotenv/config src/index.ts\"",
     "build": "tsc",
