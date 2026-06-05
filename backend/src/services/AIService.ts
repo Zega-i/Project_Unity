@@ -439,6 +439,64 @@ OUTPUT HARUS JSON:
     }
   }
 
+  static async generateRecommendationPath(data: { studentName: string; history: any[] }): Promise<any> {
+    try {
+      const historyText = data.history && data.history.length > 0
+        ? data.history.map(h => `- Mata Pelajaran: ${h.subject}\n  • Progres Materi Dibaca: ${h.viewedMaterials}/${h.totalMaterials} selesai\n  • Skor Rata-rata Kuis: ${h.score !== null ? h.score + '%' : 'Belum mengerjakan kuis'}`).join('\n')
+        : '- Siswa belum mengikuti mata pelajaran apa pun atau belum memiliki nilai.';
+
+      const prompt = `Kamu adalah EduBridge AI Tutor, asisten pembelajaran personal.
+Buatkan rekomendasi JALUR BELAJAR (LEARNING PATH) personal selama 7 hari ke depan untuk siswa berikut:
+Nama Siswa: ${data.studentName}
+Riwayat Belajar Siswa:
+${historyText}
+
+Tentukan rencana belajar harian yang konkret dari Hari 1 sampai Hari 7.
+Posisikan dirimu sebagai AI pendamping yang hangat dan berikan arahan spesifik berdasarkan nilai kuis dan progres materi di atas.
+OUTPUT HARUS HANYA BERUPA JSON ARRAY, TANPA teks penjelasan lain sebelum atau sesudah JSON, dan TANPA bungkus markdown triple backticks.
+
+Format JSON yang wajib diikuti:
+[
+  {
+    "day": 1,
+    "subject": "Nama Mata Pelajaran (misal: Matematika)",
+    "task": "Tugas utama hari ini (kalimat ringkas, misal: Pelajari Matriks Transpose)",
+    "desc": "Detail penjelasan aktivitas belajar hari ini (tulis dalam kalimat pendek dan jelas tanpa markdown # atau * atau **)",
+    "priority": "high"
+  },
+  ... (ulangi untuk day 2 sampai day 7)
+]`;
+
+      const message = await this.callGroqWithFallback({
+        messages: [{ role: "user", content: prompt }],
+        model: this.model,
+        temperature: 0.2
+      });
+
+      const responseText = message.choices[0]?.message?.content || "";
+      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error("Invalid Recommendation Path JSON format");
+
+      const result = JSON.parse(jsonMatch[0]);
+      return {
+        recommendationArray: result
+      };
+    } catch (error) {
+      logger.error("Error generating recommendation path", error);
+      return {
+        recommendationArray: [
+          { day: 1, subject: "Matematika", task: "Review Materi Dasar", desc: "Tinjau kembali materi pelajaran yang belum tuntas untuk memperkuat konsep dasar.", priority: "high" },
+          { day: 2, subject: "Latihan", task: "Latihan Soal Kuis", desc: "Kerjakan beberapa latihan kuis di kelas Anda untuk menguji pemahaman konsep.", priority: "medium" },
+          { day: 3, subject: "Evaluasi", task: "Evaluasi Kesalahan", desc: "Periksa kembali jawaban yang salah pada kuis sebelumnya dan pelajari pembahasannya.", priority: "medium" },
+          { day: 4, subject: "Diskusi", task: "Diskusi dengan Guru/Teman", desc: "Tanyakan bagian materi yang belum Anda pahami kepada guru atau teman kelas.", priority: "low" },
+          { day: 5, subject: "Fisika", task: "Materi Baru", desc: "Mulai pelajari materi baru berikutnya dengan membaca modul atau menonton video pembelajaran.", priority: "high" },
+          { day: 6, subject: "Kuis", task: "Uji Kemampuan", desc: "Coba selesaikan kuis baru untuk mengukur sejauh mana peningkatan pemahaman Anda.", priority: "high" },
+          { day: 7, subject: "Istirahat", task: "Evaluasi Mingguan & Santai", desc: "Lakukan refleksi belajar mingguan Anda dan luangkan waktu untuk beristirahat.", priority: "low" }
+        ]
+      };
+    }
+  }
+
   static async generateLessonPlan(extractedText: string): Promise<string> {
     try {
       const prompt = `Buatkan RENCANA PELAKSANAAN PEMBELAJARAN (RPP) yang inovatif berdasarkan materi berikut:

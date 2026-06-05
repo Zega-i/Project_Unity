@@ -8,6 +8,12 @@ export class ProgressController {
   static async getMyProgress(req: Request, res: Response, next: NextFunction) {
     try {
       const studentId = (req as any).user.id;
+      
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: { email: true, name: true }
+      });
+      logger.info(`[getMyProgress] Fetching progress for student: ${student?.name} (${student?.email}) [ID: ${studentId}]`);
 
       const enrollments = await prisma.classStudent.findMany({
         where: { 
@@ -22,6 +28,8 @@ export class ProgressController {
           }
         }
       });
+      logger.info(`[getMyProgress] Active enrollments found: ${enrollments.length}`);
+      
       const classIds = enrollments.map(e => e.classId);
 
       const totalMaterials = await prisma.material.count({
@@ -145,6 +153,10 @@ export class ProgressController {
           count: `${completedItems}/${totalItems}`
         });
       }
+      
+      logger.info(`[getMyProgress] Stats computed successfully: overallProgress: ${overallProgress}%, materials: ${viewedMaterials}/${totalMaterials}, quizzes completed: ${completedQuizzes}, avgScore: ${averageScore}%`);
+      logger.info(`[getMyProgress] weeklyActivities: ${JSON.stringify(weeklyActivities)}`);
+      logger.info(`[getMyProgress] subjectProgress: ${JSON.stringify(subjectProgress)}`);
 
       res.json({
         success: true,

@@ -204,17 +204,71 @@ export class AIController {
         throw new ApiError(401, ERROR_MESSAGES.UNAUTHORIZED, 'UNAUTHORIZED');
       }
 
-      const studentHistory = [
-        { subject: 'Matematika', score: 85 },
-        { subject: 'Fisika', score: 45 },
-        { subject: 'Biologi', score: 70 },
-      ];
+      const student = await prisma.student.findUnique({
+        where: { id: req.userId },
+        select: { name: true }
+      });
 
-      const result = await AIService.generateLearningPath(studentHistory);
+      const enrollments = await prisma.classStudent.findMany({
+        where: { studentId: req.userId },
+        include: {
+          class: {
+            select: {
+              id: true,
+              name: true,
+              subject: true
+            }
+          }
+        }
+      });
+
+      const studentHistory: any[] = [];
+      for (const e of enrollments) {
+        const cls = e.class;
+        
+        const totalClassMaterials = await prisma.material.count({
+          where: { classId: cls.id }
+        });
+
+        const viewedClassMaterials = await prisma.materialView.count({
+          where: {
+            studentId: req.userId,
+            material: { classId: cls.id }
+          }
+        });
+
+        const quizSessions = await prisma.quizSession.findMany({
+          where: {
+            studentId: req.userId,
+            classId: cls.id,
+            status: "COMPLETED",
+            score: { not: null }
+          },
+          select: { score: true }
+        });
+
+        let avgScore: number | null = null;
+        if (quizSessions.length > 0) {
+          const totalScore = quizSessions.reduce((sum, s) => sum + (s.score || 0), 0);
+          avgScore = Math.round(totalScore / quizSessions.length);
+        }
+
+        studentHistory.push({
+          subject: cls.subject || cls.name,
+          score: avgScore,
+          viewedMaterials: viewedClassMaterials,
+          totalMaterials: totalClassMaterials
+        });
+      }
+
+      const result = await AIService.generateRecommendationPath({
+        studentName: student?.name || "Siswa",
+        history: studentHistory
+      });
 
       res.json({
         success: true,
-        data: { recommendation: result.formattedMessage },
+        data: { recommendation: result.recommendationArray },
         message: "Learning path generated"
       });
     } catch (error) {

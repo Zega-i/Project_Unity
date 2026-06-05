@@ -95,6 +95,7 @@ model Class {
   assignments   Assignment[]
   quizzes       Quiz[]
   learningPaths LearningPath[]
+  discussions   DiscussionThread[]
 
   @@index([teacherId])
   @@index([grade])
@@ -429,4 +430,38 @@ model Assignment {
   class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
 
   @@index([classId])
+}
+
+model DiscussionThread {
+  id         String            @id @default(cuid())
+  classId    String
+  authorId   String
+  authorRole String            // TEACHER or STUDENT
+  authorName String
+  title      String
+  category   String            // PENGUMUMAN | TANYA_JAWAB | UMUM
+  content    String            @db.Text
+  createdAt  DateTime          @default(now())
+  
+  class      Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
+  replies    DiscussionReply[]
+
+  @@index([classId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model DiscussionReply {
+  id         String           @id @default(cuid())
+  threadId   String
+  authorId   String
+  authorRole String           // TEACHER or STUDENT
+  authorName String
+  content    String           @db.Text
+  createdAt  DateTime         @default(now())
+
+  thread     DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([createdAt])
 }
