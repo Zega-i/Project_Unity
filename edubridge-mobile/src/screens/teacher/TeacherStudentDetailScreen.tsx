@@ -130,26 +130,48 @@ const TeacherStudentDetailScreen = () => {
                 <Text style={[styles.aiText, { color: isDarkMode ? '#D1FAE5' : '#166534' }]}>
                   {performance?.aiRecommendation || 'Siswa belum memiliki rekomendasi.'}
                 </Text>
-                <Pressable style={styles.aiAction} onPress={() => { triggerLight(); navigation.navigate('TeacherAI'); }}>
+                <Pressable 
+                  style={styles.aiAction} 
+                  onPress={() => { 
+                    triggerLight(); 
+                    navigation.navigate('TeacherAIChat', { 
+                      studentName: student?.name, 
+                      recommendation: performance?.aiRecommendation,
+                      performanceData: performance
+                    }); 
+                  }}
+                >
                   <Text style={styles.aiActionText}>Tanya AI Assistant</Text>
                 </Pressable>
               </View>
             </>
           ) : (
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.cardTitle, { color: colors.text }]}>Riwayat Nilai</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Aktivitas Belajar</Text>
               {performance?.activityHistory && performance.activityHistory.length > 0 ? (
                 performance.activityHistory.map((h: any, i: number) => (
                   <View key={i} style={[styles.historyRow, i < performance.activityHistory.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.historyTitle, { color: colors.text }]}>{h.t}</Text>
+                    <View style={[styles.historyIconWrap, { backgroundColor: colors.surface }]}>
+                      <Ionicons 
+                        name={h.type === 'MATERIAL' ? 'document-text-outline' : 'help-circle-outline'} 
+                        size={18} 
+                        color={h.type === 'MATERIAL' ? '#3B82F6' : GREEN} 
+                      />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[styles.historyTitle, { color: colors.text }]} numberOfLines={1}>{h.t}</Text>
                       <Text style={[styles.historyDate, { color: colors.textSecondary }]}>{h.d}</Text>
                     </View>
-                    <Text style={[styles.historyScore, { color: h.s >= 75 ? GREEN : '#EF4444' }]}>{h.s}</Text>
+                    <Text style={[
+                      styles.historyScore, 
+                      { color: (h.type === 'MATERIAL' || parseFloat(h.s) >= 75) ? GREEN : '#EF4444' }
+                    ]}>
+                      {h.s}
+                    </Text>
                   </View>
                 ))
               ) : (
-                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginVertical: 20 }}>Belum ada riwayat aktivitas kuis.</Text>
+                <Text style={{ color: colors.textSecondary, textAlign: 'center', marginVertical: 20 }}>Belum ada riwayat aktivitas belajar.</Text>
               )}
             </View>
           )}
@@ -192,10 +214,11 @@ const styles = StyleSheet.create({
   aiText: { fontSize: 14, lineHeight: 22 },
   aiAction: { backgroundColor: GREEN, paddingVertical: 14, borderRadius: 16, alignItems: 'center', marginTop: 20 },
   aiActionText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
-  historyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18 },
-  historyTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  historyDate: { fontSize: 12 },
-  historyScore: { fontSize: 20, fontWeight: 'bold' },
+  historyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14 },
+  historyIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  historyTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  historyDate: { fontSize: 11 },
+  historyScore: { fontSize: 14, fontWeight: 'bold' },
 });
 
 export default TeacherStudentDetailScreen;

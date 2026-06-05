@@ -5,6 +5,8 @@ import { AIService } from "../services/AIService";
 import { ApiResponse, ApiError } from "../types";
 import { logger } from "../utils/logger";
 import { ERROR_MESSAGES } from "../constants";
+import { UTApi } from "uploadthing/server";
+import { PDFExtractor } from "../utils/pdfExtractor";
 
 export class AIController {
   static async tutorChat(req: AuthRequest, res: Response) {
@@ -13,12 +15,51 @@ export class AIController {
         throw new ApiError(401, ERROR_MESSAGES.UNAUTHORIZED, 'UNAUTHORIZED');
       }
 
-      const { message, context } = req.body;
-      const responseText = await AIService.chatWithTutor(message, context);
+      const { message, context, fileBase64, fileName } = req.body;
+      const fs = require('fs');
+      fs.appendFileSync('ai-debug.log', `[${new Date().toISOString()}] Received request. Message: "${message}". Context: ${JSON.stringify(context, null, 2)}, hasFile: ${!!fileBase64}\n`);
+      logger.info(`[tutorChat] Received request. Message: "${message}". Context: ${JSON.stringify(context)}. HasFile: ${!!fileBase64}`);
+      
+      let fileUrl: string | undefined;
+      let extractedText: string | undefined;
+
+      if (fileBase64) {
+        try {
+          const buffer = Buffer.from(fileBase64, 'base64');
+          const mimeType = 'application/pdf';
+          const utapi = new UTApi({ token: process.env.UPLOADTHING_TOKEN });
+          const file = new File([buffer], fileName || 'attachment.pdf', { type: mimeType });
+          const uploadRes = await utapi.uploadFiles(file);
+
+          if (uploadRes.data?.ufsUrl) {
+            fileUrl = uploadRes.data.ufsUrl;
+          } else if (uploadRes.data?.url) {
+            fileUrl = uploadRes.data.url;
+          }
+
+          if (fileUrl) {
+            extractedText = await PDFExtractor.extractTextFromBase64(fileBase64);
+            logger.info(`[tutorChat] Uploaded file successfully: ${fileUrl}, extracted ${extractedText?.length || 0} characters.`);
+          }
+        } catch (uploadErr) {
+          logger.error('[tutorChat] Failed to upload or extract text from attached PDF', uploadErr);
+        }
+      }
+
+      const mergedContext = {
+        ...context,
+        fileUrl: fileUrl || context?.fileUrl,
+        extractedText: extractedText || context?.extractedText,
+      };
+
+      const responseText = await AIService.chatWithTutor(message, mergedContext);
 
       const apiResponse: ApiResponse = {
         success: true,
-        data: { response: responseText },
+        data: { 
+          response: responseText,
+          fileUrl: fileUrl || null
+        },
         message: "Tutor response generated successfully",
         timestamp: new Date().toISOString(),
       };
@@ -39,17 +80,34 @@ export class AIController {
       const { text, questionCount, materialId } = req.body;
 
       let finalContent = text;
+      let classSubject = "Umum";
+      let classGrade = "SMA";
       
       if (materialId) {
         const material = await prisma.material.findUnique({
           where: { id: materialId },
-          select: { extractedText: true, content: true, title: true }
+          select: { 
+            extractedText: true, 
+            content: true, 
+            title: true,
+            class: {
+              select: {
+                subject: true,
+                grade: true
+              }
+            }
+          }
         });
         
         if (material) {
           const parts = [material.content, material.extractedText].filter(Boolean);
           finalContent = parts.length > 0 ? parts.join('\n\n') : (material.title || '');
           if (text) finalContent = `${finalContent}\n\nInstruksi Tambahan: ${text}`;
+
+          if (material.class) {
+            if (material.class.subject) classSubject = material.class.subject;
+            if (material.class.grade) classGrade = `Kelas ${material.class.grade}`;
+          }
         }
       }
 
@@ -57,7 +115,7 @@ export class AIController {
         throw new ApiError(400, "Konten materi tidak ditemukan", 'INSUFFICIENT_DATA');
       }
 
-      const quiz = await AIService.generateQuizFromText(finalContent, questionCount);
+      const quiz = await AIService.generateQuizFromText(finalContent, questionCount, classGrade, classSubject);
 
       const apiResponse: ApiResponse = {
         success: true,

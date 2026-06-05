@@ -8,6 +8,7 @@ const router = Router();
 // Public routes
 router.post("/register", asyncHandler(AuthController.register.bind(AuthController)));
 router.post("/login", asyncHandler(AuthController.login.bind(AuthController)));
+router.post("/forgot-password", asyncHandler(AuthController.forgotPassword.bind(AuthController)));
 
 // Protected routes
 router.get("/me", authMiddleware, asyncHandler(AuthController.me.bind(AuthController)));

@@ -22,4 +22,12 @@ router.post("/upload", authMiddleware, asyncHandler(async (req: AuthRequest, res
   res.json(response);
 }));
 
+router.post("/log", asyncHandler(async (req: Request, res: Response) => {
+  const { message, error } = req.body;
+  const fs = require('fs');
+  fs.appendFileSync('client-debug.log', `[${new Date().toISOString()}] CLIENT LOG: ${message}\nError: ${JSON.stringify(error, Object.getOwnPropertyNames(error || {}), 2)}\n\n`);
+  logger.info(`CLIENT LOG: ${message} - ${JSON.stringify(error)}`);
+  res.json({ success: true });
+}));
+
 export default router;

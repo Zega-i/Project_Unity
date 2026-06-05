@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, Pressable,
   ScrollView, Dimensions, ActivityIndicator,
   Modal, Share, TouchableOpacity, RefreshControl,
+  Animated, PanResponder,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -28,6 +29,48 @@ const TeacherClassDetailScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Student List Modal States
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [studentsList, setStudentsList] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Student List Modal swipe gesture
+  const panY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (showStudentsModal) {
+      panY.setValue(0);
+    }
+  }, [showStudentsModal]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 120) {
+          Animated.timing(panY, {
+            toValue: Dimensions.get('window').height,
+            duration: 220,
+            useNativeDriver: true,
+          }).start(() => {
+            setShowStudentsModal(false);
+          });
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   // Detail Modal States
   const [selectedMaterial, setSelectedMaterial] = useState<any | null>(null);
@@ -72,6 +115,19 @@ const TeacherClassDetailScreen = () => {
       console.log('Error fetching class content:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchClassStudents = async () => {
+    if (!classData?.id) return;
+    setLoadingStudents(true);
+    try {
+      const data = await teacherAPI.getClassStudents(classData.id);
+      if (data) setStudentsList(data);
+    } catch (error) {
+      console.log('Error fetching class students:', error);
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
@@ -327,15 +383,26 @@ const TeacherClassDetailScreen = () => {
             </View>
 
             {/* Students row */}
-            <View style={styles.settingsRow}>
+            <Pressable 
+              style={styles.settingsRow} 
+              onPress={() => {
+                triggerLight();
+                setShowSettings(false);
+                setShowStudentsModal(true);
+                fetchClassStudents();
+              }}
+            >
               <View style={[styles.settingsIconBox, { backgroundColor: '#F59E0B' + '15' }]}>
                 <Ionicons name="people-outline" size={18} color="#F59E0B" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.settingsLabel, { color: colors.textSecondary }]}>Jumlah Siswa</Text>
-                <Text style={[styles.settingsValue, { color: colors.text }]}>{classData?._count?.students ?? 0} Siswa</Text>
+                <Text style={[styles.settingsValue, { color: colors.text, textDecorationLine: 'underline' }]}>
+                  {classData?._count?.students ?? 0} Siswa
+                </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+            </Pressable>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -409,6 +476,82 @@ const TeacherClassDetailScreen = () => {
         onConfirm={() => setInfoModalVisible(false)}
         minimal
       />
+
+      {/* Student List Modal */}
+      <Modal
+        visible={showStudentsModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStudentsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowStudentsModal(false)} />
+          <Animated.View 
+            style={[
+              styles.detailModalSheet, 
+              { 
+                backgroundColor: colors.card, 
+                height: '55%',
+                transform: [{ translateY: panY }]
+              }
+            ]}
+          >
+            {/* Close button absolutely positioned on top right */}
+            <Pressable 
+              style={[styles.sheetClose, { position: 'absolute', top: 20, right: 24, zIndex: 10 }]} 
+              onPress={() => setShowStudentsModal(false)}
+            >
+              <Ionicons name="close" size={22} color={colors.textSecondary} />
+            </Pressable>
+
+            {/* Header Drag Zone */}
+            <View {...panResponder.panHandlers} style={{ width: '100%', alignItems: 'center', paddingTop: 12 }}>
+              <View style={styles.sheetHandle} />
+              <View style={[styles.sheetHeader, { width: '100%', paddingRight: 40 }]}>
+                <View style={[styles.sheetIconBox, { backgroundColor: '#F59E0B' + '15' }]}>
+                  <Ionicons name="people" size={28} color="#F59E0B" />
+                </View>
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>Daftar Siswa</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.sectionTitleLabel, { color: colors.textSecondary, marginBottom: 12, marginTop: 8 }]}>
+              Siswa Terdaftar ({studentsList.length})
+            </Text>
+
+            {loadingStudents ? (
+              <ActivityIndicator color={GREEN} style={{ marginVertical: 32 }} />
+            ) : studentsList.length === 0 ? (
+              <View style={{ paddingVertical: 32, alignItems: 'center' }}>
+                <Ionicons name="people-outline" size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                <Text style={{ color: colors.textSecondary, marginTop: 12, fontSize: 14 }}>
+                  Belum ada siswa yang bergabung di kelas ini.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }} style={{ flex: 1 }}>
+                {studentsList.map((student, idx) => {
+                  const initial = student.name ? student.name.charAt(0).toUpperCase() : 'S';
+                  const avatarColors = ['#8B5CF6', '#3B82F6', '#EF4444', '#10B981', '#F59E0B'];
+                  const avatarColor = avatarColors[idx % avatarColors.length];
+
+                  return (
+                    <View key={student.id} style={[styles.studentItem, { borderBottomColor: colors.border }]}>
+                      <View style={[styles.studentAvatar, { backgroundColor: avatarColor + '15' }]}>
+                        <Text style={[styles.studentAvatarText, { color: avatarColor }]}>{initial}</Text>
+                      </View>
+                      <View style={styles.studentInfo}>
+                        <Text style={[styles.studentName, { color: colors.text }]}>{student.name}</Text>
+                        <Text style={[styles.studentEmail, { color: colors.textSecondary }]}>{student.email}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </Animated.View>
+        </View>
+      </Modal>
 
       {/* Material Detail Modal */}
       <Modal
@@ -630,7 +773,7 @@ const styles = StyleSheet.create({
   copyText: { fontSize: 12, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   detailModalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 24, paddingBottom: 24, maxHeight: '85%', width: '100%', flexShrink: 1 },
-  sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1', alignSelf: 'center', marginTop: 12, marginBottom: 4 },
+  sheetHandle: { width: 48, height: 5, borderRadius: 2.5, backgroundColor: '#CBD5E1', alignSelf: 'center', marginTop: 12, marginBottom: 4 },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 16 },
   sheetIconBox: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   sheetClose: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
@@ -652,6 +795,12 @@ const styles = StyleSheet.create({
   optIndex: { fontSize: 13 },
   optText: { fontSize: 13, flex: 1 },
   qExplanation: { fontSize: 12, fontStyle: 'italic', marginTop: 12 },
+  studentItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, gap: 14 },
+  studentAvatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  studentAvatarText: { fontSize: 16, fontWeight: 'bold' },
+  studentInfo: { flex: 1 },
+  studentName: { fontSize: 15, fontWeight: '600' },
+  studentEmail: { fontSize: 12, marginTop: 2 },
 });
 
 export default TeacherClassDetailScreen;

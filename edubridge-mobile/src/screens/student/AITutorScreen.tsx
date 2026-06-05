@@ -173,7 +173,15 @@ const AITutorScreen = () => {
     }
 
     try {
-      const context = { subject, topic, role: 'STUDENT' };
+      const context = { 
+        subject, 
+        topic, 
+        role: 'STUDENT',
+        history: messages.map((m: any) => ({
+          text: m.text,
+          sender: m.isUser ? 'user' : 'ai'
+        }))
+      };
       const res = await aiAPI.tutorChat(msg, context);
       const aiReply = res.data?.response || res.response || 'Maaf, saya tidak mengerti. Bisa ulangi?';
       const aiMsg: Message = { id: (Date.now() + 1).toString(), text: aiReply, isUser: false };

@@ -14,6 +14,13 @@ export class PDFExtractor {
         .replace(/\n\s*\n/g, '\n')
         .replace(/[^\x20-\x7E\n]/g, '')
         .trim();
+      
+      const maxLength = 15000;
+      if (cleanText.length > maxLength) {
+        logger.info(`Successfully extracted ${cleanText.length} characters from PDF (truncating to ${maxLength})`);
+        return cleanText.substring(0, maxLength) + '\n\n[Konten dokumen dipotong karena terlalu panjang untuk dianalisis]';
+      }
+      
       logger.info(`Successfully extracted ${cleanText.length} characters from PDF`);
       return cleanText;
     } catch (error) {
@@ -32,6 +39,13 @@ export class PDFExtractor {
         .replace(/\n\s*\n/g, '\n')
         .replace(/[^\x20-\x7E\n]/g, '')
         .trim();
+      
+      const maxLength = 15000;
+      if (cleanText.length > maxLength) {
+        logger.info(`Successfully extracted ${cleanText.length} characters from base64 PDF (truncating to ${maxLength})`);
+        return cleanText.substring(0, maxLength) + '\n\n[Konten dokumen dipotong karena terlalu panjang untuk dianalisis]';
+      }
+      
       logger.info(`Successfully extracted ${cleanText.length} characters from base64 PDF`);
       return cleanText;
     } catch (error) {

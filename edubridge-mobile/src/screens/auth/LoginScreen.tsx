@@ -183,7 +183,7 @@ const LoginScreen = () => {
                 </View>
                 <Text style={styles.modalTitle}>Lupa Password?</Text>
                 <Text style={styles.modalSub}>
-                  Masukkan email akunmu. Kami akan mengirimkan link untuk mereset password.
+                  Masukkan email akunmu. Kami akan mengirimkan password sementara ke email Anda.
                 </Text>
                 <TextInput
                   style={styles.forgotInput}
@@ -203,7 +203,7 @@ const LoginScreen = () => {
                   {forgotLoading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.modalCloseText}>Kirim Link Reset</Text>
+                    <Text style={styles.modalCloseText}>Kirim Password Sementara</Text>
                   )}
                 </Pressable>
                 <Pressable style={styles.cancelBtn} onPress={closeForgot}>
@@ -217,7 +217,7 @@ const LoginScreen = () => {
                 </View>
                 <Text style={styles.modalTitle}>Email Terkirim!</Text>
                 <Text style={styles.modalSub}>
-                  Jika email <Text style={{ fontWeight: 'bold' }}>{forgotEmail}</Text> terdaftar, kamu akan menerima link reset password dalam beberapa menit.
+                  Jika email <Text style={{ fontWeight: 'bold' }}>{forgotEmail}</Text> terdaftar, kamu akan menerima password sementara dalam beberapa menit.
                 </Text>
                 <Pressable style={[styles.modalCloseBtn, { backgroundColor: '#16A34A' }]} onPress={closeForgot}>
                   <Text style={styles.modalCloseText}>Oke, Mengerti</Text>

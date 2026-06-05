@@ -32,6 +32,7 @@ model Teacher {
   school        String?
   phone         String?
   position      String?
+  avatar        String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   passwordUpdatedAt DateTime?

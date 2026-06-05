@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, Image, ActivityIndicator, Modal, Alert, Platform,
+  SafeAreaView, Image, ActivityIndicator, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { authAPI } from '../../services/api';
 import { EditProfilePictureModal } from './EditProfilePictureModal';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
+import PremiumModal from '../../components/PremiumModal';
 
 const PURPLE = '#7C3AED';
 
@@ -24,6 +25,12 @@ const ProfileScreen = () => {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [editAvatarModalVisible, setEditAvatarModalVisible] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [alertModal, setAlertModal] = useState<{
+    visible: boolean;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+  } | null>(null);
 
   const fetchProfile = async () => {
     try {
@@ -58,34 +65,42 @@ const ProfileScreen = () => {
     // No need to navigate, AppNavigator will switch stack based on auth state
   };
 
-  const handleAvatarSelected = async (imageUri: string) => {
+  const handleAvatarSelected = async (imageBase64: string, fileName: string) => {
     setUploadingAvatar(true);
     try {
       triggerLight();
 
-      const formData = new FormData();
-      // @ts-ignore
-      formData.append('avatar', {
-        uri: Platform.OS === 'ios' ? imageUri.replace('file://', '') : imageUri,
-        name: 'avatar.jpg',
-        type: 'image/jpeg',
-      });
+      const res = await authAPI.uploadAvatar(imageBase64, fileName);
 
-      const res = await authAPI.uploadAvatar(formData);
-      
       if (res.success) {
-        const updatedUser = { ...user, avatar: res.data.avatarUrl };
+        const avatarUrl = res.data?.avatarUrl || res.data?.avatar;
+        const updatedUser = { ...user, avatar: avatarUrl };
         setUser(updatedUser);
 
         const token = await authStore.getToken();
         await authStore.setAuth(token || '', updatedUser);
 
+        // Cache avatar URL locally too
+        if (user?.id) {
+          await AsyncStorage.setItem(`avatar_${user.id}`, avatarUrl);
+        }
+
         triggerLight();
-        Alert.alert('Sukses', 'Foto profil berhasil diubah');
+        setAlertModal({
+          visible: true,
+          type: 'success',
+          title: 'Sukses',
+          message: 'Foto profil berhasil diubah',
+        });
       }
     } catch (error) {
       console.error('Avatar upload error:', error);
-      Alert.alert('Error', 'Gagal mengubah foto profil');
+      setAlertModal({
+        visible: true,
+        type: 'error',
+        title: 'Gagal',
+        message: 'Gagal mengubah foto profil',
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -213,6 +228,18 @@ const ProfileScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {alertModal && (
+        <PremiumModal
+          visible={alertModal.visible}
+          type={alertModal.type}
+          title={alertModal.title}
+          message={alertModal.message}
+          onConfirm={() => setAlertModal(null)}
+          accentColor={PURPLE}
+          minimal
+        />
+      )}
     </SafeAreaView>
   );
 };

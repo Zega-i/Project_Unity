@@ -90,7 +90,7 @@ const ChangePasswordScreen = () => {
     setLoading(true);
 
     try {
-      await authAPI.changePassword(oldPassword, newPassword);
+      await authAPI.changePassword(oldPassword, newPassword, confirmPassword);
       triggerMedium();
       setOldPassword('');
       setNewPassword('');

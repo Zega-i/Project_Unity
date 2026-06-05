@@ -12,9 +12,15 @@ export class TeacherController {
       const teacherId = req.userId;
       if (!teacherId) return res.status(401).json({ success: false, error: "Unauthorized" });
 
+      const { classId } = req.query;
+
       const activeClasses = await prisma.class.count({ where: { teacherId, archived: false } });
       const classes = await prisma.class.findMany({
-        where: { teacherId, archived: false }
+        where: { 
+          teacherId, 
+          archived: false,
+          ...(classId ? { id: String(classId) } : {})
+        }
       });
       const classIds = classes.map(c => c.id);
 
@@ -121,19 +127,42 @@ export class TeacherController {
         ? Math.round((activeStudentsCount / totalStudents) * 100)
         : 0;
 
-      const chart = await Promise.all(classes.map(async (c) => {
-        const classSessions = await prisma.quizSession.findMany({
-          where: { classId: c.id, status: 'COMPLETED' },
-          select: { score: true }
+      let chart: { label: string; value: number }[] = [];
+      if (classId && classes.length === 1) {
+        // If a specific class is selected, show its quizzes average score
+        const quizzes = await prisma.quiz.findMany({
+          where: { classId: String(classId) },
+          select: { id: true, title: true }
         });
-        const average = classSessions.length > 0
-          ? Math.round(classSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / classSessions.length)
-          : 0;
-        return {
-          label: c.name.length > 10 ? c.name.substring(0, 10) + '..' : c.name,
-          value: average
-        };
-      }));
+        chart = await Promise.all(quizzes.map(async (q) => {
+          const quizSessions = await prisma.quizSession.findMany({
+            where: { quizId: q.id, status: 'COMPLETED' },
+            select: { score: true }
+          });
+          const average = quizSessions.length > 0
+            ? Math.round(quizSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / quizSessions.length)
+            : 0;
+          return {
+            label: q.title.length > 10 ? q.title.substring(0, 10) + '..' : q.title,
+            value: average
+          };
+        }));
+      } else {
+        // Otherwise show average score for each class
+        chart = await Promise.all(classes.map(async (c) => {
+          const classSessions = await prisma.quizSession.findMany({
+            where: { classId: c.id, status: 'COMPLETED' },
+            select: { score: true }
+          });
+          const average = classSessions.length > 0
+            ? Math.round(classSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / classSessions.length)
+            : 0;
+          return {
+            label: c.name.length > 10 ? c.name.substring(0, 10) + '..' : c.name,
+            value: average
+          };
+        }));
+      }
 
       const atRisk = enrollments.map(e => {
         const student = e.student;
@@ -522,6 +551,23 @@ export class TeacherController {
 
       console.log(`Found completed sessions: ${completedSessions.length}`);
 
+      const completedMaterialViews = await prisma.materialView.findMany({
+        where: {
+          studentId,
+          material: {
+            classId: { in: classIds }
+          }
+        },
+        include: {
+          material: {
+            select: { title: true }
+          }
+        },
+        orderBy: { viewedAt: 'desc' }
+      });
+
+      console.log(`Found completed material views: ${completedMaterialViews.length}`);
+
       const avgScore = completedSessions.length > 0
         ? Math.round(completedSessions.reduce((acc, curr) => acc + (curr.score || 0), 0) / completedSessions.length)
         : 0;
@@ -590,15 +636,33 @@ export class TeacherController {
         }
       }
 
-      const activityHistory = completedSessions.map((qs: any, index) => {
+      const quizActivities = completedSessions.map((qs: any, index) => {
         const date = qs.endedAt ? new Date(qs.endedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+        const timestamp = qs.endedAt ? new Date(qs.endedAt).getTime() : 0;
         const label = qs.quiz?.title || `Kuis Pengerjaan ${completedSessions.length - index}`;
         return {
+          type: 'QUIZ',
           t: label,
           d: date,
-          s: qs.score || 0
+          s: `${qs.score || 0}%`,
+          timestamp
         };
       });
+
+      const materialActivities = completedMaterialViews.map((mv: any) => {
+        const date = mv.viewedAt ? new Date(mv.viewedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+        const timestamp = mv.viewedAt ? new Date(mv.viewedAt).getTime() : 0;
+        const label = mv.material?.title || 'Materi Pembelajaran';
+        return {
+          type: 'MATERIAL',
+          t: label,
+          d: date,
+          s: 'Selesai Dibaca',
+          timestamp
+        };
+      });
+
+      const activityHistory = [...quizActivities, ...materialActivities].sort((a, b) => b.timestamp - a.timestamp);
 
       console.log(`Responding with calculated stats. Average Score: ${avgScore}, Rank: ${rankText}, Activities: ${activityHistory.length}`);
 

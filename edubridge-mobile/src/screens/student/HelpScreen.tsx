@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, StatusBar, Linking,
+  SafeAreaView, StatusBar, Linking, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -121,6 +121,16 @@ const HelpScreen = () => {
   const isTeacher = user?.role?.toLowerCase() === 'teacher' || user?.role?.toLowerCase() === 'guru';
   const themeColor = isTeacher ? GREEN : PURPLE;
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredFAQs = FAQ_DATA.map(category => {
+    const matchedItems = category.items.filter(item => 
+      item.q.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      item.a.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    return { ...category, items: matchedItems };
+  }).filter(category => category.items.length > 0);
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
@@ -148,29 +158,52 @@ const HelpScreen = () => {
           </View>
         </View>
 
-        {/* Search Hint */}
-        <View style={[styles.searchHint, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* Search Bar */}
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
-          <Text style={[styles.searchHintText, { color: colors.textSecondary }]}>Cari topik pertanyaan di bawah ini...</Text>
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Cari topik atau kata kunci..."
+            placeholderTextColor={colors.placeholder || colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery ? (
+            <Pressable onPress={() => { triggerLight(); setSearchQuery(''); }}>
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+            </Pressable>
+          ) : null}
         </View>
 
         {/* FAQ Sections */}
-        {FAQ_DATA.map((section) => (
-          <View key={section.category} style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={[styles.sectionIconBox, { backgroundColor: section.color + '15' }]}>
-                <Ionicons name={section.icon as any} size={20} color={section.color} />
+        {filteredFAQs.length > 0 ? (
+          filteredFAQs.map((section) => (
+            <View key={section.category} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.sectionIconBox, { backgroundColor: section.color + '15' }]}>
+                  <Ionicons name={section.icon as any} size={20} color={section.color} />
+                </View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.category}</Text>
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.category}</Text>
-            </View>
 
-            <View style={[styles.faqCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {section.items.map((item, idx) => (
-                <FAQItem key={idx} q={item.q} a={item.a} />
-              ))}
+              <View style={[styles.faqCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {section.items.map((item, idx) => (
+                  <FAQItem key={idx} q={item.q} a={item.a} />
+                ))}
+              </View>
             </View>
+          ))
+        ) : (
+          <View style={styles.noResults}>
+            <Ionicons name="alert-circle-outline" size={48} color={colors.textSecondary} />
+            <Text style={[styles.noResultsText, { color: colors.text }]}>Pertanyaan tidak ditemukan</Text>
+            <Text style={[styles.noResultsSub, { color: colors.textSecondary }]}>
+              Coba gunakan kata kunci lain seperti "kelas", "kuis", atau "kata sandi".
+            </Text>
           </View>
-        ))}
+        )}
 
         {/* Contact Support */}
         <View style={[styles.contactCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -206,8 +239,11 @@ const styles = StyleSheet.create({
   heroTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 4 },
   heroSub: { fontSize: 13, lineHeight: 18 },
 
-  searchHint: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 14, borderWidth: 1, marginBottom: 24 },
-  searchHintText: { fontSize: 14 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1, marginBottom: 24, height: 48 },
+  searchInput: { flex: 1, fontSize: 14, paddingVertical: 8 },
+  noResults: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, gap: 8 },
+  noResultsText: { fontSize: 16, fontWeight: '700' },
+  noResultsSub: { fontSize: 13, textAlign: 'center', paddingHorizontal: 20, lineHeight: 18 },
 
   section: { marginBottom: 20 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },

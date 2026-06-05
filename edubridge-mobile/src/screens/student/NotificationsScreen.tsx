@@ -32,12 +32,16 @@ const NotificationsScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const user = authStore.getUserSync();
+  const isTeacher = user?.role?.toLowerCase() === 'teacher' || user?.role?.toLowerCase() === 'guru';
+  const themeColor = isTeacher ? '#16A34A' : colors.primary;
+
   const loadNotifications = async () => {
     setLoading(true);
     try {
       const res = await notificationsAPI.getAll();
       if (res.success) {
-        setNotifications(res.data);
+        setNotifications(res.data.notifications || []);
       }
     } catch (error) {
       console.log('Error loading notifications:', error);
@@ -99,7 +103,7 @@ const NotificationsScreen = () => {
       case 'QUIZ_RESULT':
         return { icon: 'checkmark-circle', color: '#10B981' };
       case 'NEW_MATERIAL':
-        return { icon: 'document-text', color: PURPLE };
+        return { icon: 'document-text', color: themeColor };
       case 'RISK_ALERT':
         return { icon: 'warning', color: '#EF4444' };
       case 'SYSTEM':
@@ -134,7 +138,7 @@ const NotificationsScreen = () => {
       <Pressable
         style={[
           styles.notifCard,
-          !item.read && [styles.notifCardUnread, { backgroundColor: colors.primary + '08' }],
+          !item.read && [styles.notifCardUnread, { backgroundColor: themeColor + '08', borderLeftColor: themeColor }],
           { backgroundColor: colors.surface },
         ]}
         onPress={() => !item.read && markAsRead(item.id)}
@@ -151,7 +155,7 @@ const NotificationsScreen = () => {
           <Text style={[styles.notifTime, { color: colors.textSecondary }]}>{formatTime(item.createdAt)}</Text>
         </View>
 
-        {!item.read && <View style={styles.unreadDot} />}
+        {!item.read && <View style={[styles.unreadDot, { backgroundColor: themeColor }]} />}
 
         <Pressable
           style={styles.deleteBtn}
@@ -180,8 +184,8 @@ const NotificationsScreen = () => {
           )}
         </View>
         {unreadCount > 0 ? (
-          <Pressable style={[styles.markAllBtn, { backgroundColor: colors.primary + '15' }]} onPress={markAllAsRead}>
-            <Text style={[styles.markAllText, { color: colors.primary }]}>Tandai Semua</Text>
+          <Pressable style={[styles.markAllBtn, { backgroundColor: themeColor + '15' }]} onPress={markAllAsRead}>
+            <Text style={[styles.markAllText, { color: themeColor }]}>Tandai Semua</Text>
           </Pressable>
         ) : (
           <View style={styles.markAllBtn} />
@@ -197,12 +201,12 @@ const NotificationsScreen = () => {
           scrollEnabled={true}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PURPLE]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[themeColor]} />
           }
         />
       ) : (
         <View style={styles.emptyState}>
-          <Ionicons name="notifications-off-outline" size={48} color={colors.primary} />
+          <Ionicons name="notifications-off-outline" size={48} color={themeColor} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>Tidak ada notifikasi</Text>
           <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>Semua notifikasi akan muncul di sini</Text>
         </View>

@@ -1,6 +1,7 @@
 import prisma from "../config/database";
 import { AIService } from "./AIService";
 import { logger } from "../utils/logger";
+import { NotificationsController } from "../controllers/NotificationsController";
 
 export class EarlyWarningService {
   static calculateRiskScore(factors: {
@@ -174,6 +175,24 @@ export class EarlyWarningService {
           date: new Date(today),
         },
       });
+
+      // If riskCategory is DANGER or ATTENTION, trigger a TeacherNotification
+      if ((riskCategory === 'DANGER' || riskCategory === 'ATTENTION') && classId) {
+        const cls = await prisma.class.findUnique({
+          where: { id: classId },
+          select: { teacherId: true, name: true }
+        });
+
+        if (cls && cls.teacherId) {
+          const isDanger = riskCategory === 'DANGER';
+          await NotificationsController.createTeacherNotification(
+            cls.teacherId,
+            isDanger ? 'Siswa Perlu Perhatian (Bahaya)' : 'Siswa Perlu Perhatian (Peringatan)',
+            `Siswa ${student.name} di kelas ${cls.name} masuk kategori ${riskCategory} dengan skor risiko ${riskScore}%. Harap segera tinjau.`,
+            'RISK_ALERT'
+          ).catch(err => logger.error('Error creating danger risk teacher notification:', err));
+        }
+      }
 
       logger.info(`Risk analysis completed for ${student.name}: score ${riskScore} (${riskCategory})`);
       return riskData;

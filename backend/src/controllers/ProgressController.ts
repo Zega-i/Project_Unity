@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/database";
+import { NotificationsController } from "./NotificationsController";
+import { EarlyWarningService } from "../services/EarlyWarningService";
+import { logger } from "../utils/logger";
 
 export class ProgressController {
   static async getMyProgress(req: Request, res: Response, next: NextFunction) {
@@ -102,6 +105,18 @@ export class ProgressController {
         return;
       }
 
+      // Fetch class details to get teacherId and class name
+      const cls = await prisma.class.findUnique({
+        where: { id: classId },
+        select: { teacherId: true, name: true }
+      });
+
+      // Fetch student details
+      const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: { name: true }
+      });
+
       const session = await prisma.quizSession.create({
         data: {
           studentId,
@@ -114,6 +129,13 @@ export class ProgressController {
           endedAt: new Date(),
         }
       });
+
+      // Trigger early warning risk assessment asynchronously if teacher exists
+      if (cls && cls.teacherId) {
+        EarlyWarningService.analyzeStudentRisk(studentId, classId).catch(err => 
+          logger.error('Error analyzing student risk on quiz submission:', err)
+        );
+      }
 
       res.json({ success: true, data: { sessionId: session.id, score: session.score } });
     } catch (error) {

@@ -29,15 +29,28 @@ export default function App() {
           try {
             await authAPI.getProfile();
             setIsLoggedIn(true); // Token valid
-          } catch {
-            // Token invalid/expired → clear and go to login
-            await authStore.clearAuth();
-            setIsLoggedIn(false);
+          } catch (error: any) {
+            console.warn('[checkAuth] Profile check failed:', {
+              message: error?.message,
+              status: error?.response?.status,
+              data: error?.response?.data,
+            });
+            // Only clear auth if the server explicitly returns 401/403 (unauthorized)
+            const isUnauthorized = error?.response && (error.response.status === 401 || error.response.status === 403);
+            if (isUnauthorized) {
+              await authStore.clearAuth();
+              setIsLoggedIn(false);
+            } else {
+              // Network or temporary server error: assume token is still valid (offline fallback)
+              console.log('[checkAuth] Connection error, keeping session:', error?.message || error);
+              setIsLoggedIn(true);
+            }
           }
         } else {
           setIsLoggedIn(false);
         }
-      } catch {
+      } catch (outerError: any) {
+        console.error('[checkAuth] Outer error:', outerError);
         setIsLoggedIn(false);
       } finally {
         setIsReady(true);

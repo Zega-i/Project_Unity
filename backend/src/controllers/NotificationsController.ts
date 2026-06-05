@@ -37,8 +37,32 @@ export class NotificationsController {
         };
 
         res.json(response);
+      } else if (role === 'TEACHER') {
+        const notifications = await prisma.teacherNotification.findMany({
+          where: { teacherId: req.userId },
+          orderBy: { createdAt: 'desc' },
+          take: 100, // Last 100 notifications
+        });
+
+        const unreadCount = await prisma.teacherNotification.count({
+          where: {
+            teacherId: req.userId,
+            read: false,
+          }
+        });
+
+        const response: ApiResponse = {
+          success: true,
+          data: {
+            notifications,
+            unreadCount,
+          },
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(response);
       } else {
-        throw new ApiError(403, 'Only students can view notifications', 'FORBIDDEN');
+        throw new ApiError(403, 'Only students and teachers can view notifications', 'FORBIDDEN');
       }
     } catch (error) {
       logger.error('Get notifications error', error);
@@ -86,8 +110,34 @@ export class NotificationsController {
         };
 
         res.json(response);
+      } else if (role === 'TEACHER') {
+        const notification = await prisma.teacherNotification.findUnique({
+          where: { id }
+        });
+
+        if (!notification) {
+          throw new ApiError(404, 'Notification not found', 'NOT_FOUND');
+        }
+
+        if (notification.teacherId !== req.userId) {
+          throw new ApiError(403, 'You cannot read this notification', 'FORBIDDEN');
+        }
+
+        const updated = await prisma.teacherNotification.update({
+          where: { id },
+          data: { read: true }
+        });
+
+        const response: ApiResponse = {
+          success: true,
+          data: updated,
+          message: 'Notification marked as read',
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(response);
       } else {
-        throw new ApiError(403, 'Only students can mark notifications', 'FORBIDDEN');
+        throw new ApiError(403, 'Only students and teachers can mark notifications', 'FORBIDDEN');
       }
     } catch (error) {
       logger.error('Mark as read error', error);
@@ -119,8 +169,24 @@ export class NotificationsController {
         };
 
         res.json(response);
+      } else if (role === 'TEACHER') {
+        await prisma.teacherNotification.updateMany({
+          where: {
+            teacherId: req.userId,
+            read: false,
+          },
+          data: { read: true }
+        });
+
+        const response: ApiResponse = {
+          success: true,
+          message: 'All notifications marked as read',
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(response);
       } else {
-        throw new ApiError(403, 'Only students can mark notifications', 'FORBIDDEN');
+        throw new ApiError(403, 'Only students and teachers can mark notifications', 'FORBIDDEN');
       }
     } catch (error) {
       logger.error('Mark all as read error', error);
@@ -166,8 +232,32 @@ export class NotificationsController {
         };
 
         res.json(response);
+      } else if (role === 'TEACHER') {
+        const notification = await prisma.teacherNotification.findUnique({
+          where: { id }
+        });
+
+        if (!notification) {
+          throw new ApiError(404, 'Notification not found', 'NOT_FOUND');
+        }
+
+        if (notification.teacherId !== req.userId) {
+          throw new ApiError(403, 'You cannot delete this notification', 'FORBIDDEN');
+        }
+
+        await prisma.teacherNotification.delete({
+          where: { id }
+        });
+
+        const response: ApiResponse = {
+          success: true,
+          message: 'Notification deleted',
+          timestamp: new Date().toISOString(),
+        };
+
+        res.json(response);
       } else {
-        throw new ApiError(403, 'Only students can delete notifications', 'FORBIDDEN');
+        throw new ApiError(403, 'Only students and teachers can delete notifications', 'FORBIDDEN');
       }
     } catch (error) {
       logger.error('Delete notification error', error);
@@ -196,6 +286,31 @@ export class NotificationsController {
       return notification;
     } catch (error) {
       logger.error('Create notification error', error);
+      throw error;
+    }
+  }
+
+  // Create notification for teacher (internal use, for auto-triggers)
+  static async createTeacherNotification(
+    teacherId: string,
+    title: string,
+    message: string,
+    type: 'ACHIEVEMENT' | 'QUIZ_RESULT' | 'NEW_MATERIAL' | 'RISK_ALERT' | 'SYSTEM'
+  ) {
+    try {
+      const notification = await prisma.teacherNotification.create({
+        data: {
+          teacherId,
+          title,
+          message,
+          type,
+        }
+      });
+
+      logger.info(`Notification created for teacher ${teacherId}: ${title}`);
+      return notification;
+    } catch (error) {
+      logger.error('Create teacher notification error', error);
       throw error;
     }
   }

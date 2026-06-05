@@ -6,6 +6,7 @@ import { ApiResponse, ApiError } from "../types";
 import { validateRegisterRequest, validateLoginRequest } from "../utils/validation";
 import { logger } from "../utils/logger";
 import { SUCCESS_MESSAGES, ERROR_MESSAGES, VALIDATION } from "../constants";
+import { EmailService } from "../services/EmailService";
 
 export class AuthController {
   static async register(req: Request, res: Response) {
@@ -72,6 +73,11 @@ export class AuthController {
       const token = generateToken(user.id, user.email, role);
 
       logger.info(`User registered successfully: ${email} (${role})`);
+
+      // Send welcome email asynchronously
+      EmailService.sendWelcomeEmail(user.email, user.name, role).catch(err => {
+        logger.error(`Failed to send welcome email to ${user.email}:`, err);
+      });
 
       const response: ApiResponse = {
         success: true,
@@ -203,7 +209,8 @@ export class AuthController {
           user: {
             id: user.id, email: user.email, name: user.name, role,
             school: user.school, className: user.className, grade: user.grade, dateOfBirth: user.dateOfBirth,
-            nip: user.nip, subject: user.subjectTaught
+            nip: user.nip, subject: user.subjectTaught, avatar: user.avatar || null,
+            phone: user.phone || null,
           },
         },
         message: SUCCESS_MESSAGES.PROFILE_RETRIEVED,
@@ -326,6 +333,80 @@ export class AuthController {
       res.json(response);
     } catch (error) {
       logger.error('Change password error', error);
+      throw error;
+    }
+  }
+
+  static async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        throw new ApiError(400, 'Email is required', 'MISSING_FIELDS');
+      }
+
+      // 1. Find user by email in Student, Teacher, and Admin tables
+      let user: any = null;
+      let role: 'STUDENT' | 'TEACHER' | 'ADMIN' = 'STUDENT';
+
+      const student = await prisma.student.findUnique({ where: { email } });
+      if (student) {
+        user = student;
+        role = 'STUDENT';
+      } else {
+        const teacher = await prisma.teacher.findUnique({ where: { email } });
+        if (teacher) {
+          user = teacher;
+          role = 'TEACHER';
+        } else {
+          const admin = await prisma.admin.findUnique({ where: { email } });
+          if (admin) {
+            user = admin;
+            role = 'ADMIN';
+          }
+        }
+      }
+
+      // If user exists, reset password to a temporary one and send email
+      if (user) {
+        const tempPassword = `EduBridge_${Math.random().toString(36).substr(2, 6)}!`;
+        const hashedPassword = await bcrypt.hash(tempPassword, VALIDATION.BCRYPT_ROUNDS);
+
+        if (role === 'STUDENT') {
+          await prisma.student.update({
+            where: { id: user.id },
+            data: { password: hashedPassword }
+          });
+        } else if (role === 'TEACHER') {
+          await prisma.teacher.update({
+            where: { id: user.id },
+            data: { password: hashedPassword }
+          });
+        } else if (role === 'ADMIN') {
+          await prisma.admin.update({
+            where: { id: user.id },
+            data: { password: hashedPassword }
+          });
+        }
+
+        // Send email asynchronously
+        EmailService.sendForgotPasswordEmail(email, user.name, tempPassword).catch(err => {
+          logger.error(`Failed to send forgot password email to ${email}:`, err);
+        });
+      } else {
+        logger.info(`Forgot password requested for non-existent email: ${email}`);
+      }
+
+      // Always return success to prevent email enumeration
+      const response: ApiResponse = {
+        success: true,
+        message: 'If the email is registered, a password reset email has been sent.',
+        timestamp: new Date().toISOString(),
+      };
+
+      res.json(response);
+    } catch (error) {
+      logger.error('Forgot password error', error);
       throw error;
     }
   }

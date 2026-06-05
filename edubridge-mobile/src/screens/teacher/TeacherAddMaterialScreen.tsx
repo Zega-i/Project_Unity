@@ -7,10 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
-import { teacherAPI } from '../../services/api';
+import api, { teacherAPI } from '../../services/api';
 import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
@@ -37,23 +37,32 @@ const TeacherAddMaterialScreen = () => {
       });
       if (!result.canceled && result.assets.length > 0) {
         const asset = result.assets[0];
-        let base64: string | undefined;
-        try {
-          base64 = await FileSystem.readAsStringAsync(asset.uri, {
-            encoding: 'base64' as any,
-          });
-        } catch {
-          base64 = undefined;
+        const fileSizeMB = asset.size ? asset.size / (1024 * 1024) : 0;
+        if (fileSizeMB > 2) {
+          Alert.alert(
+            'File Terlalu Besar',
+            'Ukuran file melebihi batas maksimal 2MB. Silakan pilih file yang lebih kecil.'
+          );
+          return;
         }
         setSelectedFile({
           name: asset.name,
           uri: asset.uri,
           type: asset.mimeType || 'application/pdf',
-          base64,
         });
         triggerMedium();
       }
-    } catch {
+    } catch (err: any) {
+      try {
+        await api.post('/upload/log', {
+          message: `DocumentPicker error`,
+          error: {
+            message: err?.message,
+            stack: err?.stack,
+            ...err
+          }
+        });
+      } catch {}
       Alert.alert('Error', 'Gagal memilih file.');
     }
   };
@@ -82,13 +91,42 @@ const TeacherAddMaterialScreen = () => {
     setLoading(true);
     try {
       triggerMedium();
+      
+      let fileBase64: string | undefined;
+      try {
+        const decodedUri = decodeURIComponent(selectedFile.uri);
+        const tempUri = `${FileSystem.cacheDirectory}temp_upload_${Date.now()}_${selectedFile.name.replace(/\s+/g, '_')}`;
+        
+        try {
+          await FileSystem.copyAsync({
+            from: decodedUri,
+            to: tempUri
+          });
+          fileBase64 = await FileSystem.readAsStringAsync(tempUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          await FileSystem.deleteAsync(tempUri, { idempotent: true });
+        } catch (copyErr: any) {
+          console.log("[FileSystem Copy Error] Copy failed, attempting direct read:", copyErr);
+          fileBase64 = await FileSystem.readAsStringAsync(decodedUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        }
+      } catch (error: any) {
+        console.log("[FileSystem Error] Gagal membaca file as base64:", error);
+      }
+
+      if (!fileBase64) {
+        throw new Error('Gagal membaca data file.');
+      }
+
       const materialType = getMaterialType(selectedFile.type);
       await teacherAPI.addMaterial(classId, {
         title,
         description,
         fileUrl: selectedFile.uri,
         type: materialType,
-        fileBase64: selectedFile.base64,
+        fileBase64,
         fileName: selectedFile.name,
       });
       setSuccessModal({

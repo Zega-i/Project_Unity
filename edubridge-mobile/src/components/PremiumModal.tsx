@@ -20,6 +20,7 @@ interface PremiumModalProps {
   icon?: string;
   minimal?: boolean;
   scrollable?: boolean;
+  accentColor?: string;
 }
 
 const GREEN = '#16A34A';
@@ -38,17 +39,18 @@ const PremiumModal: React.FC<PremiumModalProps> = ({
   onCancel,
   icon,
   minimal = false,
-  scrollable = false
+  scrollable = false,
+  accentColor
 }) => {
   const { colors } = useTheme();
 
   const getColors = () => {
     switch (type) {
-      case 'success': return { main: GREEN, bg: GREEN + '15' };
+      case 'success': return { main: accentColor || GREEN, bg: (accentColor || GREEN) + '15' };
       case 'error': return { main: RED, bg: RED + '15' };
       case 'warning': return { main: AMBER, bg: AMBER + '15' };
-      case 'confirm': return { main: BLUE, bg: BLUE + '15' };
-      default: return { main: GREEN, bg: GREEN + '15' };
+      case 'confirm': return { main: accentColor || BLUE, bg: (accentColor || BLUE) + '15' };
+      default: return { main: accentColor || GREEN, bg: (accentColor || GREEN) + '15' };
     }
   };
 

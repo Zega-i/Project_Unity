@@ -9,7 +9,7 @@ if (!__DEV__ && (API_URL.includes('localhost') || API_URL.includes('192.168.') |
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 60000,
 });
 
 api.interceptors.request.use(async (config) => {
@@ -33,8 +33,12 @@ export const authAPI = {
     const response = await api.post('/auth/forgot-password', { email });
     return response.data;
   },
-  changePassword: async (oldPassword: string, newPassword: string) => {
-    const response = await api.put('/auth/change-password', { oldPassword, newPassword });
+  changePassword: async (oldPassword: string, newPassword: string, confirmPassword?: string) => {
+    const response = await api.post('/auth/change-password', { 
+      oldPassword, 
+      newPassword, 
+      confirmPassword: confirmPassword || newPassword 
+    });
     return response.data;
   },
   getProfile: async () => {
@@ -45,10 +49,8 @@ export const authAPI = {
     const response = await api.put('/profile/update', data);
     return response.data;
   },
-  uploadAvatar: async (formData: any) => {
-    const response = await api.post('/profile/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  uploadAvatar: async (imageBase64: string, fileName?: string) => {
+    const response = await api.post('/profile/avatar', { imageBase64, fileName: fileName || 'avatar.jpg' });
     return response.data;
   },
 };
@@ -88,8 +90,8 @@ export const quizAPI = {
 };
 
 export const aiAPI = {
-  tutorChat: async (message: string, context?: any) => {
-    const response = await api.post('/ai/tutor', { message, context });
+  tutorChat: async (message: string, context?: any, fileBase64?: string, fileName?: string) => {
+    const response = await api.post('/ai/tutor', { message, context, fileBase64, fileName });
     return response.data;
   },
   generateQuiz: async (text: string, questionCount: number = 5, materialId?: string) => {
@@ -173,8 +175,8 @@ export const teacherAPI = {
     const response = await api.get('/teacher/my-classes');
     return response.data;
   },
-  getDashboardStats: async () => {
-    const response = await api.get('/teacher/dashboard');
+  getDashboardStats: async (classId?: string) => {
+    const response = await api.get('/teacher/dashboard', { params: { classId } });
     return response.data.data;
   },
   addMaterial: async (classId: string, data: { title: string; description: string; fileUrl?: string; type?: string; fileBase64?: string; fileName?: string }) => {
