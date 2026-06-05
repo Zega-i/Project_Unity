@@ -27,11 +27,16 @@ router.post("/test-email", asyncHandler(async (req: Request, res: Response) => {
 
     const nodemailer = require("nodemailer");
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
       auth: {
         user,
         pass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     await transporter.verify();

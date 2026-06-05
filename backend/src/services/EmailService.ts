@@ -12,11 +12,16 @@ export class EmailService {
     }
 
     return nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false, // false for port 587 (STARTTLS)
       auth: {
         user: user,
         pass: pass,
       },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
   }
 
