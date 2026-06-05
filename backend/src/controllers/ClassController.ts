@@ -133,12 +133,38 @@ export class ClassController {
   static async getClassQuizzes(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const studentId = (req as any).user?.id;
+
       const quizzes = await prisma.quiz.findMany({
         where: { classId: id },
         include: { questions: true },
         orderBy: { createdAt: 'desc' },
       });
-      res.json({ success: true, data: quizzes });
+
+      let mappedQuizzes = quizzes;
+      if (studentId) {
+        const completedSessions = await prisma.quizSession.findMany({
+          where: {
+            studentId,
+            quizId: { in: quizzes.map(q => q.id) },
+            status: "COMPLETED"
+          },
+          select: { quizId: true, score: true, totalQuestions: true, correctAnswers: true }
+        });
+
+        const completedQuizIdsMap = new Map(completedSessions.map(s => [s.quizId, s]));
+
+        mappedQuizzes = quizzes.map((q: any) => {
+          const session = completedQuizIdsMap.get(q.id);
+          return {
+            ...q,
+            isCompleted: !!session,
+            sessionDetails: session || null
+          };
+        });
+      }
+
+      res.json({ success: true, data: mappedQuizzes });
     } catch (error) {
       next(error);
     }

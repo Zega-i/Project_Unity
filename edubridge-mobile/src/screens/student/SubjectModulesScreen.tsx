@@ -147,20 +147,57 @@ const SubjectModulesScreen = () => {
     try {
       const userId = authStore.getUserSync()?.id;
       const quizzesKey = userId ? `@completed_quizzes_${userId}` : '@completed_quizzes';
+      const detailsKey = userId ? `@completed_quiz_details_${userId}` : '@completed_quiz_details';
 
-      const [detailRes, assignRes, quizRes, stored] = await Promise.all([
+      const [detailRes, assignRes, quizRes, storedQuizzes, storedDetails] = await Promise.all([
         classAPI.getClassDetail(classId),
         classAPI.getClassAssignments(classId),
         classAPI.getClassQuizzes(classId),
         AsyncStorage.getItem(quizzesKey),
+        AsyncStorage.getItem(detailsKey),
       ]);
+
       setIsClassArchived(!!detailRes.data?.archived);
       setMaterials(detailRes.data?.materials || []);
       setAssignments(assignRes.data || []);
-      setQuizzes(quizRes.data || []);
-      setCompletedQuizIds(new Set(stored ? JSON.parse(stored) : []));
+      
+      const serverQuizzes = quizRes.data || [];
+      setQuizzes(serverQuizzes);
+
+      const localCompletedIds = storedQuizzes ? JSON.parse(storedQuizzes) : [];
+      const completedSet = new Set<string>(localCompletedIds);
+      const detailsMap = storedDetails ? JSON.parse(storedDetails) : {};
+      let hasUpdates = false;
+
+      serverQuizzes.forEach((q: any) => {
+        if (q.isCompleted || q.sessionDetails) {
+          if (!completedSet.has(q.id)) {
+            completedSet.add(q.id);
+            hasUpdates = true;
+          }
+          if (q.sessionDetails && (!detailsMap[q.id] || detailsMap[q.id].score !== q.sessionDetails.score)) {
+            detailsMap[q.id] = {
+              score: q.sessionDetails.score,
+              totalQuestions: q.sessionDetails.totalQuestions,
+              correctAnswers: q.sessionDetails.correctAnswers,
+              completedAt: q.sessionDetails.completedAt || new Date().toISOString()
+            };
+            hasUpdates = true;
+          }
+        }
+      });
+
+      if (hasUpdates) {
+        await Promise.all([
+          AsyncStorage.setItem(quizzesKey, JSON.stringify([...completedSet])),
+          AsyncStorage.setItem(detailsKey, JSON.stringify(detailsMap))
+        ]);
+      }
+
+      setCompletedQuizIds(completedSet);
       await fetchDiscussions();
-    } catch {
+    } catch (err) {
+      console.log('Error loading modules data:', err);
       setMaterials([]);
       setAssignments([]);
       setQuizzes([]);

@@ -122,6 +122,9 @@ const ProfileScreen = () => {
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
+  const displayName = user?.name || 'Siswa';
+  const initials = displayName.split(' ').filter(Boolean).map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -134,10 +137,16 @@ const ProfileScreen = () => {
             onPress={() => { triggerLight(); setEditAvatarModalVisible(true); }}
           >
             <View style={styles.avatarContainer}>
-              <Image
-                source={{ uri: user?.avatar || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=2080&auto=format&fit=crop' }}
-                style={styles.avatar}
-              />
+              {user?.avatar ? (
+                <Image
+                  source={{ uri: user.avatar }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>{initials}</Text>
+                </View>
+              )}
             </View>
           </Pressable>
           <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'User Name'}</Text>
@@ -253,6 +262,8 @@ const styles = StyleSheet.create({
   avatarPressable: { position: 'relative' },
   avatarContainer: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F1F5F9', padding: 4, marginBottom: 16, overflow: 'hidden', position: 'relative' },
   avatar: { width: '100%', height: '100%', borderRadius: 50 },
+  avatarCircle: { width: '100%', height: '100%', borderRadius: 50, backgroundColor: PURPLE, alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { fontSize: 36, fontWeight: 'bold', color: '#FFF' },
   editAvatarOverlay: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderRadius: 20, backgroundColor: '#7C3AED', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#FFFFFF' },
   userName: { fontSize: 20, fontWeight: 'bold', color: '#1E293B', marginBottom: 6 },
   userRole: { fontSize: 14, color: '#94A3B8' },

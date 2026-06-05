@@ -278,7 +278,48 @@ const QuizScreen = () => {
             .catch(() => [])
         )
       );
-      setTeacherQuizzes(results.flat());
+      const flatQuizzes = results.flat();
+      setTeacherQuizzes(flatQuizzes);
+
+      const userId = authStore.getUserSync()?.id;
+      const quizzesKey = userId ? `@completed_quizzes_${userId}` : '@completed_quizzes';
+      const detailsKey = userId ? `@completed_quiz_details_${userId}` : '@completed_quiz_details';
+
+      const [storedQuizzes, storedDetails] = await Promise.all([
+        AsyncStorage.getItem(quizzesKey),
+        AsyncStorage.getItem(detailsKey),
+      ]);
+
+      const localCompletedIds = storedQuizzes ? JSON.parse(storedQuizzes) : [];
+      const completedSet = new Set<string>(localCompletedIds);
+      const detailsMap = storedDetails ? JSON.parse(storedDetails) : {};
+      let hasUpdates = false;
+
+      flatQuizzes.forEach((q: any) => {
+        if (q.isCompleted || q.sessionDetails) {
+          if (!completedSet.has(q.id)) {
+            completedSet.add(q.id);
+            hasUpdates = true;
+          }
+          if (q.sessionDetails && (!detailsMap[q.id] || detailsMap[q.id].score !== q.sessionDetails.score)) {
+            detailsMap[q.id] = {
+              score: q.sessionDetails.score,
+              totalQuestions: q.sessionDetails.totalQuestions,
+              correctAnswers: q.sessionDetails.correctAnswers,
+              completedAt: q.sessionDetails.completedAt || new Date().toISOString()
+            };
+            hasUpdates = true;
+          }
+        }
+      });
+
+      if (hasUpdates) {
+        await Promise.all([
+          AsyncStorage.setItem(quizzesKey, JSON.stringify([...completedSet])),
+          AsyncStorage.setItem(detailsKey, JSON.stringify(detailsMap))
+        ]);
+      }
+      setCompletedQuizIds(completedSet);
     } catch {
       setTeacherQuizzes([]);
     } finally {

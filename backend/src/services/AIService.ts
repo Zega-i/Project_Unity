@@ -58,16 +58,22 @@ export class AIService {
     subject: string = "Umum"
   ): Promise<GeneratedQuestion[]> {
     try {
+      // Limit text to maximum 6000 characters to prevent Groq rate limits/payload too large
+      const limitedText = extractedText.length > 6000 
+        ? extractedText.substring(0, 6000) + "\n\n...[Teks dipotong karena terlalu panjang]..."
+        : extractedText;
+
       const prompt = `Berdasarkan materi berikut, buat ${questionCount} soal pilihan ganda untuk kelas ${grade} mata pelajaran ${subject}.
 
 MATERI:
-${extractedText}
+${limitedText}
 
 KETENTUAN:
 - 4 pilihan jawaban (a, b, c, d)
 - Fokus pada HOTS (Higher Order Thinking Skills)
 - Berikan penjelasan mendalam di field 'explanation'
 - Format jawaban: huruf kecil (a/b/c/d)
+- JIKA materi sangat pendek atau tidak memiliki cukup konten untuk membuat soal kuis, buatlah pertanyaan kuis umum yang mendidik sesuai dengan topik/judul materi tersebut.
 
 OUTPUT FORMAT - HANYA JSON ARRAY:
 [{"question":"...","options":{"a":"...","b":"...","c":"...","d":"..."},"correct_answer":"a","explanation":"...","difficulty":"medium","topic":"...","sub_topic":"..."}]`;
@@ -76,7 +82,7 @@ OUTPUT FORMAT - HANYA JSON ARRAY:
         messages: [
           {
             role: "system",
-            content: "Kamu adalah pakar kurikulum pendidikan Indonesia yang sangat akurat. Tugasmu adalah membuat soal kuis yang 100% didasarkan pada materi (PDF) yang diberikan oleh pengguna. Jangan mengambil informasi dari luar materi tersebut, jangan melenceng dari topik, dan pastikan pertanyaan mengukur pemahaman materi yang ada dalam dokumen secara presisi."
+            content: "Kamu adalah pakar kurikulum pendidikan Indonesia yang sangat akurat. Tugasmu adalah membuat soal kuis yang 100% didasarkan pada materi (PDF) yang diberikan oleh pengguna. Jangan mengambil informasi dari luar materi tersebut, jangan melenceng dari topik, dan pastikan pertanyaan mengukur pemahaman materi yang ada dalam dokumen secara presisi. Jika materi sangat pendek atau kurang memadai, buatlah soal kuis umum yang mendidik tentang topik materi tersebut."
           },
           { role: "user", content: prompt }
         ],
@@ -97,8 +103,12 @@ OUTPUT FORMAT - HANYA JSON ARRAY:
 
   static async generateAssignmentFromText(extractedText: string): Promise<string> {
     try {
+      const limitedText = extractedText.length > 6000 
+        ? extractedText.substring(0, 6000) + "\n\n...[Teks dipotong karena terlalu panjang]..."
+        : extractedText;
+
       const prompt = `Rancanglah sebuah TUGAS PROYEK/ESSAY berdasarkan materi berikut.
-MATERI: ${extractedText}
+MATERI: ${limitedText}
 
 FORMAT:
 1. Judul Proyek yang Menginspirasi
@@ -112,7 +122,7 @@ Gunakan Bahasa Indonesia yang profesional dan memotivasi.`;
         messages: [
           {
             role: "system",
-            content: "Kamu adalah asisten akademik yang terstruktur. Tugasmu adalah merancang tugas proyek atau esai yang 100% didasarkan pada materi (PDF) yang diberikan oleh pengguna. Jangan melenceng dari topik materi, jangan menambahkan konsep luar yang tidak dibahas dalam dokumen, dan pastikan tugas menguji materi tersebut secara langsung."
+            content: "Kamu adalah asisten akademik yang terstruktur. Tugasmu adalah merancang tugas proyek atau esai yang 100% didasarkan pada materi (PDF) yang diberikan oleh pengguna. Jangan melenceng dari topik materi, jangan menambahkan konsep luar yang tidak dibahas dalam dokumen, dan pastikan tugas menguji materi tersebut secara langsung. Jika materi sangat pendek, buatlah tugas proyek/esai umum yang mendidik tentang topik materi tersebut."
           },
           { role: "user", content: prompt }
         ],
@@ -129,6 +139,7 @@ Gunakan Bahasa Indonesia yang profesional dan memotivasi.`;
 
   static async chatWithTutor(studentQuestion: string, context?: any): Promise<string> {
     try {
+      const studentName = context?.studentName || 'Siswa';
       let prompt = '';
       if (context?.role === 'TEACHER' && (context?.studentName || context?.type === 'CLASS_STRATEGY')) {
         if (context?.type === 'CLASS_STRATEGY') {
@@ -166,7 +177,6 @@ INSTRUKSI UNTUK AI:
 4. Berikan langkah-langkah tindak lanjut nyata untuk membantu siswa-siswa yang terdeteksi "Perlu Perhatian" agar mereka bisa mengejar ketertinggalan tanpa mengganggu jalannya kelas reguler.
 5. Jawablah secara terstruktur dalam format teks biasa (Plain Text) yang bersih. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Jaga agar tanggapan tetap relevan dan fokus pada kemajuan belajar seluruh kelas. JANGAN keluar dari topik strategi pengajaran kelas.`;
         } else {
-          const studentName = context?.studentName || 'Siswa';
           const perf = context?.performanceData || {};
           
           let statsContext = '';
@@ -234,9 +244,9 @@ PERTANYAAN PENGGUNA: ${studentQuestion}
 
 INSTRUKSI PERSONA & GAYA BAHASA:
 - Gunakan bahasa yang santai, cerdas, ramah, dan interaktif seperti ChatGPT atau Gemini.
-- Panggil dirimu sebagai "Aku" dan sapa pengguna sebagai "Kamu".
-- Saat ini pengguna belum menentukan mata pelajaran atau topik belajar spesifik (riwayat percakapan kosong dan parameter subjek kosong).
-- Sapa pengguna dengan ramah dan tanyakan topik/mata pelajaran atau soal apa yang ingin dibahas hari ini (seperti Kalkulus, Fisika, atau Pemrograman Java) agar kamu bisa membantunya secara terfokus. JANGAN langsung memberikan contoh soal matematika atau penjelasan teknis pemrograman secara acak di awal.`;
+- Panggil dirimu sebagai "Aku" dan sapa pengguna dengan nama '${studentName}'.
+- JIKA PERTANYAAN PENGGUNA HANYA BERUPA SAPAAN UMUM ATAU PENGENALAN (seperti "halo", "hi", "selamat pagi", "p"), sapa ${studentName} dengan ramah menggunakan namanya, lalu tanyakan topik/mata pelajaran atau soal apa yang ingin dibahas hari ini (seperti Kalkulus, Fisika, atau Pemrograman Java) agar kamu bisa membantunya secara terfokus.
+- JIKA PERTANYAAN PENGGUNA ADALAH PERTANYAAN SPESIFIK tentang materi, pelajaran, rumus, koding, atau konsep akademik (seperti bertanya 'apa itu kalkulus jamak', dll.), JAWABLAH pertanyaan tersebut secara langsung dengan ramah, jelas, dan mendalam. Jangan menunda jawaban atau malah menanyakan kembali topik apa yang ingin dibahas.`;
           } else {
             const contextStr = subject ? `KONTEKS SUBJEK: ${subject}${topic ? `, Topik: ${topic}` : ''}.\n` : '';
             
@@ -283,7 +293,7 @@ ATURAN FORMATTING & GAYA BAHASA:
         role: "system",
         content: context?.role === 'TEACHER' 
           ? "Kamu adalah AI Assistant Guru EduBridge yang membantu Guru membimbing dan menganalisis performa belajar siswa. Sapa dan berinteraksilah dengan Guru secara sopan dan profesional. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Tulis dalam teks biasa yang bersih dengan pembagian paragraf yang rapi menggunakan baris baru."
-          : "Kamu adalah AI Tutor EduBridge yang cerdas, ramah, dan interaktif (seperti ChatGPT atau Gemini). Kamu memanggil dirimu sebagai 'Aku' dan menyapa siswa sebagai 'Kamu'. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Tulis dalam teks biasa yang bersih dengan pembagian paragraf yang rapi menggunakan baris baru."
+          : `Kamu adalah AI Tutor EduBridge yang cerdas, ramah, dan interaktif (seperti ChatGPT atau Gemini). Kamu memanggil dirimu sebagai 'Aku' dan panggil siswa secara ramah menggunakan nama '${studentName}' (misalnya: "Halo ${studentName}!"). JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Tulis dalam teks biasa yang bersih dengan pembagian paragraf yang rapi menggunakan baris baru.`
       });
 
       // Add conversation history
@@ -299,9 +309,12 @@ ATURAN FORMATTING & GAYA BAHASA:
 
       // Add document context if provided
       if (context?.extractedText) {
+        const limitedText = context.extractedText.length > 6000 
+          ? context.extractedText.substring(0, 6000) + "\n\n...[Teks dipotong karena terlalu panjang]..."
+          : context.extractedText;
         messagesArray.push({
           role: "system",
-          content: `DOKUMEN/MATERI YANG DIUNGGAH OLEH GURU (URL: ${context.fileUrl || 'N/A'}):\n${context.extractedText}\n\nHarap gunakan isi dokumen di atas untuk membantu menjawab pertanyaan atau menjalankan tugas Guru (seperti membuat kuis, RPP, rangkuman, atau remedial).`
+          content: `DOKUMEN/MATERI YANG DIUNGGAH OLEH GURU (URL: ${context.fileUrl || 'N/A'}):\n${limitedText}\n\nHarap gunakan isi dokumen di atas untuk membantu menjawab pertanyaan atau menjalankan tugas Guru (seperti membuat kuis, RPP, rangkuman, atau remedial).`
         });
       }
 
@@ -423,7 +436,7 @@ OUTPUT HARUS JSON:
 
       const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],
-        model: this.model,
+        model: "llama-3.1-8b-instant",
       });
 
       const responseText = message.choices[0]?.message?.content || "";
@@ -469,7 +482,7 @@ Format JSON yang wajib diikuti:
 
       const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],
-        model: this.model,
+        model: "llama-3.1-8b-instant",
         temperature: 0.2
       });
 
@@ -499,8 +512,12 @@ Format JSON yang wajib diikuti:
 
   static async generateLessonPlan(extractedText: string): Promise<string> {
     try {
+      const limitedText = extractedText.length > 6000 
+        ? extractedText.substring(0, 6000) + "\n\n...[Teks dipotong karena terlalu panjang]..."
+        : extractedText;
+
       const prompt = `Buatkan RENCANA PELAKSANAAN PEMBELAJARAN (RPP) yang inovatif berdasarkan materi berikut:
-      MATERI: ${extractedText}
+      MATERI: ${limitedText}
       
       RPP harus mencakup:
       1. Identitas (Topik, Target Peserta Didik)
@@ -509,7 +526,7 @@ Format JSON yang wajib diikuti:
       4. Alokasi Waktu
       5. Metode Penilaian
       
-      Gunakan Bahasa Indonesia yang profesional dan kreatif. Gunakan format Markdown yang rapi.`;
+      Gunakan Bahasa Indonesia yang profesional dan kreatif. Gunakan format Markdown yang rapi. JIKA materi sangat pendek, buatlah RPP umum sesuai topik materi tersebut.`;
 
       const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],

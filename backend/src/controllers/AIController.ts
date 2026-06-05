@@ -46,8 +46,26 @@ export class AIController {
         }
       }
 
+      let userName = "Siswa";
+      if (req.userId) {
+        const student = await prisma.student.findUnique({
+          where: { id: req.userId },
+          select: { name: true }
+        });
+        if (student) {
+          userName = student.name.split(' ')[0]; // Use first name for a friendly greeting
+        } else {
+          const teacher = await prisma.teacher.findUnique({
+            where: { id: req.userId },
+            select: { name: true }
+          });
+          if (teacher) userName = teacher.name.split(' ')[0];
+        }
+      }
+
       const mergedContext = {
         ...context,
+        studentName: userName,
         fileUrl: fileUrl || context?.fileUrl,
         extractedText: extractedText || context?.extractedText,
       };

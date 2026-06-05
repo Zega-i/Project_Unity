@@ -45,13 +45,16 @@ export class ProgressController {
 
       const overallProgress = totalMaterials > 0 ? (viewedMaterials / totalMaterials) * 100 : 0;
 
-      // 1. Kuis Selesai
-      const completedQuizzes = await prisma.quizSession.count({
+      // 1. Kuis Selesai (Unique quizzes completed)
+      const completedQuizzesCount = await prisma.quizSession.groupBy({
+        by: ['quizId'],
         where: {
           studentId,
-          status: "COMPLETED"
+          status: "COMPLETED",
+          quizId: { not: null }
         }
       });
+      const completedQuizzes = completedQuizzesCount.length;
 
       // 2. Skor Rata-rata
       const quizSessions = await prisma.quizSession.findMany({
@@ -132,13 +135,16 @@ export class ProgressController {
           where: { classId: cls.id }
         });
 
-        const completedClassQuizzes = await prisma.quizSession.count({
+        const completedClassQuizzesCount = await prisma.quizSession.groupBy({
+          by: ['quizId'],
           where: {
             studentId,
             classId: cls.id,
-            status: "COMPLETED"
+            status: "COMPLETED",
+            quizId: { not: null }
           }
         });
+        const completedClassQuizzes = completedClassQuizzesCount.length;
 
         const totalItems = totalClassMaterials + totalClassQuizzes;
         const completedItems = viewedClassMaterials + completedClassQuizzes;
