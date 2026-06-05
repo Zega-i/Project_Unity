@@ -15,6 +15,7 @@ export class EmailService {
       host: "smtp.gmail.com",
       port: 587,
       secure: false, // false for port 587 (STARTTLS)
+      family: 4,     // Force IPv4 to prevent ENETUNREACH on IPv6
       auth: {
         user: user,
         pass: pass,
@@ -22,7 +23,7 @@ export class EmailService {
       tls: {
         rejectUnauthorized: false
       }
-    });
+    } as any);
   }
 
   static async sendWelcomeEmail(to: string, name: string, role: string) {

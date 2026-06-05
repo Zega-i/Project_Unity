@@ -30,6 +30,7 @@ router.post("/test-email", asyncHandler(async (req: Request, res: Response) => {
       host: "smtp.gmail.com",
       port: 587,
       secure: false,
+      family: 4,
       auth: {
         user,
         pass,
