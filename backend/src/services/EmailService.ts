@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import axios from "axios";
 import { logger } from "../utils/logger";
 
 export class EmailService {
@@ -26,10 +27,59 @@ export class EmailService {
     } as any);
   }
 
-  static async sendWelcomeEmail(to: string, name: string, role: string) {
+  private static async sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+    const resendKey = process.env.RESEND_API_KEY;
+
+    if (resendKey) {
+      // Send via Resend HTTPS API (Port 443 - never blocked by cloud firewalls!)
+      try {
+        await axios.post(
+          "https://api.resend.com/emails",
+          {
+            from: "EduBridge <onboarding@resend.dev>", // Standard free sandbox sender
+            to: to,
+            subject: subject,
+            html: html,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${resendKey}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        logger.info(`Email sent to ${to} via Resend API`);
+        return true;
+      } catch (err: any) {
+        logger.error(`Failed to send email to ${to} via Resend API:`, err.response?.data || err.message);
+        throw err;
+      }
+    }
+
+    // Local Fallback: SMTP
     const transporter = this.getTransporter();
+    if (!transporter) {
+      logger.info(`[Email Dry-Run] Email to: ${to}. Subject: ${subject}`);
+      return false;
+    }
+
+    try {
+      await transporter.sendMail({
+        from: `"EduBridge" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html,
+      });
+      logger.info(`Email sent to ${to} via Gmail SMTP`);
+      return true;
+    } catch (err) {
+      logger.error(`Failed to send email to ${to} via SMTP:`, err);
+      throw err;
+    }
+  }
+
+  static async sendWelcomeEmail(to: string, name: string, role: string) {
     const subject = "Selamat Datang di EduBridge!";
-    
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #E2E8F0; border-radius: 12px;">
         <h2 style="color: #7C3AED; text-align: center;">Selamat Datang di EduBridge!</h2>
@@ -41,28 +91,15 @@ export class EmailService {
       </div>
     `;
 
-    if (!transporter) {
-      logger.info(`[Email Dry-Run] Welcome email to: ${to}. Name: ${name}, Role: ${role}`);
-      return;
-    }
-
     try {
-      await transporter.sendMail({
-        from: `"EduBridge" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html: htmlContent,
-      });
-      logger.info(`Welcome email sent to ${to}`);
+      await this.sendEmail({ to, subject, html: htmlContent });
     } catch (err) {
-      logger.error(`Failed to send welcome email to ${to}:`, err);
+      logger.error(`sendWelcomeEmail failed for ${to}:`, err);
     }
   }
 
   static async sendForgotPasswordEmail(to: string, name: string, tempPassword: string) {
-    const transporter = this.getTransporter();
     const subject = "Reset Password Akun EduBridge Anda";
-
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #E2E8F0; border-radius: 12px;">
         <h2 style="color: #7C3AED; text-align: center;">Reset Password EduBridge</h2>
@@ -78,21 +115,10 @@ export class EmailService {
       </div>
     `;
 
-    if (!transporter) {
-      logger.info(`[Email Dry-Run] Forgot password email to: ${to}. TempPassword: ${tempPassword}`);
-      return;
-    }
-
     try {
-      await transporter.sendMail({
-        from: `"EduBridge" <${process.env.EMAIL_USER}>`,
-        to,
-        subject,
-        html: htmlContent,
-      });
-      logger.info(`Forgot password email sent to ${to}`);
+      await this.sendEmail({ to, subject, html: htmlContent });
     } catch (err) {
-      logger.error(`Failed to send forgot password email to ${to}:`, err);
+      logger.error(`sendForgotPasswordEmail failed for ${to}:`, err);
     }
   }
 }

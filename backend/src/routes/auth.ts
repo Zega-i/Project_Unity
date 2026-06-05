@@ -13,6 +13,32 @@ router.post("/forgot-password", asyncHandler(AuthController.forgotPassword.bind(
 router.post("/test-email", asyncHandler(async (req: Request, res: Response) => {
   try {
     const to = req.body.to || "edubridge56@gmail.com";
+    const resendKey = process.env.RESEND_API_KEY;
+
+    if (resendKey) {
+      const axios = require("axios");
+      await axios.post(
+        "https://api.resend.com/emails",
+        {
+          from: "EduBridge <onboarding@resend.dev>",
+          to: to,
+          subject: "Test Connection from Live Server (Resend API)",
+          html: "<p>HTTPS API connection test from live Railway server succeeded!</p>",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return res.json({
+        success: true,
+        message: "Test email sent successfully via Resend HTTPS API from production server",
+      });
+    }
+
     const user = process.env.EMAIL_USER;
     const pass = process.env.EMAIL_PASS;
     
@@ -38,14 +64,14 @@ router.post("/test-email", asyncHandler(async (req: Request, res: Response) => {
       tls: {
         rejectUnauthorized: false
       }
-    });
+    } as any);
 
     await transporter.verify();
     
     await transporter.sendMail({
       from: `"EduBridge" <${user}>`,
       to,
-      subject: "Test Connection from Live Server",
+      subject: "Test Connection from Live Server (Gmail SMTP)",
       html: "<p>SMTP Connection test from live Railway server succeeded!</p>",
     });
 
