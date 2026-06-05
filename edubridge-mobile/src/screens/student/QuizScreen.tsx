@@ -44,7 +44,7 @@ const SUBJECTS: Subject[] = [
 const QUIZ_TIME = 600;
 
 const parseQuestions = (raw: any[]): Question[] =>
-  raw.map((q: any, i: number) => ({
+  (raw || []).map((q: any, i: number) => ({
     id: String(q.id ?? i + 1),
     question: q.question || q.text || '',
     options: Array.isArray(q.options)
@@ -57,7 +57,7 @@ const parseQuestions = (raw: any[]): Question[] =>
   }));
 
 const parseTeacherQuestions = (raw: any[]): Question[] =>
-  raw.map((q: any, i: number) => {
+  (raw || []).map((q: any, i: number) => {
     let opts: any[] = [];
     try {
       opts = typeof q.options === 'string' ? JSON.parse(q.options) : (q.options || []);
@@ -274,7 +274,7 @@ const QuizScreen = () => {
       const results = await Promise.all(
         myClasses.map((cls: any) =>
           classAPI.getClassQuizzes(cls.id)
-            .then((r: any) => (r.data || []).map((q: any) => ({ ...q, className: cls.name, classId: cls.id })))
+            .then((r: any) => (r && r.data || []).map((q: any) => ({ ...q, className: cls.name, classId: cls.id })))
             .catch(() => [])
         )
       );
@@ -1010,88 +1010,58 @@ Setiap kesalahan adalah langkah awal menuju pemahaman yang lebih baik. Kamu suda
           <View style={styles.infoBannerText}>
             <Text style={[styles.infoBannerTitle, { color: colors.text }]}>Uji Kemampuanmu!</Text>
             <Text style={[styles.infoBannerDesc, { color: colors.textSecondary }]}>
-              Pilih kuis dari guru atau latihan mandiri dengan AI
+              Pilih kuis dari guru untuk menguji kemampuanmu
             </Text>
           </View>
         </View>
 
         {/* Teacher Quizzes Section */}
-        {(loadingTeacherQuizzes || teacherQuizzes.length > 0) && (
-          <View style={styles.sectionBlock}>
-            <Text style={[styles.chooseTitle, { color: colors.text }]}>Kuis dari Guru</Text>
-            {loadingTeacherQuizzes ? (
-              <ActivityIndicator size="small" color={PURPLE} style={{ marginVertical: 12 }} />
-            ) : (
-              teacherQuizzes.map((quiz) => {
-                const isDone = completedQuizIds.has(quiz.id);
-                return (
-                  <Pressable
-                    key={quiz.id}
-                    style={[
-                      styles.teacherQuizCard,
-                      { backgroundColor: isDone ? colors.surface : colors.card, borderColor: isDone ? colors.border : colors.border, opacity: isDone ? 0.7 : 1 },
-                    ]}
-                    onPress={() => handleSelectTeacherQuiz(quiz)}
-                  >
-                    <View style={[styles.teacherQuizIcon, { backgroundColor: isDone ? '#10B981' + '20' : PURPLE + '15' }]}>
-                      <Ionicons name={isDone ? 'checkmark-done' : 'school'} size={22} color={isDone ? '#10B981' : PURPLE} />
+        <View style={styles.sectionBlock}>
+          <Text style={[styles.chooseTitle, { color: colors.text }]}>Kuis dari Guru</Text>
+          {loadingTeacherQuizzes ? (
+            <ActivityIndicator size="small" color={PURPLE} style={{ marginVertical: 12 }} />
+          ) : teacherQuizzes.length > 0 ? (
+            teacherQuizzes.map((quiz) => {
+              const isDone = completedQuizIds.has(quiz.id);
+              return (
+                <Pressable
+                  key={quiz.id}
+                  style={[
+                    styles.teacherQuizCard,
+                    { backgroundColor: isDone ? colors.surface : colors.card, borderColor: colors.border, opacity: isDone ? 0.7 : 1 },
+                  ]}
+                  onPress={() => handleSelectTeacherQuiz(quiz)}
+                >
+                  <View style={[styles.teacherQuizIcon, { backgroundColor: isDone ? '#10B981' + '20' : PURPLE + '15' }]}>
+                    <Ionicons name={isDone ? 'checkmark-done' : 'school'} size={22} color={isDone ? '#10B981' : PURPLE} />
+                  </View>
+                  <View style={styles.teacherQuizInfo}>
+                    <Text style={[styles.teacherQuizTitle, { color: colors.text }]}>{quiz.title}</Text>
+                    <Text style={[styles.teacherQuizMeta, { color: colors.textSecondary }]}>
+                      {quiz.className} • {quiz.questions?.length || 0} Soal • {quiz.timeLimit || 10} Menit
+                    </Text>
+                  </View>
+                  {isDone ? (
+                    <View style={[styles.doneBadge, { backgroundColor: '#10B981' + '20' }]}>
+                      <Text style={[styles.doneBadgeText, { color: '#10B981' }]}>Selesai</Text>
                     </View>
-                    <View style={styles.teacherQuizInfo}>
-                      <Text style={[styles.teacherQuizTitle, { color: colors.text }]}>{quiz.title}</Text>
-                      <Text style={[styles.teacherQuizMeta, { color: colors.textSecondary }]}>
-                        {quiz.className} • {quiz.questions?.length || 0} Soal • {quiz.timeLimit || 10} Menit
-                      </Text>
-                    </View>
-                    {isDone ? (
-                      <View style={[styles.doneBadge, { backgroundColor: '#10B981' + '20' }]}>
-                        <Text style={[styles.doneBadgeText, { color: '#10B981' }]}>Selesai</Text>
-                      </View>
-                    ) : (
-                      <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                    )}
-                  </Pressable>
-                );
-              })
-            )}
-          </View>
-        )}
-
-        {/* AI Practice Section */}
-        <Text style={[styles.chooseTitle, { color: colors.text }]}>Latihan Mandiri (AI)</Text>
-
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          {[
-            { icon: 'help-circle-outline', val: '5', label: 'Soal', color: PURPLE },
-            { icon: 'time-outline', val: '10 Min', label: 'Waktu', color: '#F59E0B' },
-            { icon: 'trophy-outline', val: '60%', label: 'Min Lulus', color: '#10B981' },
-          ].map((s, idx) => (
-            <View key={idx} style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name={s.icon as any} size={18} color={s.color} />
-              <Text style={[styles.statVal, { color: colors.text }]}>{s.val}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                  )}
+                </Pressable>
+              );
+            })
+          ) : (
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIconCircle, { backgroundColor: PURPLE + '10' }]}>
+                <Ionicons name="extension-puzzle-outline" size={50} color={PURPLE} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Kuis Belum Tersedia</Text>
+              <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
+                Belum ada kuis yang ditugaskan oleh guru di kelas kamu.
+              </Text>
             </View>
-          ))}
-        </View>
-
-        {/* Subject Grid */}
-        <View style={styles.subjectGrid}>
-          {SUBJECTS.map((subj) => (
-            <Pressable
-              key={subj.id}
-              style={[styles.subjectCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => handleSelectSubject(subj)}
-            >
-              <View style={[styles.subjectIconBox, { backgroundColor: subj.color + '15' }]}>
-                <Text style={styles.subjectIcon}>{subj.icon}</Text>
-              </View>
-              <Text style={[styles.subjectName, { color: colors.text }]}>{subj.name}</Text>
-              <Text style={[styles.subjectDesc, { color: colors.textSecondary }]}>{subj.desc}</Text>
-              <View style={[styles.subjectQuizBadge, { backgroundColor: subj.color + '15' }]}>
-                <Text style={[styles.subjectQuizText, { color: subj.color }]}>5 Soal</Text>
-              </View>
-            </Pressable>
-          ))}
+          )}
         </View>
       </ScrollView>
 
@@ -1452,6 +1422,12 @@ const styles = StyleSheet.create({
   scoreLabel: { fontSize: 10, fontWeight: 'bold', letterSpacing: 0.5, marginBottom: 4 },
   scoreValue: { fontSize: 20, fontWeight: 'bold', textAlign: 'center' },
   scoreDivider: { width: 1, height: 36 },
+
+  // Empty State Styles
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 40, paddingHorizontal: 30, paddingVertical: 20 },
+  emptyIconCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' },
+  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 22 },
 });
 
 export default QuizScreen;

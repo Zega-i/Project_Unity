@@ -337,6 +337,28 @@ export class TeacherController {
         }
       });
 
+      // Send notifications to enrolled students
+      try {
+        const classData = await prisma.class.findUnique({ where: { id: classId }, select: { name: true } });
+        const className = classData?.name || 'Kelas';
+        const enrolled = await prisma.classStudent.findMany({
+          where: { classId },
+          select: { studentId: true }
+        });
+        if (enrolled.length > 0) {
+          await prisma.studentNotification.createMany({
+            data: enrolled.map(s => ({
+              studentId: s.studentId,
+              title: "Materi Baru",
+              message: `Materi baru "${title}" telah diunggah di kelas ${className}. Yuk pelajari sekarang!`,
+              type: "NEW_MATERIAL",
+            }))
+          });
+        }
+      } catch (err) {
+        logger.error('Failed to create student notifications for new material', err);
+      }
+
       res.status(201).json({ success: true, data: material });
     } catch (error) {
       logger.error('Error adding material', error);
@@ -358,6 +380,29 @@ export class TeacherController {
           points: parseInt(points) || 100
         }
       });
+
+      // Send notifications to enrolled students
+      try {
+        const classData = await prisma.class.findUnique({ where: { id: classId }, select: { name: true } });
+        const className = classData?.name || 'Kelas';
+        const enrolled = await prisma.classStudent.findMany({
+          where: { classId },
+          select: { studentId: true }
+        });
+        if (enrolled.length > 0) {
+          const formattedDeadline = new Date(deadline).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          await prisma.studentNotification.createMany({
+            data: enrolled.map(s => ({
+              studentId: s.studentId,
+              title: "Tugas Baru",
+              message: `Tugas baru "${title}" telah dipublikasikan di kelas ${className}. Batas waktu: ${formattedDeadline}.`,
+              type: "SYSTEM",
+            }))
+          });
+        }
+      } catch (err) {
+        logger.error('Failed to create student notifications for new assignment', err);
+      }
 
       res.status(201).json({ success: true, data: assignment, message: "Tugas berhasil dipublikasikan" });
     } catch (error) {
@@ -441,6 +486,28 @@ export class TeacherController {
           }
         }
       });
+
+      // Send notifications to enrolled students
+      try {
+        const classData = await prisma.class.findUnique({ where: { id: classId }, select: { name: true } });
+        const className = classData?.name || 'Kelas';
+        const enrolled = await prisma.classStudent.findMany({
+          where: { classId },
+          select: { studentId: true }
+        });
+        if (enrolled.length > 0) {
+          await prisma.studentNotification.createMany({
+            data: enrolled.map(s => ({
+              studentId: s.studentId,
+              title: "Kuis Baru",
+              message: `Kuis baru "${title}" kini tersedia di kelas ${className}. Durasi: ${duration || 15} menit.`,
+              type: "SYSTEM",
+            }))
+          });
+        }
+      } catch (err) {
+        logger.error('Failed to create student notifications for new quiz', err);
+      }
 
       res.status(201).json({ success: true, data: quiz, message: "Kuis berhasil dibuat" });
     } catch (error) {

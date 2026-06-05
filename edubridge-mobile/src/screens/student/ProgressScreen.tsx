@@ -6,7 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useFocusEffect } from '@react-navigation/native';
-import { authAPI } from '../../services/api';
+import { authAPI, progressAPI } from '../../services/api';
 import { authStore } from '../../store/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 import { USE_MOCK_DATA } from '../../constants';
@@ -30,14 +30,36 @@ const ProgressScreen = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState({
+    overallProgress: 0,
+    totalMaterials: 0,
+    viewedMaterials: 0,
+    completedQuizzes: 0,
+    averageScore: 0,
+    weeklyActivities: [0, 0, 0, 0, 0, 0, 0],
+    subjectProgress: [] as any[]
+  });
 
   const loadData = async () => {
     try {
       const cached = authStore.getUserSync();
       if (cached) setUser(cached);
-      const res = await authAPI.getProfile();
-      setUser(res.data || res);
-    } catch {
+
+      const [profileRes, progressRes] = await Promise.all([
+        authAPI.getProfile(),
+        progressAPI.getMyProgress()
+      ]);
+
+      setUser(profileRes.data || profileRes);
+      console.log('[ProgressScreen] Loaded profileRes user:', JSON.stringify(profileRes.data || profileRes));
+      console.log('[ProgressScreen] Loaded progressRes success:', progressRes.success);
+      console.log('[ProgressScreen] Loaded progressRes data:', JSON.stringify(progressRes.data));
+      
+      if (progressRes.success && progressRes.data) {
+        setStats(progressRes.data);
+      }
+    } catch (err) {
+      console.log('[ProgressScreen] Error loading progress data:', err);
       const cached = authStore.getUserSync();
       if (cached) setUser(cached);
     } finally {
@@ -65,7 +87,7 @@ const ProgressScreen = () => {
     );
   }
 
-  const hasClass = !!(user?.className || user?.['class']);
+  const hasClass = !!(user?.className || user?.['class']) || (stats.subjectProgress && stats.subjectProgress.length > 0);
 
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
@@ -81,9 +103,9 @@ const ProgressScreen = () => {
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           {[
-            { icon: 'book-outline',    color: '#6366F1', val: USE_MOCK_DATA ? '14' : '0', label: 'Materi Dibaca' },
-            { icon: 'trophy-outline',  color: '#F59E0B', val: USE_MOCK_DATA ? '9' : '0', label: 'Kuis Selesai'  },
-            { icon: 'stats-chart',     color: '#10B981', val: USE_MOCK_DATA ? '86%' : '0%', label: 'Skor Rata-rata' },
+            { icon: 'book-outline',    color: '#6366F1', val: String(stats.viewedMaterials), label: 'Materi Dibaca' },
+            { icon: 'trophy-outline',  color: '#F59E0B', val: String(stats.completedQuizzes), label: 'Kuis Selesai'  },
+            { icon: 'stats-chart',     color: '#10B981', val: `${stats.averageScore}%`, label: 'Skor Rata-rata' },
           ].map((item, idx) => (
             <View key={idx} style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={[styles.summaryIconBox, { backgroundColor: item.color + '18' }]}>
@@ -97,10 +119,11 @@ const ProgressScreen = () => {
 
         {/* Weekly Bar Chart */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktivitas 7 Hari (Jam)</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktivitas 7 Hari (Aktivitas)</Text>
           <View style={[styles.barChart, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {(USE_MOCK_DATA ? [4, 8, 2, 9, 6, 1, 5] : WEEK_DATA).map((val, idx) => {
-              const barH = val === 0 ? 4 : Math.max(4, (val / 10) * BAR_MAX_H);
+            {(stats?.weeklyActivities || [0, 0, 0, 0, 0, 0, 0]).map((val, idx) => {
+              const maxVal = Math.max(1, ...(stats?.weeklyActivities || [0, 0, 0, 0, 0, 0, 0]));
+              const barH = val === 0 ? 4 : Math.max(4, (val / maxVal) * BAR_MAX_H);
               const barColor = val === 0 ? colors.border : PURPLE;
               return (
                 <View key={idx} style={styles.barColumn}>
@@ -116,13 +139,16 @@ const ProgressScreen = () => {
         {/* Subject Progress */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Progress per Mata Pelajaran</Text>
-          {USE_MOCK_DATA ? (
+          {stats?.subjectProgress && stats.subjectProgress.length > 0 ? (
             <View style={{ gap: 12 }}>
-              {MOCK_SUBJECT_PROGRESS.map((item) => (
+              {stats.subjectProgress.map((item) => (
                 <View key={item.id} style={[styles.subjectProgressCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.subjectHeader}>
-                    <Text style={[styles.subjectName, { color: colors.text }]}>{item.name}</Text>
-                    <Text style={[styles.subjectCount, { color: colors.textSecondary }]}>{item.count} materi</Text>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={[styles.subjectName, { color: colors.text }]}>{item.name}</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>{item.className}</Text>
+                    </View>
+                    <Text style={[styles.subjectCount, { color: colors.textSecondary }]}>{item.count} selesai</Text>
                   </View>
                   <View style={styles.progressBarWrapper}>
                     <View style={[styles.progressBarBg, { backgroundColor: colors.border }]}>

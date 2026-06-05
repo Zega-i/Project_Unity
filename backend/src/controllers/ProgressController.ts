@@ -14,7 +14,13 @@ export class ProgressController {
           studentId,
           class: { archived: false }
         },
-        select: { classId: true }
+        include: {
+          class: {
+            include: {
+              materials: true
+            }
+          }
+        }
       });
       const classIds = enrollments.map(e => e.classId);
 
@@ -29,14 +35,127 @@ export class ProgressController {
         }
       });
 
-      const progress = totalMaterials > 0 ? (viewedMaterials / totalMaterials) * 100 : 0;
+      const overallProgress = totalMaterials > 0 ? (viewedMaterials / totalMaterials) * 100 : 0;
+
+      // 1. Kuis Selesai
+      const completedQuizzes = await prisma.quizSession.count({
+        where: {
+          studentId,
+          status: "COMPLETED"
+        }
+      });
+
+      // 2. Skor Rata-rata
+      const quizSessions = await prisma.quizSession.findMany({
+        where: {
+          studentId,
+          status: "COMPLETED",
+          score: { not: null }
+        },
+        select: { score: true }
+      });
+      let averageScore = 0;
+      if (quizSessions.length > 0) {
+        const totalScore = quizSessions.reduce((sum, s) => sum + (s.score || 0), 0);
+        averageScore = Math.round(totalScore / quizSessions.length);
+      }
+
+      // 3. Aktivitas 7 Hari
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const viewsThisWeek = await prisma.materialView.findMany({
+        where: {
+          studentId,
+          viewedAt: { gte: startOfWeek }
+        },
+        select: { viewedAt: true }
+      });
+
+      const quizzesThisWeek = await prisma.quizSession.findMany({
+        where: {
+          studentId,
+          status: "COMPLETED",
+          endedAt: { gte: startOfWeek }
+        },
+        select: { endedAt: true }
+      });
+
+      const weeklyActivities = [0, 0, 0, 0, 0, 0, 0]; // Mon, Tue, Wed, Thu, Fri, Sat, Sun
+      viewsThisWeek.forEach(v => {
+        const d = new Date(v.viewedAt);
+        let dayIndex = d.getDay() - 1; // 0 = Mon, 6 = Sun
+        if (dayIndex < 0) dayIndex = 6;
+        if (dayIndex >= 0 && dayIndex < 7) {
+          weeklyActivities[dayIndex]++;
+        }
+      });
+      quizzesThisWeek.forEach(q => {
+        if (q.endedAt) {
+          const d = new Date(q.endedAt);
+          let dayIndex = d.getDay() - 1;
+          if (dayIndex < 0) dayIndex = 6;
+          if (dayIndex >= 0 && dayIndex < 7) {
+            weeklyActivities[dayIndex]++;
+          }
+        }
+      });
+
+      // 4. Progress per Mata Pelajaran
+      const subjectProgress: any[] = [];
+      const colorsList = ['#6366F1', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
+      
+      for (let i = 0; i < enrollments.length; i++) {
+        const cls = enrollments[i].class;
+        const totalClassMaterials = cls.materials.length;
+        
+        const viewedClassMaterials = await prisma.materialView.count({
+          where: {
+            studentId,
+            material: { classId: cls.id }
+          }
+        });
+
+        const totalClassQuizzes = await prisma.quiz.count({
+          where: { classId: cls.id }
+        });
+
+        const completedClassQuizzes = await prisma.quizSession.count({
+          where: {
+            studentId,
+            classId: cls.id,
+            status: "COMPLETED"
+          }
+        });
+
+        const totalItems = totalClassMaterials + totalClassQuizzes;
+        const completedItems = viewedClassMaterials + completedClassQuizzes;
+        const progressPct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        
+        subjectProgress.push({
+          id: cls.id,
+          name: cls.subject || cls.name,
+          className: cls.name,
+          progress: progressPct,
+          color: colorsList[i % colorsList.length],
+          count: `${completedItems}/${totalItems}`
+        });
+      }
 
       res.json({
         success: true,
         data: {
-          overallProgress: Math.round(progress),
+          overallProgress: Math.round(overallProgress),
           totalMaterials,
-          viewedMaterials
+          viewedMaterials,
+          completedQuizzes,
+          averageScore,
+          weeklyActivities,
+          subjectProgress
         }
       });
     } catch (error) {

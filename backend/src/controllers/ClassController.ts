@@ -50,7 +50,7 @@ export class ClassController {
   static async getMyClasses(req: Request, res: Response, next: NextFunction) {
     try {
       const studentId = (req as any).user.id;
-      const classes = await prisma.classStudent.findMany({
+      const enrollments = await prisma.classStudent.findMany({
         where: { studentId },
         include: {
           class: {
@@ -62,7 +62,40 @@ export class ClassController {
         }
       });
 
-      res.json({ success: true, data: classes.map(c => c.class) });
+      // Get all materials viewed by this student
+      const materialViews = await prisma.materialView.findMany({
+        where: { studentId },
+        select: { materialId: true }
+      });
+      const viewedMaterialIds = new Set(materialViews.map(mv => mv.materialId));
+
+      const classesWithProgress = enrollments.map(e => {
+        const cls = e.class;
+        const totalMaterials = cls.materials.length;
+        
+        let progress = 0;
+        if (totalMaterials > 0) {
+          const viewedCount = cls.materials.filter((m: any) => viewedMaterialIds.has(m.id)).length;
+          progress = Math.round((viewedCount / totalMaterials) * 100);
+        }
+
+        return {
+          id: cls.id,
+          name: cls.name,
+          code: cls.code,
+          description: cls.description,
+          teacherId: cls.teacherId,
+          grade: cls.grade,
+          subject: cls.subject,
+          archived: cls.archived,
+          createdAt: cls.createdAt,
+          updatedAt: cls.updatedAt,
+          teacher: cls.teacher,
+          progress
+        };
+      });
+
+      res.json({ success: true, data: classesWithProgress });
     } catch (error) {
       next(error);
     }

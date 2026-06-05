@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, SafeAreaView, Pressable,
   ScrollView, Dimensions, ActivityIndicator,
   Modal, Share, TouchableOpacity, RefreshControl,
-  Animated, PanResponder,
+  Animated, PanResponder, TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -11,7 +11,7 @@ import Constants from 'expo-constants';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 
-import { teacherAPI } from '../../services/api';
+import { teacherAPI, classAPI } from '../../services/api';
 import PremiumModal from '../../components/PremiumModal';
 
 const GREEN = '#16A34A';
@@ -29,6 +29,22 @@ const TeacherClassDetailScreen = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Discussion States
+  const [threads, setThreads] = useState<any[]>([]);
+  const [loadingThreads, setLoadingThreads] = useState(false);
+  const [showCreateThreadModal, setShowCreateThreadModal] = useState(false);
+  const [newThreadTitle, setNewThreadTitle] = useState('');
+  const [newThreadCategory, setNewThreadCategory] = useState('UMUM');
+  const [newThreadContent, setNewThreadContent] = useState('');
+  const [creatingThread, setCreatingThread] = useState(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('SEMUA');
+  
+  const [selectedThread, setSelectedThread] = useState<any | null>(null);
+  const [replies, setReplies] = useState<any[]>([]);
+  const [loadingReplies, setLoadingReplies] = useState(false);
+  const [newReplyContent, setNewReplyContent] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
   
   // Student List Modal States
   const [showStudentsModal, setShowStudentsModal] = useState(false);
@@ -97,6 +113,103 @@ const TeacherClassDetailScreen = () => {
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState('');
 
+  const fetchDiscussions = async () => {
+    if (!classData?.id) return;
+    setLoadingThreads(true);
+    try {
+      const res = await classAPI.getDiscussions(classData.id);
+      if (res.success) {
+        setThreads(res.data);
+      }
+    } catch (error) {
+      console.log('Error fetching discussions:', error);
+    } finally {
+      setLoadingThreads(false);
+    }
+  };
+
+  const handleCreateThread = async () => {
+    if (!newThreadTitle.trim() || !newThreadContent.trim()) {
+      setErrorModalMessage('Judul dan isi diskusi tidak boleh kosong');
+      setErrorModalVisible(true);
+      return;
+    }
+    setCreatingThread(true);
+    try {
+      const res = await classAPI.createDiscussion(classData.id, {
+        title: newThreadTitle.trim(),
+        category: newThreadCategory,
+        content: newThreadContent.trim(),
+      });
+      if (res.success) {
+        setNewThreadTitle('');
+        setNewThreadContent('');
+        setNewThreadCategory('UMUM');
+        setShowCreateThreadModal(false);
+        setSuccessModalTitle('Berhasil');
+        setSuccessModalMessage('Diskusi baru berhasil ditambahkan.');
+        setSuccessModalVisible(true);
+        fetchDiscussions();
+      }
+    } catch (error) {
+      console.log('Error creating thread:', error);
+      setErrorModalMessage('Gagal membuat diskusi baru. Silakan coba lagi.');
+      setErrorModalVisible(true);
+    } finally {
+      setCreatingThread(false);
+    }
+  };
+
+  const fetchReplies = async (threadId: string) => {
+    setLoadingReplies(true);
+    try {
+      const res = await classAPI.getReplies(threadId);
+      if (res.success) {
+        setReplies(res.data);
+      }
+    } catch (error) {
+      console.log('Error fetching replies:', error);
+    } finally {
+      setLoadingReplies(false);
+    }
+  };
+
+  const handleCreateReply = async () => {
+    if (!selectedThread || !newReplyContent.trim()) return;
+    setSubmittingReply(true);
+    try {
+      const res = await classAPI.createReply(selectedThread.id, newReplyContent.trim());
+      if (res.success) {
+        setNewReplyContent('');
+        // Refresh replies
+        await fetchReplies(selectedThread.id);
+        // Refresh threads to update reply count
+        fetchDiscussions();
+      }
+    } catch (error) {
+      console.log('Error creating reply:', error);
+      setErrorModalMessage('Gagal mengirim balasan. Silakan coba lagi.');
+      setErrorModalVisible(true);
+    } finally {
+      setSubmittingReply(false);
+    }
+  };
+
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins} menit lalu`;
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    if (diffDays < 7) return `${diffDays} hari lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
   const fetchClassContent = async () => {
     if (!classData?.id) return;
     setLoading(true);
@@ -110,6 +223,8 @@ const TeacherClassDetailScreen = () => {
       } else if (activeTab === 'Quizzes') {
         const res = await teacherAPI.getClassQuizzes(classData.id);
         if (res.success) setQuizzes(res.data);
+      } else if (activeTab === 'Discussions') {
+        await fetchDiscussions();
       }
     } catch (error) {
       console.log('Error fetching class content:', error);
@@ -185,6 +300,8 @@ const TeacherClassDetailScreen = () => {
     { id: 'Quizzes', icon: 'extension-puzzle', label: 'Kuis' },
     { id: 'Discussions', icon: 'chatbubbles', label: 'Diskusi' },
   ];
+
+  const filteredThreads = threads.filter(t => selectedCategoryFilter === 'SEMUA' || t.category === selectedCategoryFilter);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
@@ -327,6 +444,128 @@ const TeacherClassDetailScreen = () => {
             ))}
           </View>
         )}
+
+        {activeTab === 'Discussions' && (
+          <View style={styles.listSection}>
+            {/* Category Filter Pills */}
+            <View style={styles.filterPillsWrapper}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterPillsContainer}>
+                {['SEMUA', 'PENGUMUMAN', 'TANYA_JAWAB', 'UMUM'].map((cat) => {
+                  const isActive = selectedCategoryFilter === cat;
+                  return (
+                    <Pressable
+                      key={cat}
+                      onPress={() => {
+                        triggerLight();
+                        setSelectedCategoryFilter(cat);
+                      }}
+                      style={[
+                        styles.filterPill,
+                        {
+                          backgroundColor: isActive ? GREEN : colors.card,
+                          borderColor: isActive ? GREEN : colors.border,
+                        }
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterPillText,
+                          {
+                            color: isActive ? '#FFFFFF' : colors.textSecondary,
+                            fontWeight: isActive ? '600' : 'bold',
+                          }
+                        ]}
+                      >
+                        {cat === 'SEMUA' ? 'Semua' : cat === 'PENGUMUMAN' ? 'Pengumuman' : cat === 'TANYA_JAWAB' ? 'Tanya Jawab' : 'Umum'}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {loadingThreads ? (
+              <ActivityIndicator color={GREEN} style={{ marginTop: 20 }} />
+            ) : filteredThreads.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="chatbubbles-outline" size={48} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary, marginTop: 12 }]}>
+                  Belum ada diskusi {selectedCategoryFilter !== 'SEMUA' ? 'di kategori ini' : ''}.
+                </Text>
+              </View>
+            ) : (
+              filteredThreads.map(t => {
+                let categoryColor = '#6B7280';
+                let categoryBg = colors.border;
+                if (t.category === 'PENGUMUMAN') {
+                  categoryColor = '#EF4444';
+                  categoryBg = '#FEE2E2';
+                } else if (t.category === 'TANYA_JAWAB') {
+                  categoryColor = '#F59E0B';
+                  categoryBg = '#FEF3C7';
+                } else if (t.category === 'UMUM') {
+                  categoryColor = GREEN;
+                  categoryBg = '#DCFCE7';
+                }
+
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    key={t.id}
+                    style={[styles.threadCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => {
+                      triggerLight();
+                      setSelectedThread(t);
+                      fetchReplies(t.id);
+                    }}
+                  >
+                    <View style={styles.threadHeader}>
+                      <View style={[styles.avatarCircle, { backgroundColor: t.authorRole === 'TEACHER' ? GREEN + '20' : '#4F46E520' }]}>
+                        <Text style={[styles.avatarText, { color: t.authorRole === 'TEACHER' ? GREEN : '#4F46E5' }]}>
+                          {t.authorName ? t.authorName.charAt(0).toUpperCase() : 'U'}
+                        </Text>
+                      </View>
+                      <View style={styles.threadAuthorInfo}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={[styles.threadAuthorName, { color: colors.text }]} numberOfLines={1}>
+                            {t.authorName}
+                          </Text>
+                          <View style={[styles.roleBadge, { backgroundColor: t.authorRole === 'TEACHER' ? GREEN + '15' : colors.border }]}>
+                            <Text style={[styles.roleBadgeText, { color: t.authorRole === 'TEACHER' ? GREEN : colors.textSecondary }]}>
+                              {t.authorRole === 'TEACHER' ? 'Guru' : 'Siswa'}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.threadTime, { color: colors.textSecondary }]}>
+                          {formatRelativeTime(t.createdAt)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={[styles.threadTitleText, { color: colors.text }]}>{t.title}</Text>
+                    <Text style={[styles.threadContentPreview, { color: colors.textSecondary }]} numberOfLines={2}>
+                      {t.content}
+                    </Text>
+
+                    <View style={styles.threadFooter}>
+                      <View style={[styles.categoryTag, { backgroundColor: categoryBg }]}>
+                        <Text style={[styles.categoryTagText, { color: categoryColor }]}>
+                          {t.category === 'PENGUMUMAN' ? 'PENGUMUMAN' : t.category === 'TANYA_JAWAB' ? 'TANYA JAWAB' : 'UMUM'}
+                        </Text>
+                      </View>
+                      <View style={styles.replyCountContainer}>
+                        <Ionicons name="chatbubble-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.replyCountText, { color: colors.textSecondary }]}>
+                          {t._count?.replies ?? 0} Balasan
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </View>
+        )}
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -418,6 +657,8 @@ const TeacherClassDetailScreen = () => {
               navigation.navigate('TeacherAddAssignment', { classId: classData?.id });
             } else if (activeTab === 'Quizzes') {
               navigation.navigate('TeacherAddQuiz', { classId: classData?.id });
+            } else if (activeTab === 'Discussions') {
+              setShowCreateThreadModal(true);
             } else {
               setInfoModalMessage('Fitur diskusi segera hadir!');
               setInfoModalVisible(true);
@@ -733,6 +974,258 @@ const TeacherClassDetailScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Create Discussion Thread Modal */}
+      <Modal
+        visible={showCreateThreadModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCreateThreadModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCreateThreadModal(false)} />
+          <View style={[styles.detailModalSheet, { backgroundColor: colors.card }]}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <View style={[styles.sheetIconBox, { backgroundColor: GREEN + '15' }]}>
+                <Ionicons name="chatbubbles" size={28} color={GREEN} />
+              </View>
+              <Text style={[styles.sheetTitle, { color: colors.text }]}>Buat Diskusi Baru</Text>
+              <Pressable style={styles.sheetClose} onPress={() => setShowCreateThreadModal(false)}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Judul Diskusi</Text>
+              <TextInput
+                style={[styles.modalTextInput, { backgroundColor: colors.border, color: colors.text }]}
+                placeholder="Masukkan judul diskusi..."
+                placeholderTextColor={colors.textSecondary}
+                value={newThreadTitle}
+                onChangeText={setNewThreadTitle}
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 16 }]}>Kategori</Text>
+              <View style={styles.modalCategoryContainer}>
+                {['UMUM', 'TANYA_JAWAB', 'PENGUMUMAN'].map((cat) => {
+                  const isSelected = newThreadCategory === cat;
+                  let color = GREEN;
+                  if (cat === 'PENGUMUMAN') color = '#EF4444';
+                  if (cat === 'TANYA_JAWAB') color = '#F59E0B';
+
+                  return (
+                    <Pressable
+                      key={cat}
+                      onPress={() => setNewThreadCategory(cat)}
+                      style={[
+                        styles.categorySelectPill,
+                        {
+                          borderColor: isSelected ? color : colors.border,
+                          backgroundColor: isSelected ? color + '15' : 'transparent',
+                        }
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.categorySelectPillText,
+                          {
+                            color: isSelected ? color : colors.textSecondary,
+                            fontWeight: isSelected ? '700' : 'normal',
+                          }
+                        ]}
+                      >
+                        {cat === 'UMUM' ? 'Umum' : cat === 'TANYA_JAWAB' ? 'Tanya Jawab' : 'Pengumuman'}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 16 }]}>Isi / Deskripsi Diskusi</Text>
+              <TextInput
+                style={[styles.modalTextInput, { backgroundColor: colors.border, color: colors.text, height: 100, textAlignVertical: 'top' }]}
+                placeholder="Tuliskan pertanyaan atau informasi detail di sini..."
+                placeholderTextColor={colors.textSecondary}
+                value={newThreadContent}
+                onChangeText={setNewThreadContent}
+                multiline
+                numberOfLines={4}
+              />
+
+              <Pressable
+                onPress={handleCreateThread}
+                disabled={creatingThread}
+                style={[styles.submitButton, { backgroundColor: GREEN, marginTop: 24 }]}
+              >
+                {creatingThread ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Buat Diskusi</Text>
+                )}
+              </Pressable>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Discussion Thread Detail & Replies Modal */}
+      <Modal
+        visible={!!selectedThread}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedThread(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedThread(null)} />
+          <View style={[styles.detailModalSheet, { backgroundColor: colors.card, height: '80%' }]}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <View style={[styles.sheetIconBox, { backgroundColor: GREEN + '15' }]}>
+                <Ionicons name="chatbubbles-outline" size={28} color={GREEN} />
+              </View>
+              <Text style={[styles.sheetTitle, { color: colors.text }]} numberOfLines={1}>Diskusi Kelas</Text>
+              <Pressable style={styles.sheetClose} onPress={() => setSelectedThread(null)}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            {selectedThread && (
+              <View style={{ flex: 1 }}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }} style={{ flex: 1 }}>
+                  {/* Original Thread Content */}
+                  <View style={[styles.threadDetailMain, { borderBottomColor: colors.border }]}>
+                    <View style={styles.threadHeader}>
+                      <View style={[styles.avatarCircle, { backgroundColor: selectedThread.authorRole === 'TEACHER' ? GREEN + '20' : '#4F46E520' }]}>
+                        <Text style={[styles.avatarText, { color: selectedThread.authorRole === 'TEACHER' ? GREEN : '#4F46E5' }]}>
+                          {selectedThread.authorName ? selectedThread.authorName.charAt(0).toUpperCase() : 'U'}
+                        </Text>
+                      </View>
+                      <View style={styles.threadAuthorInfo}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={[styles.threadAuthorName, { color: colors.text, fontWeight: '700' }]}>
+                            {selectedThread.authorName}
+                          </Text>
+                          <View style={[styles.roleBadge, { backgroundColor: selectedThread.authorRole === 'TEACHER' ? GREEN + '15' : colors.border }]}>
+                            <Text style={[styles.roleBadgeText, { color: selectedThread.authorRole === 'TEACHER' ? GREEN : colors.textSecondary }]}>
+                              {selectedThread.authorRole === 'TEACHER' ? 'Guru' : 'Siswa'}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.threadTime, { color: colors.textSecondary }]}>
+                          {formatRelativeTime(selectedThread.createdAt)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={[styles.threadDetailTitle, { color: colors.text, marginTop: 12 }]}>
+                      {selectedThread.title}
+                    </Text>
+                    <Text style={[styles.threadDetailContent, { color: colors.text, marginTop: 8 }]}>
+                      {selectedThread.content}
+                    </Text>
+
+                    <View style={{ marginTop: 12, flexDirection: 'row' }}>
+                      {(() => {
+                        let categoryColor = '#6B7280';
+                        let categoryBg = colors.border;
+                        if (selectedThread.category === 'PENGUMUMAN') {
+                          categoryColor = '#EF4444';
+                          categoryBg = '#FEE2E2';
+                        } else if (selectedThread.category === 'TANYA_JAWAB') {
+                          categoryColor = '#F59E0B';
+                          categoryBg = '#FEF3C7';
+                        } else if (selectedThread.category === 'UMUM') {
+                          categoryColor = GREEN;
+                          categoryBg = '#DCFCE7';
+                        }
+                        return (
+                          <View style={[styles.categoryTag, { backgroundColor: categoryBg }]}>
+                            <Text style={[styles.categoryTagText, { color: categoryColor }]}>
+                              {selectedThread.category === 'PENGUMUMAN' ? 'PENGUMUMAN' : selectedThread.category === 'TANYA_JAWAB' ? 'TANYA JAWAB' : 'UMUM'}
+                            </Text>
+                          </View>
+                        );
+                      })()}
+                    </View>
+                  </View>
+
+                  {/* Replies List */}
+                  <Text style={[styles.sectionTitleLabel, { color: colors.textSecondary, marginTop: 16, marginBottom: 12 }]}>
+                    Balasan ({replies.length})
+                  </Text>
+
+                  {loadingReplies ? (
+                    <ActivityIndicator color={GREEN} style={{ marginTop: 12 }} />
+                  ) : replies.length === 0 ? (
+                    <Text style={{ textAlign: 'center', marginVertical: 16, color: colors.textSecondary, fontSize: 13 }}>
+                      Belum ada balasan. Jadilah yang pertama membalas!
+                    </Text>
+                  ) : (
+                    replies.map(r => (
+                      <View key={r.id} style={[styles.replyCard, { borderBottomColor: colors.border }]}>
+                        <View style={styles.threadHeader}>
+                          <View style={[styles.avatarCircle, { width: 32, height: 32, borderRadius: 16, backgroundColor: r.authorRole === 'TEACHER' ? GREEN + '20' : '#4F46E520' }]}>
+                            <Text style={[styles.avatarText, { fontSize: 13, color: r.authorRole === 'TEACHER' ? GREEN : '#4F46E5' }]}>
+                              {r.authorName ? r.authorName.charAt(0).toUpperCase() : 'U'}
+                            </Text>
+                          </View>
+                          <View style={styles.threadAuthorInfo}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Text style={[styles.threadAuthorName, { color: colors.text, fontSize: 13, fontWeight: '600' }]} numberOfLines={1}>
+                                {r.authorName}
+                              </Text>
+                              <View style={[styles.roleBadge, { paddingHorizontal: 4, paddingVertical: 1, backgroundColor: r.authorRole === 'TEACHER' ? GREEN + '15' : colors.border }]}>
+                                <Text style={[styles.roleBadgeText, { fontSize: 9, color: r.authorRole === 'TEACHER' ? GREEN : colors.textSecondary }]}>
+                                  {r.authorRole === 'TEACHER' ? 'Guru' : 'Siswa'}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text style={[styles.threadTime, { fontSize: 10, color: colors.textSecondary }]}>
+                              {formatRelativeTime(r.createdAt)}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.replyContentText, { color: colors.text, marginTop: 6, marginLeft: 38 }]}>
+                          {r.content}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+
+                {/* Reply Form at the Bottom */}
+                <View style={[styles.replyInputWrapper, { borderTopColor: colors.border }]}>
+                  <TextInput
+                    style={[styles.replyInput, { backgroundColor: colors.border, color: colors.text }]}
+                    placeholder="Tulis balasan..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={newReplyContent}
+                    onChangeText={setNewReplyContent}
+                    multiline
+                  />
+                  <Pressable
+                    onPress={handleCreateReply}
+                    disabled={submittingReply || !newReplyContent.trim()}
+                    style={[
+                      styles.sendReplyBtn,
+                      {
+                        backgroundColor: newReplyContent.trim() ? GREEN : colors.border,
+                      }
+                    ]}
+                  >
+                    {submittingReply ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Ionicons name="send" size={16} color={newReplyContent.trim() ? '#FFFFFF' : colors.textSecondary} />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -801,6 +1294,43 @@ const styles = StyleSheet.create({
   studentInfo: { flex: 1 },
   studentName: { fontSize: 15, fontWeight: '600' },
   studentEmail: { fontSize: 12, marginTop: 2 },
+  filterPillsWrapper: { marginBottom: 16 },
+  filterPillsContainer: { gap: 8, paddingRight: 16 },
+  filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },
+  filterPillText: { fontSize: 13 },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
+  emptyText: { fontSize: 14, textAlign: 'center' },
+  threadCard: { borderRadius: 20, padding: 16, borderWidth: 1, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  threadHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 16, fontWeight: 'bold' },
+  threadAuthorInfo: { flex: 1 },
+  threadAuthorName: { fontSize: 14, fontWeight: '600' },
+  roleBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  roleBadgeText: { fontSize: 10, fontWeight: '600' },
+  threadTime: { fontSize: 11, marginTop: 1 },
+  threadTitleText: { fontSize: 16, fontWeight: '700', marginTop: 12, marginBottom: 6 },
+  threadContentPreview: { fontSize: 13, lineHeight: 18 },
+  threadFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.02)' },
+  categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  categoryTagText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  replyCountContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  replyCountText: { fontSize: 12, fontWeight: '600' },
+  inputLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  modalTextInput: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, minHeight: 48 },
+  modalCategoryContainer: { flexDirection: 'row', gap: 8 },
+  categorySelectPill: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  categorySelectPillText: { fontSize: 12 },
+  submitButton: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  submitButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: 'bold' },
+  threadDetailMain: { paddingBottom: 16, borderBottomWidth: 1 },
+  threadDetailTitle: { fontSize: 18, fontWeight: 'bold' },
+  threadDetailContent: { fontSize: 14, lineHeight: 22 },
+  replyCard: { paddingVertical: 14, borderBottomWidth: 1 },
+  replyContentText: { fontSize: 13, lineHeight: 20 },
+  replyInputWrapper: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderTopWidth: 1, gap: 10 },
+  replyInput: { flex: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, fontSize: 13, maxHeight: 80 },
+  sendReplyBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 });
 
 export default TeacherClassDetailScreen;

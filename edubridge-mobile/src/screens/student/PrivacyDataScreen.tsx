@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  SafeAreaView, StatusBar,
+  SafeAreaView, StatusBar, Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -22,6 +22,22 @@ const PrivacyDataScreen = () => {
   const navigation = useNavigation<any>();
   const { colors, isDarkMode } = useTheme();
   const { triggerLight } = useHapticFeedback();
+
+  const handleDownloadPrivacy = () => {
+    triggerLight();
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://edubridge.up.railway.app/api';
+    const privacyUrl = `${apiUrl}/privacy`;
+    Linking.openURL(privacyUrl).catch(err => {
+      console.log('Failed to open privacy URL:', err);
+    });
+  };
+
+  const handleContactPrivacy = () => {
+    triggerLight();
+    Linking.openURL('mailto:edubridge56@gmail.com').catch(err => {
+      console.log('Failed to open email client:', err);
+    });
+  };
 
   const sections: Section[] = [
     {
@@ -77,7 +93,7 @@ const PrivacyDataScreen = () => {
       icon: 'mail',
       color: '#EC4899',
       content: [
-        '📧 Email: privacy@edubridge.id',
+        '📧 Email: edubridge56@gmail.com',
         '📞 Telepon: (021) 1234-5678',
         '⏰ Jam Operasional: Senin-Jumat, 09:00-17:00 WIB',
         '📬 Alamat: Jl. Pendidikan No. 123, Jakarta, Indonesia',
@@ -141,12 +157,12 @@ const PrivacyDataScreen = () => {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <Pressable style={[styles.downloadBtn, { borderColor: colors.primary }]} onPress={() => triggerLight()}>
+          <Pressable style={[styles.downloadBtn, { borderColor: colors.primary }]} onPress={handleDownloadPrivacy}>
             <Ionicons name="download-outline" size={20} color={colors.primary} />
             <Text style={[styles.downloadBtnText, { color: colors.primary }]}>Unduh Kebijakan Privasi (PDF)</Text>
           </Pressable>
 
-          <Pressable style={styles.contactBtn} onPress={() => triggerLight()}>
+          <Pressable style={styles.contactBtn} onPress={handleContactPrivacy}>
             <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
             <Text style={styles.contactBtnText}>Hubungi Tim Privasi</Text>
           </Pressable>

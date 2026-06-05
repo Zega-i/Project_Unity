@@ -13,6 +13,7 @@ import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
 import { authStore } from '../../store/authStore';
 import { USE_MOCK_DATA } from '../../constants';
+import PremiumModal from '../../components/PremiumModal';
 
 const PURPLE = '#7C3AED';
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -76,6 +77,28 @@ const AITutorScreen = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [historyVisible, setHistoryVisible] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ visible: boolean; sessionId: string | null }>({ visible: false, sessionId: null });
+
+  const handleDeleteSession = async () => {
+    const sessionId = deleteModal.sessionId;
+    if (!sessionId) return;
+    try {
+      const userData = authStore.getUserSync();
+      if (!userData?.id) return;
+      const userHistoryKey = `ai_tutor_history_${userData.id}`;
+      const filtered = sessions.filter(s => s.id !== sessionId);
+      setSessions(filtered);
+      await AsyncStorage.setItem(userHistoryKey, JSON.stringify(filtered));
+      if (currentSessionId === sessionId) {
+        setMessages([INITIAL_MESSAGE]);
+        setCurrentSessionId(null);
+      }
+    } catch (err) {
+      console.log('Error deleting session:', err);
+    } finally {
+      setDeleteModal({ visible: false, sessionId: null });
+    }
+  };
 
   const flatListRef = useRef<FlatList>(null);
   const panelAnim = useRef(new Animated.Value(-PANEL_WIDTH)).current;
@@ -202,7 +225,10 @@ const AITutorScreen = () => {
     triggerLight();
     if (loading) return;
 
-    if (chip === 'Beri contoh soal') {
+    // Check if we have any active subject/topic from route params OR if the student has already sent messages
+    const hasContext = !!(subject || topic || messages.some(m => m.isUser));
+
+    if (chip === 'Beri contoh soal' && !hasContext) {
       const ts = Date.now();
       setMessages(prev => [
         ...prev,
@@ -210,7 +236,7 @@ const AITutorScreen = () => {
         { id: String(ts + 1), text: 'Mohon maaf, Anda belum memberikan informasi kepada saya terkait materi apa yang ingin kita bahas! Silakan sebutkan mata pelajaran atau topik yang ingin kamu pelajari terlebih dahulu.', isUser: false },
       ]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    } else if (chip === 'Cara menyelesaikan') {
+    } else if (chip === 'Cara menyelesaikan' && !hasContext) {
       const ts = Date.now();
       setMessages(prev => [
         ...prev,
@@ -334,34 +360,55 @@ const AITutorScreen = () => {
                 </View>
               ) : (
                 sessions.map(session => (
-                  <Pressable
+                  <View
                     key={session.id}
                     style={[
-                      styles.sessionItem,
+                      styles.sessionItemContainer,
                       { borderBottomColor: colors.border },
                       currentSessionId === session.id && { backgroundColor: PURPLE + '12' },
                     ]}
-                    onPress={() => loadSession(session)}
                   >
-                    <Ionicons
-                      name="chatbubble-ellipses-outline"
-                      size={15}
-                      color={currentSessionId === session.id ? PURPLE : colors.textSecondary}
-                      style={{ marginRight: 10, marginTop: 2, flexShrink: 0 }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.sessionTitle, { color: currentSessionId === session.id ? PURPLE : colors.text }]} numberOfLines={2}>
-                        {session.title}
-                      </Text>
-                      <Text style={[styles.sessionDate, { color: colors.textSecondary }]}>{formatDate(session.createdAt)}</Text>
-                    </View>
-                  </Pressable>
+                    <Pressable
+                      style={styles.sessionItemPressable}
+                      onPress={() => loadSession(session)}
+                    >
+                      <Ionicons
+                        name="chatbubble-ellipses-outline"
+                        size={15}
+                        color={currentSessionId === session.id ? PURPLE : colors.textSecondary}
+                        style={{ marginRight: 10, marginTop: 2, flexShrink: 0 }}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.sessionTitle, { color: currentSessionId === session.id ? PURPLE : colors.text }]} numberOfLines={2}>
+                          {session.title}
+                        </Text>
+                        <Text style={[styles.sessionDate, { color: colors.textSecondary }]}>{formatDate(session.createdAt)}</Text>
+                      </View>
+                    </Pressable>
+                    <Pressable
+                      style={styles.moreBtn}
+                      onPress={() => { triggerLight(); setDeleteModal({ visible: true, sessionId: session.id }); }}
+                    >
+                      <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
+                    </Pressable>
+                  </View>
                 ))
               )}
             </ScrollView>
           </Animated.View>
         </View>
       )}
+      <PremiumModal
+        visible={deleteModal.visible}
+        type="warning"
+        title="Hapus Obrolan?"
+        message="Riwayat obrolan ini akan dihapus secara permanen. Yakin?"
+        confirmText="Hapus"
+        cancelText="Batal"
+        onConfirm={handleDeleteSession}
+        onCancel={() => setDeleteModal({ visible: false, sessionId: null })}
+        minimal
+      />
     </SafeAreaView>
   );
 };
@@ -401,7 +448,9 @@ const styles = StyleSheet.create({
   panelTitle: { fontSize: 18, fontWeight: 'bold' },
   newChatBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, margin: 16, paddingVertical: 13, borderRadius: 12, backgroundColor: PURPLE },
   newChatText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  sessionItem: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+  sessionItemContainer: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, paddingRight: 4 },
+  sessionItemPressable: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 14 },
+  moreBtn: { padding: 12, justifyContent: 'center', alignItems: 'center' },
   sessionTitle: { fontSize: 13, fontWeight: '600', marginBottom: 4, lineHeight: 18 },
   sessionDate: { fontSize: 11 },
   emptyHistory: { alignItems: 'center', paddingTop: 48, gap: 12 },

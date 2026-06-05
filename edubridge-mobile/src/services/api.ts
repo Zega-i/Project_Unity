@@ -141,6 +141,22 @@ export const classAPI = {
     const response = await api.get(`/class/${classId}/quizzes`);
     return response.data;
   },
+  getDiscussions: async (classId: string) => {
+    const response = await api.get(`/class/${classId}/discussions`);
+    return response.data;
+  },
+  createDiscussion: async (classId: string, data: { title: string; category: string; content: string }) => {
+    const response = await api.post(`/class/${classId}/discussions`, data);
+    return response.data;
+  },
+  getReplies: async (threadId: string) => {
+    const response = await api.get(`/discussion/${threadId}/replies`);
+    return response.data;
+  },
+  createReply: async (threadId: string, content: string) => {
+    const response = await api.post(`/discussion/${threadId}/replies`, { content });
+    return response.data;
+  },
 };
 
 export const progressAPI = {

@@ -21,6 +21,36 @@ export interface GeneratedQuestion {
 export class AIService {
   private static readonly model = "llama-3.3-70b-versatile";
 
+  private static async callGroqWithFallback(payload: { messages: any[]; model?: string; temperature?: number; max_tokens?: number }): Promise<any> {
+    const primaryModel = payload.model || this.model;
+    const fallbackModel = "llama-3.1-8b-instant";
+    
+    try {
+      return await groq.chat.completions.create({
+        ...payload,
+        model: primaryModel,
+      });
+    } catch (err: any) {
+      const isRateLimit = err?.status === 429 || 
+                          (err?.message && err.message.includes("429")) ||
+                          (err?.message && err.message.includes("rate_limit_exceeded"));
+      
+      if (isRateLimit && primaryModel !== fallbackModel) {
+        logger.warn(`Groq Rate Limit exceeded for ${primaryModel}. Retrying with fallback model ${fallbackModel}...`);
+        try {
+          return await groq.chat.completions.create({
+            ...payload,
+            model: fallbackModel,
+          });
+        } catch (fallbackErr) {
+          logger.error(`Groq fallback model also failed:`, fallbackErr);
+          throw fallbackErr;
+        }
+      }
+      throw err;
+    }
+  }
+
   static async generateQuizFromText(
     extractedText: string,
     questionCount: number = 5,
@@ -42,7 +72,7 @@ KETENTUAN:
 OUTPUT FORMAT - HANYA JSON ARRAY:
 [{"question":"...","options":{"a":"...","b":"...","c":"...","d":"..."},"correct_answer":"a","explanation":"...","difficulty":"medium","topic":"...","sub_topic":"..."}]`;
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: [
           {
             role: "system",
@@ -78,7 +108,7 @@ FORMAT:
 
 Gunakan Bahasa Indonesia yang profesional dan memotivasi.`;
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: [
           {
             role: "system",
@@ -192,14 +222,56 @@ INSTRUKSI UNTUK AI:
 2. Berikan jawaban yang informatif, terstruktur, dan aplikatif untuk membantu tugas mengajar Guru secara umum sesuai pertanyaan yang diberikan.
 3. Jawablah secara terstruktur menggunakan format teks biasa (Plain Text) yang bersih. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **.`;
         } else {
-          prompt = `Kamu adalah AI Tutor EduBridge.
-KONTEKS: Subjek ${context?.subject || 'Umum'}, Topik ${context?.topic || 'Bermacam-macam'}.
-PERTANYAAN: ${studentQuestion}
+          const subject = context?.subject || '';
+          const topic = context?.topic || '';
+          
+          const hasHistory = context?.history && Array.isArray(context.history) && context.history.filter((m: any) => m.sender === 'user' || m.isUser === true).length > 0;
+          const hasActiveContext = !!(subject || topic || hasHistory);
 
-INSTRUKSI:
-- Jelas, ramah, dan suportif.
-- Gunakan analogi jika konsep sulit.
-- Maksimal 300 kata.`;
+          if (!hasActiveContext) {
+            prompt = `Kamu adalah AI Tutor EduBridge.
+PERTANYAAN PENGGUNA: ${studentQuestion}
+
+INSTRUKSI PERSONA & GAYA BAHASA:
+- Gunakan bahasa yang santai, cerdas, ramah, dan interaktif seperti ChatGPT atau Gemini.
+- Panggil dirimu sebagai "Aku" dan sapa pengguna sebagai "Kamu".
+- Saat ini pengguna belum menentukan mata pelajaran atau topik belajar spesifik (riwayat percakapan kosong dan parameter subjek kosong).
+- Sapa pengguna dengan ramah dan tanyakan topik/mata pelajaran atau soal apa yang ingin dibahas hari ini (seperti Kalkulus, Fisika, atau Pemrograman Java) agar kamu bisa membantunya secara terfokus. JANGAN langsung memberikan contoh soal matematika atau penjelasan teknis pemrograman secara acak di awal.`;
+          } else {
+            const contextStr = subject ? `KONTEKS SUBJEK: ${subject}${topic ? `, Topik: ${topic}` : ''}.\n` : '';
+            
+            prompt = `Kamu adalah AI Tutor EduBridge.
+${contextStr}PERTANYAAN PENGGUNA: ${studentQuestion}
+
+INSTRUKSI IDENTIFIKASI TOPIK/TEMA:
+1. Temukan TOPIK AKTIF yang sedang dibahas pada riwayat percakapan sebelumnya (misalnya tentang Kalkulus, Fisika, Pemrograman Java, dll.).
+2. Klasifikasikan topik tersebut ke dalam kategori utama:
+   - "Sains/Matematika/Fisika/Kimia" (jika membahas kalkulus, rumus matematika, persamaan fisika, reaksi kimia, dll.)
+   - "Pemrograman/IT" (jika membahas bahasa pemrograman Java/Python/C++, coding, database, algoritma, dll.)
+   - "Umum/Sosial/Bahasa" (jika membahas sejarah, ekonomi, bahasa inggris, dll.)
+
+INSTRUKSI KHUSUS PERINTAH CEPAT (Wajib disesuaikan dengan TOPIK AKTIF):
+1. JIKA pertanyaan pengguna adalah "Beri contoh soal" (atau meminta soal baru):
+   - Buatkan HANYA 1 buah soal/pertanyaan latihan saja yang relevan dan menantang sesuai TOPIK AKTIF yang dideteksi.
+   - JIKA topiknya "Sains/Matematika/Fisika/Kimia" (seperti Kalkulus), berikan angka, variabel, atau persamaan matematika menggunakan notasi teks biasa (seperti x^2, integral(2x dx)), dan JANGAN sertakan kode pemrograman komputer (Python/Java) untuk menyelesaikan soal tersebut.
+   - JIKA topiknya "Pemrograman/IT", berikan potongan kode program (source code) yang perlu dianalisis, diperbaiki, atau ditanyakan keluarannya.
+   - JANGAN sertakan kunci jawaban atau cara penyelesaiannya langsung di awal agar siswa mencobanya sendiri. Ajak siswa untuk menjawabnya terlebih dahulu dengan ramah.
+2. JIKA pertanyaan pengguna adalah "Cara menyelesaikan" (atau menanyakan solusi soal sebelumnya):
+   - Ambil soal yang baru saja diberikan/dibahas sebelumnya, lalu jelaskan cara menyelesaikannya langkah demi langkah secara mendalam, runut, dan logis.
+   - JIKA sebelumnya belum ada soal spesifik yang ditanyakan atau dibahas di riwayat chat, katakan dengan ramah bahwa kamu siap membantu menyelesaikan soal, lalu minta siswa untuk menuliskan soal yang ingin dibahas terlebih dahulu.
+   - JIKA topiknya "Sains/Matematika/Fisika/Kimia" (seperti Kalkulus), jabarkan langkah perhitungan matematis secara terperinci menggunakan notasi teks biasa yang rapi (seperti menurunkan/mengintegralkan rumus selangkah demi selangkah), dan JANGAN menggunakan kode program komputer (misalnya Python/Java) kecuali jika pengguna secara eksplisit meminta penyelesaian dalam bentuk kode program.
+   - JIKA topiknya "Pemrograman/IT", berikan penjelasan baris-baris kode beserta kode program solusi yang lengkap.
+   - Selalu sertakan kunci jawaban akhir yang jelas di bagian akhir penjelasan.
+3. JIKA pertanyaan pengguna adalah "Latihan" (atau memulai latihan):
+   - Buat satu kuis interaktif atau pertanyaan konsep singkat tentang TOPIK AKTIF tersebut.
+   - Ajak siswa dengan antusias untuk langsung mencoba mengetikkan jawabannya agar bisa kalian diskusikan bersama.
+
+ATURAN FORMATTING & GAYA BAHASA:
+- Gunakan bahasa yang cerdas, ramah, dan asyik seperti ChatGPT atau Gemini. Gunakan analogi yang relevan jika konsep yang dibahas sulit dipahami.
+- Selalu panggil dirimu sebagai "Aku" dan sapa pengguna sebagai "Kamu".
+- Jawablah secara terstruktur dalam format teks biasa (Plain Text) yang bersih. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **.
+- Batasi respon maksimal 300 kata agar padat dan mudah dibaca di layar HP.`;
+          }
         }
       }
 
@@ -211,7 +283,7 @@ INSTRUKSI:
         role: "system",
         content: context?.role === 'TEACHER' 
           ? "Kamu adalah AI Assistant Guru EduBridge yang membantu Guru membimbing dan menganalisis performa belajar siswa. Sapa dan berinteraksilah dengan Guru secara sopan dan profesional. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Tulis dalam teks biasa yang bersih dengan pembagian paragraf yang rapi menggunakan baris baru."
-          : "Kamu adalah AI Tutor EduBridge yang ramah dan suportif untuk membantu siswa belajar. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Tulis dalam teks biasa yang bersih dengan pembagian paragraf yang rapi menggunakan baris baru."
+          : "Kamu adalah AI Tutor EduBridge yang cerdas, ramah, dan interaktif (seperti ChatGPT atau Gemini). Kamu memanggil dirimu sebagai 'Aku' dan menyapa siswa sebagai 'Kamu'. JANGAN gunakan tag Markdown seperti #, ##, ###, *, atau **. Tulis dalam teks biasa yang bersih dengan pembagian paragraf yang rapi menggunakan baris baru."
       });
 
       // Add conversation history
@@ -239,7 +311,7 @@ INSTRUKSI:
         content: prompt
       });
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: messagesArray,
         model: this.model,
       });
@@ -292,7 +364,7 @@ Jawaban benar  : ${w.correctAnswerLabel || w.correctAnswer}`;
  
  Kalimat motivasi personal yang spesifik (bukan klise), sesuaikan dengan kesalahan yang dibuat.`;
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],
         model: this.model,
         temperature: 0.7,
@@ -318,7 +390,7 @@ Berikan analisis mendalam dan rekomendasi untuk guru.
 OUTPUT HARUS JSON:
 {"analysis": "...", "recommendations": ["...", "...", "..."]}`;
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],
         model: this.model,
       });
@@ -349,7 +421,7 @@ OUTPUT HARUS JSON:
   "formattedMessage": "... (Markdown version for display)"
 }`;
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],
         model: this.model,
       });
@@ -381,7 +453,7 @@ OUTPUT HARUS JSON:
       
       Gunakan Bahasa Indonesia yang profesional dan kreatif. Gunakan format Markdown yang rapi.`;
 
-      const message = await groq.chat.completions.create({
+      const message = await this.callGroqWithFallback({
         messages: [{ role: "user", content: prompt }],
         model: this.model,
       });

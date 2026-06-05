@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { authStore } from '../../store/authStore';
-import { authAPI, aiAPI, progressAPI } from '../../services/api';
+import { authAPI, aiAPI, progressAPI, notificationsAPI, classAPI } from '../../services/api';
 import PremiumModal from '../../components/PremiumModal';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -17,6 +17,33 @@ import { useFocusEffect } from '@react-navigation/native';
 import { USE_MOCK_DATA } from '../../constants';
 
 const PURPLE = '#7C3AED';
+
+const getRemainingTimeText = (dateStr: string) => {
+  const now = new Date();
+  const deadline = new Date(dateStr);
+  const diffMs = deadline.getTime() - now.getTime();
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+  if (diffHours <= 24) {
+    const hours = Math.max(1, diffHours);
+    return `${hours} jam lagi`;
+  }
+  const days = Math.ceil(diffHours / 24);
+  return `${days} hari lagi`;
+};
+
+const formatRelativeTime = (dateStr: string) => {
+  if (!dateStr) return '';
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  if (diffMins < 1) return 'Baru saja';
+  if (diffMins < 60) return `${diffMins} mnt lalu`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours} jam lalu`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} hari lalu`;
+};
 
 const DashboardScreen = () => {
   const navigation = useNavigation<any>();
@@ -28,14 +55,17 @@ const DashboardScreen = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loadingPath, setLoadingPath] = useState(false);
   const [learningPath, setLearningPath] = useState({ visible: false, content: '' });
+  const [recommendationPath, setRecommendationPath] = useState<any[]>([]);
+  const [completedDays, setCompletedDays] = useState<number[]>([]);
   const [progress, setProgress] = useState({ overallProgress: 0, totalMaterials: 0, viewedMaterials: 0 });
+  const [upcomingAssignments, setUpcomingAssignments] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
 
   const loadUnreadCount = async () => {
     try {
-      const stored = await AsyncStorage.getItem('notifications');
-      if (stored) {
-        const notifs = JSON.parse(stored);
-        setUnreadCount(notifs.filter((n: any) => !n.read).length);
+      const res = await notificationsAPI.getAll();
+      if (res && res.success && res.data && Array.isArray(res.data.notifications)) {
+        setUnreadCount(res.data.notifications.filter((n: any) => !n.read).length);
       } else {
         setUnreadCount(0);
       }
@@ -59,10 +89,112 @@ const DashboardScreen = () => {
     }
   };
 
+  const loadDashboardAlerts = async () => {
+    if (USE_MOCK_DATA) {
+      setUpcomingAssignments([
+        {
+          id: 'mock-assign-1',
+          title: 'Tugas Kalkulus: Limit & Turunan Fungsi',
+          className: 'Kalkulus XI-A',
+          classIcon: '📐',
+          deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        }
+      ]);
+      setRecentActivities([
+        {
+          id: 'mock-notif-1',
+          title: 'Materi Baru',
+          message: 'Materi baru "Integral Lipat Dua" telah diunggah di kelas Kalkulus XI-A. Yuk pelajari sekarang!',
+          type: 'NEW_MATERIAL',
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: 'mock-notif-2',
+          title: 'Kuis Baru',
+          message: 'Kuis baru "Kuis 1: SPLDV" kini tersedia di kelas Matematika 11-A. Durasi: 15 menit.',
+          type: 'SYSTEM',
+          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+        }
+      ]);
+      return;
+    }
+
+    try {
+      // 1. Fetch upcoming assignments across all joined classes
+      const classRes = await classAPI.getMyClasses();
+      const myClasses: any[] = classRes.data || [];
+      
+      const results = await Promise.all(
+        myClasses.map((cls: any) =>
+          classAPI.getClassAssignments(cls.id)
+            .then((r: any) => (r && r.data || []).map((a: any) => ({
+              ...a,
+              className: cls.name,
+              classIcon: cls.subject === 'Matematika' || cls.subject === 'Fisika' ? '📐' : '📗'
+            })))
+            .catch(() => [])
+        )
+      );
+
+      const allAssignments = results.flat();
+      const now = new Date();
+      const upcoming = allAssignments.filter((a: any) => {
+        const deadline = new Date(a.deadline);
+        const diffHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+        return diffHours > 0 && diffHours <= 72; // within 3 days (72 hours)
+      });
+      upcoming.sort((a: any, b: any) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+      setUpcomingAssignments(upcoming);
+
+      // 2. Fetch notifications and filter for recent class activities
+      const notifRes = await notificationsAPI.getAll();
+      if (notifRes && notifRes.success && notifRes.data && Array.isArray(notifRes.data.notifications)) {
+        const classActivities = notifRes.data.notifications.filter((n: any) =>
+          n.type === 'NEW_MATERIAL' || (n.type === 'SYSTEM' && (n.title.toLowerCase().includes('kuis') || n.title.toLowerCase().includes('tugas') || n.title.toLowerCase().includes('materi')))
+        );
+        setRecentActivities(classActivities.slice(0, 3));
+      } else {
+        setRecentActivities([]);
+      }
+    } catch (err) {
+      console.log('Error loading dashboard alerts:', err);
+    }
+  };
+
+  const loadSavedPath = async () => {
+    try {
+      const userData = authStore.getUserSync();
+      if (userData?.id) {
+        const stored = await AsyncStorage.getItem(`@learning_path_${userData.id}`);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              setRecommendationPath(parsed);
+              const storedCompleted = await AsyncStorage.getItem(`@learning_path_completed_${userData.id}`);
+              if (storedCompleted) {
+                setCompletedDays(JSON.parse(storedCompleted));
+              } else {
+                setCompletedDays([]);
+              }
+              return;
+            }
+          } catch {}
+        }
+        setRecommendationPath([]);
+        setCompletedDays([]);
+      }
+    } catch (err) {
+      console.log('[DashboardScreen] Error loading saved path:', err);
+    }
+  };
+
   useFocusEffect(
     React.useCallback(() => {
       loadUnreadCount();
       loadProgress();
+      loadDashboardAlerts();
+      loadSavedPath();
     }, [])
   );
 
@@ -99,23 +231,59 @@ const DashboardScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadProfile();
+    await Promise.all([
+      loadProfile(),
+      loadUnreadCount(),
+      loadProgress(),
+      loadDashboardAlerts(),
+      loadSavedPath()
+    ]);
     setRefreshing(false);
   };
 
   const handleGeneratePath = async () => {
+    console.log('[DashboardScreen] handleGeneratePath - Triggered');
     setLoadingPath(true);
     triggerLight();
     try {
       const res = await aiAPI.getLearningPath();
-      if (res.success) {
-        setLearningPath({ visible: true, content: res.data.recommendation });
+      console.log('[DashboardScreen] handleGeneratePath - Response success:', res?.success);
+      console.log('[DashboardScreen] handleGeneratePath - Response data keys:', res?.data ? Object.keys(res.data) : null);
+      if (res.success && res.data && res.data.recommendation) {
+        const pathData = res.data.recommendation; // This is the JSON array
+        console.log('[DashboardScreen] handleGeneratePath - Loaded recommendation path array length:', Array.isArray(pathData) ? pathData.length : typeof pathData);
+        setRecommendationPath(pathData);
+        setCompletedDays([]);
+        const userData = authStore.getUserSync();
+        if (userData?.id) {
+          await AsyncStorage.setItem(`@learning_path_${userData.id}`, JSON.stringify(pathData));
+          await AsyncStorage.removeItem(`@learning_path_completed_${userData.id}`);
+        }
+      } else {
+        console.log('[DashboardScreen] handleGeneratePath - Failed validation:', JSON.stringify(res));
       }
     } catch (error) {
+      console.log('[DashboardScreen] handleGeneratePath - Error:', error);
       Alert.alert('Error', 'Gagal membuat jalur belajar AI.');
     } finally {
       setLoadingPath(false);
     }
+  };
+
+  const toggleDayCompleted = async (index: number) => {
+    triggerLight();
+    const userData = authStore.getUserSync();
+    if (!userData?.id) return;
+    
+    const isCompleted = completedDays.includes(index);
+    let updated: number[];
+    if (isCompleted) {
+      updated = completedDays.filter(i => i !== index);
+    } else {
+      updated = [...completedDays, index];
+    }
+    setCompletedDays(updated);
+    await AsyncStorage.setItem(`@learning_path_completed_${userData.id}`, JSON.stringify(updated));
   };
 
   const hasClass = !!(user?.className || user?.['class']);
@@ -146,6 +314,22 @@ const DashboardScreen = () => {
           </Pressable>
         </View>
 
+        {/* Urgent Deadline Alert Banner */}
+        {upcomingAssignments.length > 0 && (
+          <Pressable 
+            style={[styles.deadlineBanner, { backgroundColor: isDarkMode ? '#3F2C00' : '#FEF3C7', borderColor: isDarkMode ? '#D97706' : '#FDE68A' }]} 
+            onPress={() => { triggerLight(); navigation.navigate('Assignments' as any); }}
+          >
+            <View style={styles.deadlineBannerHeader}>
+              <Ionicons name="alert-circle" size={18} color="#D97706" style={{ marginRight: 6 }} />
+              <Text style={[styles.deadlineBannerTitle, { color: isDarkMode ? '#FBBF24' : '#B45309' }]}>Tugas Mendekati Deadline!</Text>
+            </View>
+            <Text style={[styles.deadlineBannerText, { color: isDarkMode ? '#FDE68A' : '#78350F' }]} numberOfLines={2}>
+              "{upcomingAssignments[0].title}" ({upcomingAssignments[0].className}) batas akhir {getRemainingTimeText(upcomingAssignments[0].deadline)}
+            </Text>
+          </Pressable>
+        )}
+
         {/* Learning Summary Card */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryInfo}>
@@ -168,42 +352,182 @@ const DashboardScreen = () => {
           </View>
         </View>
 
+        {/* Recent Class Activity Feed */}
+        {recentActivities.length > 0 && (
+          <View style={styles.activitySection}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Aktivitas Kelas Terbaru</Text>
+            <View style={styles.activityList}>
+              {recentActivities.map((item) => {
+                const isMaterial = item.type === 'NEW_MATERIAL';
+                const isQuiz = item.title.toLowerCase().includes('kuis');
+                const isAssignment = item.title.toLowerCase().includes('tugas');
+                
+                let iconName = 'notifications-outline';
+                let iconColor = '#6B7280';
+                let targetRoute = 'Notifications';
+                
+                if (isMaterial) {
+                  iconName = 'book';
+                  iconColor = '#6366F1';
+                  targetRoute = 'Materials';
+                } else if (isQuiz) {
+                  iconName = 'extension-puzzle';
+                  iconColor = '#F59E0B';
+                  targetRoute = 'Quiz';
+                } else if (isAssignment) {
+                  iconName = 'clipboard';
+                  iconColor = '#EF4444';
+                  targetRoute = 'Assignments';
+                }
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => { triggerLight(); navigation.navigate(targetRoute as any); }}
+                  >
+                    <View style={[styles.activityIconBox, { backgroundColor: iconColor + '12' }]}>
+                      <Ionicons name={iconName as any} size={20} color={iconColor} />
+                    </View>
+                    <View style={styles.activityInfo}>
+                      <View style={styles.activityHeaderRow}>
+                        <Text style={[styles.activityType, { color: iconColor }]} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={[styles.activityTime, { color: colors.textSecondary }]}>
+                          {formatRelativeTime(item.createdAt)}
+                        </Text>
+                      </View>
+                      <Text style={[styles.activityMessage, { color: colors.text }]} numberOfLines={1}>
+                        {item.message}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} style={{ marginLeft: 4 }} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
         {/* Recommendations */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Rekomendasi Belajar</Text>
-        </View>
-        <View style={[styles.emptyRecom, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.aiHeader}>
-            <Ionicons name="sparkles" size={24} color={PURPLE} />
-            <Text style={[styles.aiHeaderTitle, { color: PURPLE }]}>AI LEARNING PATH</Text>
-          </View>
-          <Text style={[styles.emptyRecomTitle, { color: colors.text }]}>Jalur Belajar Personal</Text>
-          <Text style={[styles.emptyRecomDesc, { color: colors.textSecondary }]}>
-            {hasClass
-              ? 'Dapatkan rencana belajar 7 hari kedepan yang disusun khusus oleh AI berdasarkan performamu.'
-              : 'Bergabung ke kelas terlebih dahulu untuk mendapatkan rekomendasi belajarmu.'}
-          </Text>
-          {hasClass ? (
+          {Array.isArray(recommendationPath) && recommendationPath.length > 0 ? (
             <Pressable 
-              style={[styles.joinClassBtn, { backgroundColor: PURPLE }]} 
+              style={[styles.seeAllBtn, { backgroundColor: PURPLE + '10', borderWidth: 0, paddingHorizontal: 12, paddingVertical: 6 }]} 
               onPress={handleGeneratePath}
               disabled={loadingPath}
             >
               {loadingPath ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={PURPLE} />
               ) : (
                 <>
-                  <Ionicons name="map-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.joinClassText}>Buat Jalur Belajar AI</Text>
+                  <Ionicons name="sync-outline" size={14} color={PURPLE} />
+                  <Text style={[styles.seeAll, { color: PURPLE }]}>Perbarui</Text>
                 </>
               )}
             </Pressable>
-          ) : (
-            <Pressable style={[styles.joinClassBtn, { backgroundColor: colors.primary }]} onPress={() => { triggerLight(); navigation.navigate('JoinClass' as any); }}>
-              <Text style={styles.joinClassText}>Gabung Kelas</Text>
-            </Pressable>
-          )}
+          ) : null}
         </View>
+
+        {Array.isArray(recommendationPath) && recommendationPath.length > 0 ? (
+          <View style={[styles.emptyRecom, { backgroundColor: colors.card, borderColor: colors.border, alignItems: 'stretch', padding: 16 }]}>
+            <View style={[styles.aiHeader, { justifyContent: 'center', marginBottom: 12 }]}>
+              <Ionicons name="sparkles" size={20} color={PURPLE} />
+              <Text style={[styles.aiHeaderTitle, { color: PURPLE }]}>JALUR BELAJAR 7 HARI KAMU</Text>
+            </View>
+            <ScrollView 
+              style={{ maxHeight: 280 }} 
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+            >
+              <View style={styles.timelineContainer}>
+                {(recommendationPath || []).map((item: any, idx: number) => {
+                  const isHigh = item.priority === 'high';
+                  const isMedium = item.priority === 'medium';
+                  const badgeBg = isHigh ? '#FEE2E2' : isMedium ? '#FEF3C7' : '#D1FAE5';
+                  const badgeText = isHigh ? '#EF4444' : isMedium ? '#D97706' : '#10B981';
+                  const priorityLabel = isHigh ? 'Penting' : isMedium ? 'Sedang' : 'Rendah';
+                  const isCompleted = completedDays.includes(idx);
+
+                  return (
+                    <View key={idx} style={styles.timelineItem}>
+                      {/* Left timeline line and dot */}
+                      <View style={styles.timelineLeft}>
+                        <View style={[styles.timelineDot, { backgroundColor: PURPLE }]}>
+                          <Text style={styles.timelineDotText}>{item.day}</Text>
+                        </View>
+                        {idx < (recommendationPath || []).length - 1 && (
+                          <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />
+                        )}
+                      </View>
+
+                      {/* Right card content */}
+                      <View style={[styles.timelineCard, { backgroundColor: colors.surface, borderColor: colors.border, opacity: isCompleted ? 0.6 : 1 }]}>
+                        <View style={styles.cardHeader}>
+                          <View style={[styles.subjectBadge, { backgroundColor: colors.primary + '15' }]}>
+                            <Text style={[styles.subjectBadgeText, { color: colors.primary, textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>{item.subject}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={[styles.priorityBadge, { backgroundColor: badgeBg }]}>
+                              <Text style={[styles.priorityBadgeText, { color: badgeText }]}>{priorityLabel}</Text>
+                            </View>
+                            <Pressable 
+                              style={[styles.checkBtn, { backgroundColor: isCompleted ? '#D1FAE5' : colors.border + '30', borderColor: isCompleted ? '#10B981' : colors.border }]} 
+                              onPress={() => toggleDayCompleted(idx)}
+                            >
+                              <Ionicons 
+                                name={isCompleted ? "checkmark-sharp" : "ellipse-outline"} 
+                                size={12} 
+                                color={isCompleted ? '#10B981' : colors.textSecondary} 
+                              />
+                            </Pressable>
+                          </View>
+                        </View>
+                        <Text style={[styles.taskTitle, { color: colors.text, textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>{item.task}</Text>
+                        <Text style={[styles.taskDesc, { color: colors.textSecondary, textDecorationLine: isCompleted ? 'line-through' : 'none' }]}>{item.desc}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        ) : (
+          <View style={[styles.emptyRecom, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.aiHeader}>
+              <Ionicons name="sparkles" size={24} color={PURPLE} />
+              <Text style={[styles.aiHeaderTitle, { color: PURPLE }]}>AI LEARNING PATH</Text>
+            </View>
+            <Text style={[styles.emptyRecomTitle, { color: colors.text }]}>Jalur Belajar Personal</Text>
+            <Text style={[styles.emptyRecomDesc, { color: colors.textSecondary }]}>
+              {hasClass
+                ? 'Dapatkan rencana belajar 7 hari kedepan yang disusun khusus oleh AI berdasarkan performamu.'
+                : 'Bergabung ke kelas terlebih dahulu untuk mendapatkan rekomendasi belajarmu.'}
+            </Text>
+            {hasClass ? (
+              <Pressable 
+                style={[styles.joinClassBtn, { backgroundColor: PURPLE }]} 
+                onPress={handleGeneratePath}
+                disabled={loadingPath}
+              >
+                {loadingPath ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="map-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.joinClassText}>Buat Jalur Belajar AI</Text>
+                  </>
+                )}
+              </Pressable>
+            ) : (
+              <Pressable style={[styles.joinClassBtn, { backgroundColor: colors.primary }]} onPress={() => { triggerLight(); navigation.navigate('JoinClass' as any); }}>
+                <Text style={styles.joinClassText}>Gabung Kelas</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
 
         {/* Spacer - Push Menu Cepat to bottom */}
         <View style={styles.spacer} />
@@ -303,6 +627,102 @@ const styles = StyleSheet.create({
   recomTime: { fontSize: 12, color: '#94A3B8', marginLeft: 4, marginRight: 10 },
   miniProgressBg: { flex: 1, height: 4, backgroundColor: '#F1F5F9', borderRadius: 2 },
   miniProgressFill: { height: '100%', borderRadius: 2 },
+  deadlineBanner: { padding: 16, borderRadius: 20, borderWidth: 1, marginBottom: 15 },
+  deadlineBannerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  deadlineBannerTitle: { fontSize: 13, fontWeight: '700' },
+  deadlineBannerText: { fontSize: 12, lineHeight: 18 },
+  activitySection: { marginBottom: 20 },
+  activityList: { gap: 10, marginTop: 8 },
+  activityCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 20, borderWidth: 1 },
+  activityIconBox: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  activityInfo: { flex: 1, marginRight: 8 },
+  activityHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  activityType: { fontSize: 12, fontWeight: '700' },
+  activityTime: { fontSize: 10 },
+  activityMessage: { fontSize: 12, lineHeight: 18 },
+  timelineContainer: {
+    paddingLeft: 4,
+    paddingRight: 4,
+    paddingVertical: 4,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    marginRight: 12,
+    width: 28,
+  },
+  timelineDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: PURPLE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  timelineDotText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  timelineLine: {
+    position: 'absolute',
+    top: 24,
+    bottom: -16,
+    width: 2,
+    zIndex: 0,
+  },
+  timelineCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  subjectBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  subjectBadgeText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  priorityBadgeText: {
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  taskTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  taskDesc: {
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  checkBtn: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default DashboardScreen;
