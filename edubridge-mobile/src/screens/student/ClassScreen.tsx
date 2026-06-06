@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-  SafeAreaView, Alert, ActivityIndicator,
+  SafeAreaView, Alert, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -21,6 +21,7 @@ const ClassScreen = () => {
   const [classes, setClasses] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const filteredClasses = classes
     .filter(cls => {
@@ -46,9 +47,21 @@ const ClassScreen = () => {
 
   useFocusEffect(useCallback(() => { fetchClasses(); }, [fetchClasses]));
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchClasses();
+    setRefreshing(false);
+  }, [fetchClasses]);
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: Constants.statusBarHeight, backgroundColor: colors.background }]}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PURPLE]} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           {showSearch ? (

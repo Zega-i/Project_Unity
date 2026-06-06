@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   Pressable, StatusBar, Dimensions, ActivityIndicator,
-  Modal, TextInput, Animated, PanResponder,
+  Modal, TextInput, Animated, PanResponder, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +21,7 @@ const TeacherAnalyticsScreen = () => {
   const { triggerLight } = useHapticFeedback();
   
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<any>(null);
 
   // Filter States
@@ -80,8 +81,8 @@ const TeacherAnalyticsScreen = () => {
     }
   };
 
-  const loadData = async (classId?: string) => {
-    setLoading(true);
+  const loadData = async (classId?: string, silent = false) => {
+    if (!silent) setLoading(true);
     if (USE_MOCK_DATA) {
       setData({
         summary: {
@@ -125,7 +126,7 @@ const TeacherAnalyticsScreen = () => {
           }
         ]
       });
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
     try {
@@ -138,9 +139,18 @@ const TeacherAnalyticsScreen = () => {
     } catch (error) {
       console.log('Analytics load error:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([
+      loadClasses(),
+      loadData(selectedClass?.id, true)
+    ]);
+    setRefreshing(false);
+  }, [selectedClass]);
 
   useEffect(() => {
     loadClasses();
@@ -175,7 +185,13 @@ const TeacherAnalyticsScreen = () => {
         </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[GREEN]} />
+        }
+      >
         {loading ? (
           <ActivityIndicator color={GREEN} style={{ marginTop: 100 }} />
         ) : !data ? (

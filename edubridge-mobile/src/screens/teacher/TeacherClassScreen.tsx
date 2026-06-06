@@ -22,6 +22,7 @@ const TeacherClassScreen = () => {
   const [activeTab, setActiveTab] = useState('active');
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [confirmModal, setConfirmModal] = useState<{
     visible: boolean;
@@ -35,8 +36,8 @@ const TeacherClassScreen = () => {
     type: 'archive',
   });
 
-  const fetchClasses = React.useCallback(async () => {
-    setLoading(true);
+  const fetchClasses = React.useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await teacherAPI.getMyClasses();
       if (res.success) {
@@ -45,7 +46,7 @@ const TeacherClassScreen = () => {
     } catch (error) {
       console.log('Error fetching classes:', error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -123,49 +124,57 @@ const TeacherClassScreen = () => {
     </Pressable>
   );
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Manajemen Kelas</Text>
-        <Pressable style={styles.addBtn} onPress={() => { triggerLight(); navigation.navigate('TeacherAddClass'); }}>
-          <Ionicons name="add-circle" size={32} color={GREEN} />
-        </Pressable>
-      </View>
- 
-      <View style={styles.tabBar}>
-        <Pressable 
-          style={[styles.tab, activeTab === 'active' && styles.activeTab]} 
-          onPress={() => { triggerLight(); setActiveTab('active'); }}
-        >
-          <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Aktif</Text>
-        </Pressable>
-        <Pressable 
-          style={[styles.tab, activeTab === 'archived' && styles.activeTab]} 
-          onPress={() => { triggerLight(); setActiveTab('archived'); }}
-        >
-          <Text style={[styles.tabText, activeTab === 'archived' && styles.activeTabText]}>Arsip</Text>
-        </Pressable>
-      </View>
+      const onRefresh = React.useCallback(async () => {
+        setRefreshing(true);
+        await fetchClasses(true);
+        setRefreshing(false);
+      }, [fetchClasses]);
 
-      {loading ? (
-        <View style={styles.emptyState}>
-          <ActivityIndicator size="large" color={GREEN} />
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Memuat kelas...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={classes.filter(c => activeTab === 'active' ? !c.archived : c.archived)}
-          renderItem={renderClassItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
+      return (
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background, paddingTop: Constants.statusBarHeight }]}>
+          <View style={styles.header}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Manajemen Kelas</Text>
+            <Pressable style={styles.addBtn} onPress={() => { triggerLight(); navigation.navigate('TeacherAddClass'); }}>
+              <Ionicons name="add-circle" size={32} color={GREEN} />
+            </Pressable>
+          </View>
+     
+          <View style={styles.tabBar}>
+            <Pressable 
+              style={[styles.tab, activeTab === 'active' && styles.activeTab]} 
+              onPress={() => { triggerLight(); setActiveTab('active'); }}
+            >
+              <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>Aktif</Text>
+            </Pressable>
+            <Pressable 
+              style={[styles.tab, activeTab === 'archived' && styles.activeTab]} 
+              onPress={() => { triggerLight(); setActiveTab('archived'); }}
+            >
+              <Text style={[styles.tabText, activeTab === 'archived' && styles.activeTabText]}>Arsip</Text>
+            </Pressable>
+          </View>
+    
+          {loading ? (
             <View style={styles.emptyState}>
-              <Ionicons name="folder-open-outline" size={60} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Tidak ada kelas di kategori ini</Text>
+              <ActivityIndicator size="large" color={GREEN} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Memuat kelas...</Text>
             </View>
-          }
-        />
-      )}
+          ) : (
+            <FlatList
+              data={classes.filter(c => activeTab === 'active' ? !c.archived : c.archived)}
+              renderItem={renderClassItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.listContainer}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Ionicons name="folder-open-outline" size={60} color={colors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Tidak ada kelas di kategori ini</Text>
+                </View>
+              }
+            />
+          )}
 
       <PremiumModal
         visible={confirmModal.visible}
