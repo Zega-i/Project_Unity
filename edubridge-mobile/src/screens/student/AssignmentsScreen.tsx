@@ -151,11 +151,12 @@ const AssignmentsScreen = () => {
         animationType="slide"
         onRequestClose={() => setSelectedAssignment(null)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedAssignment(null)}>
-          <Pressable style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: sheetBottomPadding }]} onPress={e => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedAssignment(null)} />
+          <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: sheetBottomPadding }]}>
             {selectedAssignment && <AssignmentDetailSheet assignment={selectedAssignment} colors={colors} onClose={() => setSelectedAssignment(null)} />}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );

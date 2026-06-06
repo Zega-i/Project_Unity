@@ -504,13 +504,14 @@ const SubjectModulesScreen = () => {
         animationType="slide"
         onRequestClose={() => setSelectedAssignment(null)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedAssignment(null)}>
-          <Pressable style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: sheetBottomPadding }]} onPress={e => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedAssignment(null)} />
+          <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: sheetBottomPadding }]}>
             {selectedAssignment && (
               <AssignmentSheet assignment={selectedAssignment} colors={colors} onClose={() => setSelectedAssignment(null)} />
             )}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       {/* Quiz Detail Modal */}
@@ -520,8 +521,9 @@ const SubjectModulesScreen = () => {
         animationType="slide"
         onRequestClose={() => setSelectedQuiz(null)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setSelectedQuiz(null)}>
-          <Pressable style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: sheetBottomPadding }]} onPress={e => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedQuiz(null)} />
+          <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: sheetBottomPadding }]}>
             {selectedQuiz && (
               <QuizSheet
                 quiz={selectedQuiz}
@@ -534,9 +536,9 @@ const SubjectModulesScreen = () => {
                 }}
               />
             )}
-            </Pressable>
-          </Pressable>
-        </Modal>
+          </View>
+        </View>
+      </Modal>
 
         {/* Create Discussion Thread Modal */}
         <Modal
